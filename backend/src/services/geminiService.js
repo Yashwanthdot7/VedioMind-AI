@@ -3,8 +3,9 @@ const { GEMINI_MODELS, PROMPTS } = require('../types/constants');
 
 class GeminiService {
     constructor() {
+        // Ensure your API key is in your .env file
         this.genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-        this.model = this.genAI.getGenerativeModel({ model: GEMINI_MODELS.TEXT });
+        this.model = this.genAI.getGenerativeModel({ model: GEMINI_MODELS.TEXT || "gemini-1.5-flash" });
     }
 
     /**
@@ -17,8 +18,7 @@ class GeminiService {
                 .replace('{transcript}', transcript);
 
             const result = await this.model.generateContent(prompt);
-            const response = await result.response;
-            return response.text();
+            return result.response.text();
         } catch (error) {
             console.error('Error generating summary:', error);
             throw new Error('Failed to generate summary');
@@ -26,54 +26,52 @@ class GeminiService {
     }
 
     /**
-     * Extract key takeaways
+     * Extract key takeaways from transcript
      */
     async extractKeyTakeaways(transcript) {
         try {
-            const prompt = PROMPTS.KEY_TAKEAWAYS.replace('{transcript}', transcript);
+            const prompt = PROMPTS.KEY_TAKEAWAYS
+                .replace('{transcript}', transcript.substring(0, 50000));
 
             const result = await this.model.generateContent(prompt);
-            const response = await result.response;
-            const text = response.text();
+            const text = result.response.text();
 
-            // Try to parse JSON response
-            try {
-                const jsonMatch = text.match(/\[[\s\S]*\]/);
-                if (jsonMatch) {
-                    return JSON.parse(jsonMatch[0]);
-                }
-            } catch (e) {
-                console.log('Could not parse JSON, falling back to text parsing');
+            // Parse the JSON array from the response
+            const jsonMatch = text.match(/\[[\s\S]*\]/);
+            if (jsonMatch) {
+                return JSON.parse(jsonMatch[0]);
             }
-
-            // Fallback: split by lines and clean up
-            return text
-                .split('\n')
-                .filter(line => line.trim().startsWith('-') || line.trim().startsWith('•'))
-                .map(line => line.replace(/^[-•]\s*/, '').trim())
-                .filter(line => line.length > 0);
+            // Fallback: split by newlines if JSON parsing fails
+            return text.split('\n').filter(line => line.trim().length > 0);
         } catch (error) {
-            console.error('Error extracting takeaways:', error);
+            console.error('Error extracting key takeaways:', error);
             throw new Error('Failed to extract key takeaways');
         }
     }
 
     /**
-     * Answer question about video
+     * Answer question about video (Single Turn)
      */
     async answerQuestion(question, videoContext) {
         try {
             const { title, summary, transcript } = videoContext;
 
+            // Transcript might be a string or an array of segments
+            const transcriptText = Array.isArray(transcript)
+                ? transcript.map(t => t.text).join(' ')
+                : transcript;
+
+            // Using a larger slice of transcript for better accuracy in 2026
+            const safeTranscript = transcriptText.substring(0, 50000);
+
             const prompt = PROMPTS.CHAT
                 .replace('{title}', title)
                 .replace('{summary}', summary)
-                .replace('{transcript}', transcript.substring(0, 3000)) // Limit transcript length
+                .replace('{transcript}', safeTranscript)
                 .replace('{question}', question);
 
             const result = await this.model.generateContent(prompt);
-            const response = await result.response;
-            return response.text();
+            return result.response.text();
         } catch (error) {
             console.error('Error answering question:', error);
             throw new Error('Failed to answer question');
@@ -81,26 +79,37 @@ class GeminiService {
     }
 
     /**
-     * Chat with conversation history
+     * Chat with conversation history (Multi-Turn)
      */
     async chat(messages, videoContext) {
         try {
-            const chat = this.model.startChat({
-                history: messages.map(msg => ({
-                    role: msg.role === 'user' ? 'user' : 'model',
-                    parts: msg.content,
-                })),
+            // 1. Prepare history: exclude the very last message (it's sent via sendMessage)
+            const history = messages.slice(0, -1).map(msg => ({
+                role: msg.role === 'user' ? 'user' : 'model',
+                parts: [{ text: msg.content }],
+            }));
+
+            // 2. Initialize chat session
+            const chatSession = this.model.startChat({
+                history: history,
                 generationConfig: {
                     maxOutputTokens: 1000,
+                    temperature: 0.7,
                 },
             });
 
-            const contextPrompt = `You are analyzing this video:\nTitle: ${videoContext.title}\nSummary: ${videoContext.summary}\n\n`;
-            const result = await chat.sendMessage(contextPrompt + messages[messages.length - 1].content);
-            const response = await result.response;
-            return response.text();
+            // 3. Prepare the latest message with context injection
+            const latestUserMessage = messages[messages.length - 1].content;
+            const contextHeader = `Context for the video you are discussing:
+            Title: ${videoContext.title}
+            Summary: ${videoContext.summary}
+            
+            User Message: `;
+
+            const result = await chatSession.sendMessage(contextHeader + latestUserMessage);
+            return result.response.text();
         } catch (error) {
-            console.error('Error in chat:', error);
+            console.error('Error in chat service:', error);
             throw new Error('Failed to process chat message');
         }
     }
