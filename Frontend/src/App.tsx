@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Languages, ArrowLeft, Cloud, CloudOff } from 'lucide-react';
+import { Languages, ArrowLeft, Cloud, CloudOff, Clapperboard } from 'lucide-react';
 import Header from './components/Header';
 import VideoPlayer from './components/VideoPlayer';
 import Transcript from './components/Transcript';
@@ -10,13 +10,14 @@ import ProcessingOverlay from './components/ProcessingOverlay';
 import AuthModal from './components/AuthModal';
 import Library from './components/Library';
 import StudyTools from './components/study/StudyTools';
+import LessonsPage from './components/lessons/LessonsPage';
 import { useAuth } from './context/AuthContext';
 import { ProcessingStatus, VideoData, Message, ProcessingStep, PlayerHandle, LibraryItem } from './types';
 import { processVideo, sendChat, getLibraryEntry, clearChat } from './services/apiService';
 import { DEFAULT_LANGUAGE, LANGUAGES, languageLabel } from './constants/languages';
 import { errorMessage } from './lib/errors';
 
-type View = 'home' | 'dashboard' | 'library';
+type View = 'home' | 'dashboard' | 'library' | 'lessons';
 
 const STEP_LABELS = ['Fetching video & captions', 'Generating AI insights', 'Preparing your dashboard'];
 const freshSteps = (): ProcessingStep[] => STEP_LABELS.map((label) => ({ label, completed: false }));
@@ -52,6 +53,7 @@ function App() {
   const [notice, setNotice] = useState<string | null>(null);
   const [language, setLanguage] = useState<string>(loadLanguage);
   const [authOpen, setAuthOpen] = useState(false);
+  const [lessonFromVideo, setLessonFromVideo] = useState(false);
 
   const [processingSteps, setProcessingSteps] = useState<ProcessingStep[]>(freshSteps);
   const [progress, setProgress] = useState(0);
@@ -211,6 +213,13 @@ function App() {
     }
   };
 
+  const openLessons = (fromVideo = false) => {
+    setLessonFromVideo(fromVideo);
+    setError(null);
+    setView('lessons');
+    window.scrollTo({ top: 0 });
+  };
+
   const openLibrary = () => {
     if (!user) {
       setAuthOpen(true);
@@ -234,6 +243,7 @@ function App() {
         language={language}
         onLanguageChange={setLanguage}
         onOpenLibrary={openLibrary}
+        onOpenLessons={() => openLessons(false)}
         onOpenAuth={() => setAuthOpen(true)}
         onGoHome={() => { setView('home'); setError(null); }}
       />
@@ -247,7 +257,17 @@ function App() {
       <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
 
       <AnimatePresence mode="wait">
-        {view === 'library' && user ? (
+        {view === 'lessons' ? (
+          <motion.div
+            key={`lessons-${lessonFromVideo}`}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="pt-36 md:pt-28 pb-16 px-4"
+          >
+            <LessonsPage currentVideo={videoData} preferVideo={lessonFromVideo} defaultLanguage={videoData?.language || language} />
+          </motion.div>
+        ) : view === 'library' && user ? (
           <motion.div
             key="library"
             initial={{ opacity: 0 }}
@@ -284,10 +304,16 @@ function App() {
                   ) : null
                 )}
                 {notice && <span className="text-slate-500">{notice}</span>}
+                <button
+                  onClick={() => openLessons(true)}
+                  className={`${language !== videoData.language ? '' : 'ml-auto '}flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-indigo-600/80 to-purple-600/80 hover:from-indigo-500 hover:to-purple-500 text-white`}
+                >
+                  <Clapperboard className="w-4 h-4" /> Make a video lesson
+                </button>
                 {language !== videoData.language && (
                   <button
                     onClick={() => handleSummarize(`https://youtu.be/${videoData.videoId}`, language)}
-                    className="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 hover:bg-indigo-500/25"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 hover:bg-indigo-500/25"
                   >
                     <Languages className="w-4 h-4" /> Show this video in {languageLabel(language)}
                   </button>

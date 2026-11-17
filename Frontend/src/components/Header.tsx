@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useRef, useState } from 'react';
-import { Sparkles, Youtube, Languages, Library, LogIn, LogOut, ChevronDown } from 'lucide-react';
+import { Sparkles, Youtube, Languages, Library, LogIn, LogOut, ChevronDown, Clapperboard } from 'lucide-react';
 import { ProcessingStatus } from '../types';
 import { LANGUAGES } from '../constants/languages';
 import { useAuth } from '../context/AuthContext';
@@ -10,6 +10,7 @@ interface HeaderProps {
   language: string;
   onLanguageChange: (code: string) => void;
   onOpenLibrary: () => void;
+  onOpenLessons: () => void;
   onOpenAuth: () => void;
   onGoHome: () => void;
 }
@@ -75,7 +76,7 @@ function UserMenu({ onOpenLibrary }: { onOpenLibrary: () => void }) {
 }
 
 export default function Header({
-  onSummarize, status, language, onLanguageChange, onOpenLibrary, onOpenAuth, onGoHome,
+  onSummarize, status, language, onLanguageChange, onOpenLibrary, onOpenLessons, onOpenAuth, onGoHome,
 }: HeaderProps) {
   const { enabled: authEnabled, user, loading } = useAuth();
   const [url, setUrl] = useState('');
@@ -101,6 +102,13 @@ export default function Header({
           </button>
 
           <div className="ml-auto flex items-center gap-2 md:order-3">
+            <button
+              onClick={onOpenLessons}
+              className="flex items-center gap-2 px-3 py-2 text-sm text-slate-300 hover:text-white hover:bg-slate-800/60 rounded-lg transition-colors"
+              title="Create a video lesson"
+            >
+              <Clapperboard className="w-4 h-4" /> <span className="hidden lg:inline">Create video</span>
+            </button>
             {authEnabled && !loading && (
               user ? (
                 <>

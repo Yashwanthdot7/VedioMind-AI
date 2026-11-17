@@ -100,3 +100,57 @@ export interface StudyDataMap {
   flashcards: StudyFlashcards;
   mindmap: StudyMindMap;
 }
+
+// ------------------------------------------------------------------ video lessons
+
+export type LessonLayout = 'title' | 'bullets' | 'fact' | 'steps' | 'compare' | 'summary';
+export type LessonStatus = 'queued' | 'scripting' | 'voice' | 'done' | 'failed';
+export type LessonAudience = 'kids' | 'student' | 'teacher';
+
+export interface LessonScene {
+  layout: LessonLayout;
+  icon: string;
+  heading: string;
+  narration: string;
+  bullets: string[];
+  highlight: string;
+  leftTitle: string;
+  left: string[];
+  rightTitle: string;
+  right: string[];
+  audio: string | null;
+  duration: number | null;
+}
+
+export interface Lesson {
+  id: string;
+  title: string;
+  status: LessonStatus;
+  progress: number;
+  language: string;
+  audience: LessonAudience;
+  length?: 'short' | 'standard';
+  voice: string;
+  voiceMode: 'gemini' | 'browser';
+  voiceNotice?: string | null;
+  source: 'text' | 'video';
+  sourceVideo: { videoId: string; analysisId: string | null; title: string } | null;
+  inputPreview?: string | null;
+  scenes: LessonScene[];
+  quiz: StudyQuiz['questions'];
+  durationSec: number | null;
+  error: string | null;
+  createdAt: string;
+}
+
+export interface LessonSummary {
+  id: string;
+  title: string;
+  icon: string;
+  status: LessonStatus;
+  progress: number;
+  language: string;
+  audience: LessonAudience;
+  durationSec: number | null;
+  createdAt: string;
+}

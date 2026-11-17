@@ -15,7 +15,7 @@ export function downloadText(filename: string, text: string, mime = 'text/plain'
 export function slugify(value: string, max = 60): string {
   return value
     .toLowerCase()
-    .replace(/[^\p{L}\p{N}]+/gu, '-')
+    .replace(/[^\p{L}\p{M}\p{N}]+/gu, '-')
     .replace(/^-+|-+$/g, '')
     .slice(0, max) || 'videomind';
 }

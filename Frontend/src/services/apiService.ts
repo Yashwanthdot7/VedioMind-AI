@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase';
-import { LibraryItem, Message, StudyDataMap, StudyLevel, StudyType, VideoData } from '../types';
+import { Lesson, LessonAudience, LessonSummary, LibraryItem, Message, StudyDataMap, StudyLevel, StudyType, VideoData } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
@@ -132,6 +132,74 @@ export async function getStudyMaterial<T extends StudyType>(
     }
     throw err;
   }
+}
+
+// ------------------------------------------------------------------ video lessons
+
+export interface LessonOptions {
+  voices: Record<string, string>;
+  audiences: LessonAudience[];
+  lengths: Record<string, string>;
+}
+
+export async function getLessonOptions(): Promise<LessonOptions> {
+  return (await request<{ data: LessonOptions }>('/lessons/options')).data;
+}
+
+export interface CreateLessonInput {
+  text?: string;
+  video?: VideoData;
+  audience: LessonAudience;
+  language: string;
+  length: 'short' | 'standard';
+  voice?: string;
+}
+
+export async function createLesson(input: CreateLessonInput): Promise<Lesson> {
+  const body: Record<string, unknown> = {
+    audience: input.audience,
+    language: input.language,
+    length: input.length,
+    voice: input.voice,
+  };
+  if (input.video) {
+    Object.assign(body, {
+      videoId: input.video.videoId,
+      analysisId: input.video.analysisId,
+      videoLanguage: input.video.language,
+    });
+  } else {
+    body.text = input.text;
+  }
+  try {
+    return (await request<{ data: Lesson }>('/lessons', { method: 'POST', body })).data;
+  } catch (err) {
+    if (err instanceof ApiError && err.code === 'CONTEXT_EXPIRED' && input.video) {
+      const v = input.video;
+      body.videoContext = { title: v.title, summary: v.summary, transcript: v.transcript };
+      return (await request<{ data: Lesson }>('/lessons', { method: 'POST', body })).data;
+    }
+    throw err;
+  }
+}
+
+export async function getLesson(id: string): Promise<Lesson> {
+  return (await request<{ data: Lesson }>(`/lessons/${id}`)).data;
+}
+
+export async function listLessons(): Promise<LessonSummary[]> {
+  return (await request<{ data: LessonSummary[] }>('/lessons')).data;
+}
+
+export async function deleteLesson(id: string): Promise<void> {
+  await request(`/lessons/${id}`, { method: 'DELETE' });
+}
+
+/** Narration audio as a Blob (fetched with auth so private lessons work) */
+export async function fetchLessonAudio(id: string, index: number): Promise<Blob> {
+  const res = await fetch(`${API_BASE_URL}/lessons/${id}/audio/${index}`, { headers: await authHeaders() });
+  if (!res.ok) throw new ApiError('Could not load the narration audio', res.status, 'AUDIO_FAILED');
+  return res.blob();
 }
 
 // ------------------------------------------------------------------ library

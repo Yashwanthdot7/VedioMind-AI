@@ -25,3 +25,6 @@ Thumbs.db
 # Temp upload artefacts
 *-player-script.js
 models-output.txt
+
+# Generated lesson audio (local, free storage)
+storage/
