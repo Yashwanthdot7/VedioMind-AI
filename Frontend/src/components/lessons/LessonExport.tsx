@@ -9,6 +9,7 @@ import { errorMessage } from '../../lib/errors';
 interface LessonExportProps {
   lesson: Lesson;
   audioBlobs: Blob[];
+  images: (ImageBitmap | null)[];
   captions: boolean;
   onClose: () => void;
 }
@@ -36,7 +37,7 @@ type Phase = 'intro' | 'recording' | 'done' | 'error';
  * Records the lesson in real time: draws frames on a canvas and plays the
  * narration through Web Audio into a MediaRecorder. 100% in the browser, free.
  */
-export default function LessonExport({ lesson, audioBlobs, captions, onClose }: LessonExportProps) {
+export default function LessonExport({ lesson, audioBlobs, images, captions, onClose }: LessonExportProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const cancelRef = useRef<() => void>(() => {});
   const [phase, setPhase] = useState<Phase>('intro');
@@ -89,7 +90,10 @@ export default function LessonExport({ lesson, audioBlobs, captions, onClose }: 
       const finished = new Promise<void>((resolve) => { recorder.onstop = () => resolve(); });
 
       // first frame before recording starts
-      drawFrame(ctx, { scene: lesson.scenes[0], sceneIndex: 0, sceneCount: lesson.scenes.length, time: 0, duration: sceneDurations[0], lessonTitle: lesson.title, captions });
+      drawFrame(ctx, {
+        scene: lesson.scenes[0], sceneIndex: 0, sceneCount: lesson.scenes.length, time: 0, duration: sceneDurations[0],
+        lessonTitle: lesson.title, captions, image: images[0] || null,
+      });
       recorder.start(1000);
 
       const t0 = audioCtx.currentTime + 0.15;
@@ -117,7 +121,7 @@ export default function LessonExport({ lesson, audioBlobs, captions, onClose }: 
         const inScene = Math.min(t - starts[i], sceneDurations[i]);
         drawFrame(ctx, {
           scene: lesson.scenes[i], sceneIndex: i, sceneCount: lesson.scenes.length,
-          time: inScene, duration: sceneDurations[i], lessonTitle: lesson.title, captions,
+          time: inScene, duration: sceneDurations[i], lessonTitle: lesson.title, captions, image: images[i] || null,
         });
         setProgress(Math.min(100, Math.round((t / length) * 100)));
         setElapsed(t);

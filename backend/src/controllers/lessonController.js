@@ -2,6 +2,7 @@ const fs = require('fs');
 const lessonJobs = require('../services/lessonJobs');
 const lessonService = require('../services/lessonService');
 const ttsService = require('../services/ttsService');
+const imageService = require('../services/imageService');
 const { resolveContext } = require('../services/contextResolver');
 const { isSupabaseEnabled } = require('../config/supabase');
 const AppError = require('../lib/AppError');
@@ -34,6 +35,8 @@ class LessonController {
             success: true,
             data: {
                 voices: ttsService.voices(),
+                pictures: imageService.enabled(),
+                pictureProvider: imageService.cloudflareEnabled() ? 'cloudflare' : (imageService.pollinationsEnabled() ? 'pollinations' : null),
                 audiences: AUDIENCES,
                 lengths: Object.fromEntries(Object.entries(lessonService.LENGTHS).map(([k, v]) => [k, v.label])),
             },
@@ -53,6 +56,7 @@ class LessonController {
             const length = body.length ?? 'short';
             if (!lessonService.LENGTHS[length]) throw new AppError('Unknown length', 400, 'INVALID_LENGTH');
             const voice = body.voice && ttsService.voices()[body.voice] ? body.voice : undefined;
+            const visuals = body.visuals === 'slides' ? 'slides' : 'pictures';
 
             let material;
             let source;
@@ -83,7 +87,7 @@ class LessonController {
             }
 
             const lesson = await lessonJobs.create({
-                userId: req.user?.id, material, inputText, source, sourceVideo, audience, language, length, voice,
+                userId: req.user?.id, material, inputText, source, sourceVideo, audience, language, length, voice, visuals,
             });
             res.status(202).json({ success: true, data: publicLesson(lesson) });
         } catch (error) {
@@ -126,6 +130,40 @@ class LessonController {
             }
             res.set('Cache-Control', 'private, max-age=86400');
             res.type('audio/wav').sendFile(file);
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    /** GET /api/lessons/:id/image/:index — AI picture for one scene */
+    async image(req, res, next) {
+        try {
+            const lesson = await loadAccessible(req);
+            const index = Number(req.params.index);
+            const scene = Number.isInteger(index) ? lesson.scenes[index] : null;
+            if (!scene || !scene.image) throw new AppError('Picture not found', 404, 'NOT_FOUND');
+            const file = lessonJobs.imagePath(lesson.id, scene.image);
+            if (!fs.existsSync(file)) {
+                throw new AppError('This lesson\'s pictures are stored on another computer.', 404, 'IMAGE_MISSING');
+            }
+            res.set('Cache-Control', 'private, max-age=86400');
+            res.sendFile(file);
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    /**
+     * POST /api/lessons/:id/quiz  { kind: 'quick' | 'test', refresh? }
+     * Quizzes are made only when asked for, so lessons finish faster.
+     */
+    async quiz(req, res, next) {
+        try {
+            const lesson = await loadAccessible(req);
+            if (lesson.status !== 'done') throw new AppError('The lesson is still being created.', 409, 'NOT_READY');
+            const kind = req.body?.kind === 'test' ? 'test' : 'quick';
+            const questions = await lessonJobs.ensureQuiz(lesson, kind, { refresh: req.body?.refresh === true });
+            res.json({ success: true, data: { kind, questions } });
         } catch (error) {
             next(error);
         }

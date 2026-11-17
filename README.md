@@ -25,7 +25,10 @@
 - 🎬 **Video lessons (text → video)**: type a topic, paste notes, or pick a YouTube video, and get a narrated, animated explainer video
   - AI-written scene script for **Kids**, **Students** or **Teachers**, in any of the 15 languages
   - AI narration (Gemini text-to-speech, free tier) with 6 voices, plus captions
-  - Animated slides drawn by the app (title, key points, big fact, steps, compare, recap) and a quiz at the end
+  - **3D educational renders in every scene** (FLUX, free via Cloudflare Workers AI or Pollinations): cute Pixar-like 3D for kids, cutaway models for students and teachers, with slow zoom-and-pan motion; or plain animated slides if you prefer
+  - Six scene layouts (title, key points, big fact, steps, compare, recap)
+  - Live progress: the script, pictures and narration appear scene by scene as they're made
+  - **Quiz on demand**: the video is made first; a Quick quiz (5) or Full test (10, mixed difficulty) is generated only when you ask, so lessons finish faster
   - **Download as MP4**, recorded in your browser (no server rendering and no cost)
   - If the free AI voice quota runs out, lessons still play using your **browser's built-in voice**
 - 👤 **Accounts (Supabase)** — sign in with Google or email
@@ -91,6 +94,8 @@ npm run dev              # http://localhost:3001
 | `GEMINI_MODEL` | | Model to try first. Empty = newest Flash, with automatic fallback if a model is retired |
 | `PORT` | | Defaults to `3001` |
 | `CORS_ORIGINS` | | Comma-separated allowed frontend URLs (default `http://localhost:5173`) |
+| `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN` | optional | Free AI pictures (~170/day, no card). See below |
+| `POLLINATIONS_TOKEN` | optional | Pictures work without it; a free token makes them faster |
 | `SUPABASE_URL` | for accounts | Supabase → Project Settings → API |
 | `SUPABASE_SECRET_KEY` | for accounts | The `sb_secret_…` key (or legacy `SUPABASE_SERVICE_ROLE_KEY`). **Server only — never put this in the frontend or commit it** |
 
@@ -108,6 +113,17 @@ npm run dev              # http://localhost:5173
 | `VITE_API_URL` | ✅ | Backend URL, e.g. `http://localhost:3001/api` |
 | `VITE_SUPABASE_URL` | for accounts | Same project URL as the backend |
 | `VITE_SUPABASE_PUBLISHABLE_KEY` | for accounts | The public `sb_publishable_…` key (or legacy `VITE_SUPABASE_ANON_KEY`) |
+
+### Free AI pictures for video lessons (optional, 5 minutes)
+
+Pictures already work without any setup through **Pollinations.ai** (free, about one picture every 15 seconds). For faster pictures, add a free **Cloudflare** account:
+
+1. Sign up at [dash.cloudflare.com](https://dash.cloudflare.com) (free plan, no credit card).
+2. Go to **AI → Workers AI → Use REST API**.
+3. Copy your **Account ID** and click **Create a Workers AI API Token**.
+4. Put both in `backend/.env` as `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_API_TOKEN`, then restart.
+
+The free plan gives 10,000 Neurons a day, about 170 pictures (about 25 lessons). It resets at 05:30 IST, and going over the limit only falls back to Pollinations, never to a bill.
 
 ### 3. Supabase setup (optional, for accounts & library)
 
@@ -168,6 +184,8 @@ All endpoints accept an optional `Authorization: Bearer <supabase access token>`
 | `POST` | `/api/lessons` | optional | Create a video lesson: `{ text }` or `{ videoId, analysisId? }`, plus `audience`, `language`, `length: short\|standard`, `voice?`. Returns at once (status `queued`) |
 | `GET` | `/api/lessons/:id` | owner | Lesson status/progress, or the full lesson when `done` |
 | `GET` | `/api/lessons/:id/audio/:n` | owner | Narration WAV for scene `n` |
+| `GET` | `/api/lessons/:id/image/:n` | owner | AI picture for scene `n` |
+| `POST` | `/api/lessons/:id/quiz` | owner | `{ kind: quick\|test, refresh? }`: make (or return the saved) 5-question quiz or 10-question test |
 | `GET` | `/api/lessons` | required | Your lessons |
 | `DELETE` | `/api/lessons/:id` | owner | Delete a lesson |
 | `GET` | `/api/lessons/options` | | Voices and lengths |

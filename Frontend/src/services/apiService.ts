@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase';
-import { Lesson, LessonAudience, LessonSummary, LibraryItem, Message, StudyDataMap, StudyLevel, StudyType, VideoData } from '../types';
+import { Lesson, LessonAudience, LessonQuizQuestion, LessonSummary, LibraryItem, Message, StudyDataMap, StudyLevel, StudyType, VideoData } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
@@ -138,6 +138,8 @@ export async function getStudyMaterial<T extends StudyType>(
 
 export interface LessonOptions {
   voices: Record<string, string>;
+  pictures: boolean;
+  pictureProvider: 'cloudflare' | 'pollinations' | null;
   audiences: LessonAudience[];
   lengths: Record<string, string>;
 }
@@ -153,6 +155,7 @@ export interface CreateLessonInput {
   language: string;
   length: 'short' | 'standard';
   voice?: string;
+  visuals?: 'pictures' | 'slides';
 }
 
 export async function createLesson(input: CreateLessonInput): Promise<Lesson> {
@@ -161,6 +164,7 @@ export async function createLesson(input: CreateLessonInput): Promise<Lesson> {
     language: input.language,
     length: input.length,
     voice: input.voice,
+    visuals: input.visuals,
   };
   if (input.video) {
     Object.assign(body, {
@@ -200,6 +204,28 @@ export async function fetchLessonAudio(id: string, index: number): Promise<Blob>
   const res = await fetch(`${API_BASE_URL}/lessons/${id}/audio/${index}`, { headers: await authHeaders() });
   if (!res.ok) throw new ApiError('Could not load the narration audio', res.status, 'AUDIO_FAILED');
   return res.blob();
+}
+
+/** Generate (or fetch the saved) quiz for a finished lesson: quick = 5 questions, test = 10 */
+export async function generateLessonQuiz(id: string, kind: 'quick' | 'test', refresh = false) {
+  const res = await request<{ data: { kind: 'quick' | 'test'; questions: LessonQuizQuestion[] } }>(
+    `/lessons/${id}/quiz`, { method: 'POST', body: { kind, refresh } },
+  );
+  return res.data;
+}
+
+/** A scene's AI picture as an object URL for <img> (caller revokes it) */
+export async function fetchLessonImageUrl(id: string, index: number): Promise<string> {
+  const res = await fetch(`${API_BASE_URL}/lessons/${id}/image/${index}`, { headers: await authHeaders() });
+  if (!res.ok) throw new ApiError('Could not load a picture', res.status, 'IMAGE_FAILED');
+  return URL.createObjectURL(await res.blob());
+}
+
+/** A scene's AI picture, decoded and ready to draw (same-origin, so the canvas can still be recorded) */
+export async function fetchLessonImage(id: string, index: number): Promise<ImageBitmap> {
+  const res = await fetch(`${API_BASE_URL}/lessons/${id}/image/${index}`, { headers: await authHeaders() });
+  if (!res.ok) throw new ApiError('Could not load a picture', res.status, 'IMAGE_FAILED');
+  return createImageBitmap(await res.blob());
 }
 
 // ------------------------------------------------------------------ library

@@ -120,6 +120,9 @@ export interface LessonScene {
   right: string[];
   audio: string | null;
   duration: number | null;
+  imagePrompt?: string;
+  image?: string | null;
+  imageStatus?: 'pending' | 'done' | 'failed' | 'skipped';
 }
 
 export interface Lesson {
@@ -133,11 +136,15 @@ export interface Lesson {
   voice: string;
   voiceMode: 'gemini' | 'browser';
   voiceNotice?: string | null;
+  visuals?: 'pictures' | 'slides';
+  imageNotice?: string | null;
+  imageProvider?: string | null;
   source: 'text' | 'video';
   sourceVideo: { videoId: string; analysisId: string | null; title: string } | null;
   inputPreview?: string | null;
   scenes: LessonScene[];
-  quiz: StudyQuiz['questions'];
+  quiz: LessonQuizQuestion[];
+  quizKind?: 'quick' | 'test' | null;
   durationSec: number | null;
   error: string | null;
   createdAt: string;
@@ -154,3 +161,9 @@ export interface LessonSummary {
   durationSec: number | null;
   createdAt: string;
 }
+
+export type LessonQuizQuestion = StudyQuiz['questions'][number] & {
+  difficulty?: 'easy' | 'medium' | 'hard';
+  /** 0-based scene the question is about */
+  scene?: number | null;
+};

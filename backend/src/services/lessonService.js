@@ -6,7 +6,8 @@ const { languageName } = require('../config/languages');
 
 /**
  * Writes the script for a narrated video lesson: a list of scenes, each with
- * narration (spoken) and a slide layout (shown), plus a short quiz.
+ * narration (spoken), a slide layout and a 3D picture prompt (shown).
+ * Quizzes are generated separately, only when the viewer asks for one.
  */
 
 const S = SchemaType;
@@ -28,6 +29,7 @@ const LESSON_SCHEMA = {
                     icon: str('ONE emoji that represents this scene'),
                     heading: str('Slide heading, max 7 words'),
                     narration: str('What the narrator says during this scene'),
+                    imagePrompt: str('IN ENGLISH: a concrete description of ONE 3D educational render that illustrates this scene: the 3D model / cutaway / figures shown, what they do, camera angle. No text or labels.'),
                     bullets: strList('Short on-screen points (max 6 words each). bullets/steps: 2-4 items; summary: 3-4; others: empty'),
                     highlight: str('fact layout: a big number, word or short phrase to show. Otherwise empty'),
                     leftTitle: str('compare layout: left column title. Otherwise empty'),
@@ -35,24 +37,11 @@ const LESSON_SCHEMA = {
                     rightTitle: str('compare layout: right column title. Otherwise empty'),
                     right: strList('compare layout: 2-3 short points. Otherwise empty'),
                 },
-                required: ['layout', 'icon', 'heading', 'narration', 'bullets', 'highlight', 'leftTitle', 'left', 'rightTitle', 'right'],
-            },
-        },
-        quiz: {
-            type: S.ARRAY,
-            items: {
-                type: S.OBJECT,
-                properties: {
-                    question: str(),
-                    options: strList('Exactly 4 options'),
-                    answerIndex: { type: S.INTEGER },
-                    explanation: str('One sentence'),
-                },
-                required: ['question', 'options', 'answerIndex', 'explanation'],
+                required: ['layout', 'icon', 'heading', 'narration', 'imagePrompt', 'bullets', 'highlight', 'leftTitle', 'left', 'rightTitle', 'right'],
             },
         },
     },
-    required: ['title', 'scenes', 'quiz'],
+    required: ['title', 'scenes'],
 };
 
 const AUDIENCE = {
@@ -86,9 +75,9 @@ Structure:
 - In between, choose the layout that best fits each idea: "bullets" (key points), "fact" (one striking number/word), "steps" (a process in order), "compare" (two things side by side).
 - Each scene's narration is ${len.words} words, spoken naturally and flowing on from the previous scene. Never read the bullets word for word; the slide supports what is said.
 - On-screen text must be very short.
-- Then write a 3-question multiple-choice quiz (4 options each) about the lesson.
+- For every scene, write "imagePrompt" in English: a 3D educational render that shows the idea of the scene, like a science-museum model (e.g. "3D cutaway of a volcano showing a glowing magma chamber and lava rising through cracks to the crater, side view"). Prefer models, cutaways and objects; a person or figure may demonstrate something. Never ask for text, labels or diagrams with words.
 
-Write ALL text (titles, narration, slides, quiz) in ${languageName(language)}. Emojis stay as emojis.
+Write ALL text (titles, narration, slides) in ${languageName(language)}, except "imagePrompt", which is always in English. Emojis stay as emojis.
 Stay accurate to the material; do not invent facts.
 
 Material:
@@ -108,6 +97,7 @@ function normalise(raw) {
             icon: clean(s.icon, 16) || '💡',
             heading: clean(s.heading, 90),
             narration: clean(s.narration, 900),
+            imagePrompt: clean(s.imagePrompt, 600),
             bullets: list(s.bullets, 5, 90),
             highlight: clean(s.highlight, 40),
             leftTitle: clean(s.leftTitle, 40),
@@ -125,16 +115,85 @@ function normalise(raw) {
         return scene;
     }).filter((s) => s.narration && s.heading).slice(0, 12);
 
-    const quiz = (Array.isArray(raw.quiz) ? raw.quiz : []).map((q) => ({
-        question: clean(q.question, 300),
-        options: list(q.options, 4, 150),
+    return { title: clean(raw.title, 100), scenes };
+}
+
+// ------------------------------------------------------------------ quiz on demand
+
+const QUIZ_SCHEMA = {
+    type: S.OBJECT,
+    properties: {
+        questions: {
+            type: S.ARRAY,
+            items: {
+                type: S.OBJECT,
+                properties: {
+                    question: str(),
+                    options: strList('Exactly 4 options'),
+                    answerIndex: { type: S.INTEGER, description: 'Index (0-3) of the correct option' },
+                    explanation: str('One or two sentences'),
+                    difficulty: { type: S.STRING, format: 'enum', enum: ['easy', 'medium', 'hard'] },
+                    scene: { type: S.INTEGER, description: 'Number (1-based) of the scene this question is about' },
+                },
+                required: ['question', 'options', 'answerIndex', 'explanation', 'difficulty', 'scene'],
+            },
+        },
+    },
+    required: ['questions'],
+};
+
+const QUIZ_KINDS = {
+    quick: { count: 5, mix: '2 easy, 2 medium, 1 hard' },
+    test: { count: 10, mix: '3 easy, 5 medium, 2 hard' },
+};
+
+function normaliseQuiz(raw, sceneCount, max) {
+    return (Array.isArray(raw?.questions) ? raw.questions : []).map((q) => ({
+        question: clean(q.question, 400),
+        options: list(q.options, 4, 200),
         answerIndex: Number(q.answerIndex),
-        explanation: clean(q.explanation, 300),
+        explanation: clean(q.explanation, 400),
+        difficulty: ['easy', 'medium', 'hard'].includes(q.difficulty) ? q.difficulty : 'medium',
+        scene: Number.isInteger(q.scene) && q.scene >= 1 && q.scene <= sceneCount ? q.scene - 1 : null,
         timestamp: '',
     })).filter((q) => q.question && q.options.length >= 2 && Number.isInteger(q.answerIndex)
-        && q.answerIndex >= 0 && q.answerIndex < q.options.length).slice(0, 5);
+        && q.answerIndex >= 0 && q.answerIndex < q.options.length).slice(0, max);
+}
 
-    return { title: clean(raw.title, 100), scenes, quiz };
+/** Generate a quiz (5 questions) or test (10) from a finished lesson's narration */
+async function writeQuiz(lesson, kind = 'quick') {
+    const spec = QUIZ_KINDS[kind] || QUIZ_KINDS.quick;
+    const scenes = lesson.scenes.map((s, i) => `Scene ${i + 1} — ${s.heading}: ${s.narration}`).join('\n');
+    const prompt = `Write a ${spec.count}-question multiple-choice ${kind === 'test' ? 'test' : 'quiz'} for this video lesson.
+
+${AUDIENCE[lesson.audience].guide}
+
+Rules:
+- Difficulty mix: ${spec.mix}. Mark each question's difficulty.
+- Exactly 4 options per question, one correct answer, plausible wrong options.
+- Only ask about what the lesson actually says. Give a short explanation for each answer and the scene number it comes from.
+- Write everything in ${languageName(lesson.language)}.
+
+Lesson: ${lesson.title}
+${scenes}`;
+
+    let raw;
+    try {
+        raw = await geminiService.withModel({
+            generationConfig: { responseMimeType: 'application/json', responseSchema: QUIZ_SCHEMA, temperature: 0.6 },
+        }, async (model) => (await model.generateContent(prompt)).response.text());
+    } catch (error) {
+        throw wrapGeminiError(error, 'Failed to create the quiz. Please try again.');
+    }
+
+    let questions;
+    try {
+        questions = normaliseQuiz(JSON.parse(raw), lesson.scenes.length, spec.count);
+    } catch {
+        throw new AppError('The AI returned an unexpected quiz format. Please try again.', 502, 'AI_BAD_OUTPUT');
+    }
+    if (!questions.length) throw new AppError('The AI could not create a quiz for this lesson. Please try again.', 502, 'AI_BAD_OUTPUT');
+    return questions;
 }
 
 /** Material from a processed YouTube video */
@@ -180,5 +239,5 @@ async function writeScript({ material, audience, language, length }) {
 }
 
 module.exports = {
-    LAYOUTS, AUDIENCE, LENGTHS, LESSON_SCHEMA, buildPrompt, normalise, materialFromVideo, writeScript,
+    LAYOUTS, AUDIENCE, LENGTHS, LESSON_SCHEMA, QUIZ_KINDS, buildPrompt, normalise, normaliseQuiz, materialFromVideo, writeScript, writeQuiz,
 };

@@ -4,6 +4,7 @@ const crypto = require('crypto');
 const { supabase } = require('../config/supabase');
 const lessonService = require('./lessonService');
 const ttsService = require('./ttsService');
+const imageService = require('./imageService');
 
 /**
  * Video lesson jobs. A lesson is created instantly and processed in the
@@ -52,8 +53,10 @@ async function syncToDb(lesson) {
         language: lesson.language,
         status: lesson.status,
         progress: lesson.progress,
-        script: { title: lesson.title, voice: lesson.voice, voiceMode: lesson.voiceMode, scenes: lesson.scenes, sourceVideo: lesson.sourceVideo || null },
-        quiz: lesson.quiz,
+        script: {
+            title: lesson.title, voice: lesson.voice, voiceMode: lesson.voiceMode, visuals: lesson.visuals, scenes: lesson.scenes, sourceVideo: lesson.sourceVideo || null,
+        },
+        quiz: lesson.quiz?.length ? { kind: lesson.quizKind || 'quick', questions: lesson.quiz } : [],
         video_path: dirOf(lesson.id),
         duration_sec: Math.round(lesson.durationSec || 0) || null,
         error: lesson.error || null,
@@ -80,10 +83,12 @@ function lessonFromRow(row) {
         audience: FROM_DB_AUDIENCE[row.audience] || 'student',
         voice: script.voice,
         voiceMode: script.voiceMode || 'gemini',
+        visuals: script.visuals || 'slides',
         source: row.source === 'youtube' ? 'video' : 'text',
         sourceVideo: script.sourceVideo || null,
         scenes: script.scenes || [],
-        quiz: row.quiz || [],
+        quiz: Array.isArray(row.quiz) ? row.quiz : (row.quiz?.questions || []),
+        quizKind: Array.isArray(row.quiz) ? (row.quiz.length ? 'quick' : null) : (row.quiz?.kind || null),
         durationSec: row.duration_sec,
         error: row.error,
         createdAt: row.created_at,
@@ -136,6 +141,71 @@ function audioPath(id, index) {
     return path.join(dirOf(id), `scene-${index}.wav`);
 }
 
+const IMAGE_EXT = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' };
+
+function imagePath(id, file) {
+    return path.join(dirOf(id), path.basename(file));
+}
+
+/** Narration for every scene (sequential: the free voice tier is rate-limited per minute) */
+async function narrateScenes(lesson, onProgress) {
+    const style = lessonService.AUDIENCE[lesson.audience].voiceStyle;
+    for (let i = 0; i < lesson.scenes.length; i += 1) {
+        const scene = lesson.scenes[i];
+        try {
+            const { wav, duration } = await ttsService.synthesize(scene.narration, { voice: lesson.voice, style });
+            await fs.writeFile(audioPath(lesson.id, i), wav);
+            scene.audio = `scene-${i}.wav`;
+            scene.duration = Math.round(duration * 100) / 100;
+        } catch (error) {
+            if (!VOICE_FALLBACK_CODES.has(error.code)) throw error;
+            // Free voice not available right now: the player will use the browser's voice instead
+            console.warn(`Gemini voice unavailable (${error.code}); lesson ${lesson.id} will use the browser voice`);
+            lesson.voiceMode = 'browser';
+            lesson.voiceNotice = error.code === 'TTS_QUOTA'
+                ? 'The free AI voice limit was reached, so this lesson uses your browser\'s voice.'
+                : 'The AI voice was unavailable, so this lesson uses your browser\'s voice.';
+            lesson.scenes.forEach((s) => { if (!s.audio) s.duration = null; });
+            break;
+        }
+        await onProgress();
+    }
+}
+
+/** A picture for every scene. Failures never fail the lesson: that scene shows the drawn slide. */
+async function illustrateScenes(lesson, onProgress) {
+    let failures = 0;
+    for (let i = 0; i < lesson.scenes.length; i += 1) {
+        const scene = lesson.scenes[i];
+        if (!scene.imagePrompt) {
+            scene.imageStatus = 'skipped';
+            await onProgress();
+            continue;
+        }
+        try {
+            const { buffer, mime, provider } = await imageService.generate(scene.imagePrompt, {
+                audience: lesson.audience,
+                seed: (parseInt(lesson.id.slice(0, 6), 16) + i) % 1000000,
+            });
+            const file = `scene-${i}.${IMAGE_EXT[mime] || 'jpg'}`;
+            await fs.writeFile(imagePath(lesson.id, file), buffer);
+            scene.image = file;
+            scene.imageStatus = 'done';
+            lesson.imageProvider = lesson.imageProvider || provider;
+        } catch (error) {
+            failures += 1;
+            scene.imageStatus = 'failed';
+            console.warn(`Picture for scene ${i} of lesson ${lesson.id} failed: ${error.message}`);
+        }
+        await onProgress();
+    }
+    if (failures === lesson.scenes.length) {
+        lesson.imageNotice = 'The free picture service was busy, so this lesson uses illustrated slides instead.';
+    } else if (failures > 0) {
+        lesson.imageNotice = `${failures} scene${failures === 1 ? '' : 's'} use${failures === 1 ? 's' : ''} an illustrated slide because the free picture service was busy.`;
+    }
+}
+
 /** Runs in the background after create() has returned */
 async function runJob(lesson, material) {
     try {
@@ -147,34 +217,31 @@ async function runJob(lesson, material) {
             material, audience: lesson.audience, language: lesson.language, length: lesson.length,
         });
         lesson.title = script.title || lesson.title;
-        lesson.quiz = script.quiz;
-        lesson.scenes = script.scenes.map((s) => ({ ...s, audio: null, duration: null }));
+        lesson.quiz = []; // made on demand, only if the viewer asks for it
+        const wantPictures = lesson.visuals === 'pictures' && imageService.enabled();
+        lesson.scenes = script.scenes.map((s) => ({
+            ...s, audio: null, duration: null, image: null, imageStatus: wantPictures ? 'pending' : 'skipped',
+        }));
         lesson.status = 'voice';
-        lesson.progress = 20;
+        lesson.progress = 15;
         await save(lesson);
 
-        const style = lessonService.AUDIENCE[lesson.audience].voiceStyle;
-        for (let i = 0; i < lesson.scenes.length; i += 1) {
-            const scene = lesson.scenes[i];
-            try {
-                const { wav, duration } = await ttsService.synthesize(scene.narration, { voice: lesson.voice, style });
-                await fs.writeFile(audioPath(lesson.id, i), wav);
-                scene.audio = `scene-${i}.wav`;
-                scene.duration = Math.round(duration * 100) / 100;
-            } catch (error) {
-                if (!VOICE_FALLBACK_CODES.has(error.code)) throw error;
-                // Free voice not available right now: the player will use the browser's voice instead
-                console.warn(`Gemini voice unavailable (${error.code}); lesson ${lesson.id} will use the browser voice`);
-                lesson.voiceMode = 'browser';
-                lesson.voiceNotice = error.code === 'TTS_QUOTA'
-                    ? 'The free AI voice limit was reached, so this lesson uses your browser\'s voice.'
-                    : 'The AI voice was unavailable, so this lesson uses your browser\'s voice.';
-                lesson.scenes.forEach((s) => { if (!s.audio) s.duration = null; });
-                break;
-            }
-            lesson.progress = 20 + Math.round(((i + 1) / lesson.scenes.length) * 78);
-            await save(lesson);
-        }
+        // Pictures and narration are made at the same time; progress counts both
+        const total = lesson.scenes.length * (wantPictures ? 2 : 1);
+        let finished = 0;
+        let saving = Promise.resolve();
+        const tick = () => {
+            finished += 1;
+            lesson.progress = 15 + Math.round((finished / total) * 83);
+            saving = saving.then(() => save(lesson)).catch(() => {});
+            return saving;
+        };
+
+        await Promise.all([
+            narrateScenes(lesson, tick),
+            wantPictures ? illustrateScenes(lesson, tick) : Promise.resolve(),
+        ]);
+        await saving;
 
         lesson.durationSec = lesson.scenes.reduce((sum, s) => sum + (s.duration || 0), 0) || null;
         lesson.status = 'done';
@@ -189,11 +256,28 @@ async function runJob(lesson, material) {
     }
 }
 
+/** Generate (or return the saved) quiz/test for a finished lesson */
+const quizInFlight = new Map();
+async function ensureQuiz(lesson, kind, { refresh = false } = {}) {
+    if (!refresh && lesson.quiz?.length && lesson.quizKind === kind) return lesson.quiz;
+    const key = `${lesson.id}:${kind}`;
+    if (!quizInFlight.has(key)) {
+        quizInFlight.set(key, (async () => {
+            const questions = await lessonService.writeQuiz(lesson, kind);
+            lesson.quiz = questions;
+            lesson.quizKind = kind;
+            await save(lesson);
+            return questions;
+        })().finally(() => quizInFlight.delete(key)));
+    }
+    return quizInFlight.get(key);
+}
+
 /**
  * Create a lesson job and start processing in the background.
  * @returns the lesson (status "queued")
  */
-async function create({ userId, material, inputText, source, sourceVideo, audience, language, length, voice }) {
+async function create({ userId, material, inputText, source, sourceVideo, audience, language, length, voice, visuals }) {
     const lesson = {
         id: crypto.randomUUID(),
         userId: userId || null,
@@ -209,6 +293,9 @@ async function create({ userId, material, inputText, source, sourceVideo, audien
         voice: voice || ttsService.defaultVoice(audience),
         voiceMode: 'gemini',
         voiceNotice: null,
+        visuals: visuals === 'slides' ? 'slides' : 'pictures',
+        imageProvider: null,
+        imageNotice: null,
         scenes: [],
         quiz: [],
         durationSec: null,
@@ -222,5 +309,5 @@ async function create({ userId, material, inputText, source, sourceVideo, audien
 }
 
 module.exports = {
-    create, get, listForUser, remove, audioPath, isLessonId, STORAGE, _jobs: jobs, _runJob: runJob,
+    create, get, listForUser, remove, audioPath, imagePath, isLessonId, ensureQuiz, STORAGE, _jobs: jobs, _runJob: runJob,
 };
