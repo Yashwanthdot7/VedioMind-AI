@@ -153,6 +153,22 @@ class LessonController {
         }
     }
 
+    /**
+     * POST /api/lessons/:id/quiz  { kind: 'quick' | 'test', refresh? }
+     * Quizzes are made only when asked for, so lessons finish faster.
+     */
+    async quiz(req, res, next) {
+        try {
+            const lesson = await loadAccessible(req);
+            if (lesson.status !== 'done') throw new AppError('The lesson is still being created.', 409, 'NOT_READY');
+            const kind = req.body?.kind === 'test' ? 'test' : 'quick';
+            const questions = await lessonJobs.ensureQuiz(lesson, kind, { refresh: req.body?.refresh === true });
+            res.json({ success: true, data: { kind, questions } });
+        } catch (error) {
+            next(error);
+        }
+    }
+
     /** DELETE /api/lessons/:id */
     async remove(req, res, next) {
         try {

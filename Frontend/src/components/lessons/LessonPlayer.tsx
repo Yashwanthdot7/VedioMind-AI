@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  Play, Pause, SkipBack, SkipForward, Maximize, Minimize, Subtitles, RotateCcw, Download, Loader2, Info, ListChecks,
+  Play, Pause, SkipBack, SkipForward, Maximize, Minimize, Subtitles, RotateCcw, Download, Loader2, Info, ListChecks, GraduationCap,
 } from 'lucide-react';
-import { Lesson } from '../../types';
+import { Lesson, LessonQuizQuestion } from '../../types';
 import { drawFrame, estimateDuration, HEIGHT, WIDTH } from '../../lib/lessonCanvas';
-import { fetchLessonAudio, fetchLessonImage } from '../../services/apiService';
+import { fetchLessonAudio, fetchLessonImage, generateLessonQuiz } from '../../services/apiService';
 import { speak, stopSpeaking, hasVoiceFor } from '../../lib/speech';
 import { errorMessage } from '../../lib/errors';
 import QuizView from '../study/QuizView';
@@ -30,6 +30,13 @@ export default function LessonPlayer({ lesson }: LessonPlayerProps) {
   const [finished, setFinished] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
   const [showQuiz, setShowQuiz] = useState(false);
+  // Quizzes are made only when asked for (saves time while generating the video)
+  const [quiz, setQuiz] = useState<{ kind: 'quick' | 'test'; questions: LessonQuizQuestion[] } | null>(
+    lesson.quiz.length ? { kind: lesson.quizKind === 'test' ? 'test' : 'quick', questions: lesson.quiz } : null,
+  );
+  const [quizLoading, setQuizLoading] = useState<'quick' | 'test' | null>(null);
+  const [quizError, setQuizError] = useState<string | null>(null);
+  const quizRef = useRef<HTMLDivElement>(null);
   const [exporting, setExporting] = useState(false);
 
   // Browser-voice clock (when there's no audio file)
@@ -207,6 +214,26 @@ export default function LessonPlayer({ lesson }: LessonPlayerProps) {
     else if (e.key === 'f') toggleFullscreen();
   };
 
+  const openQuiz = async (kind: 'quick' | 'test', refresh = false) => {
+    if (document.fullscreenElement) document.exitFullscreen();
+    setPlaying(false);
+    setShowQuiz(true);
+    setQuizError(null);
+    if (!refresh && quiz?.kind === kind) {
+      setTimeout(() => quizRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+      return;
+    }
+    setQuizLoading(kind);
+    try {
+      setQuiz(await generateLessonQuiz(lesson.id, kind, refresh));
+    } catch (err) {
+      setQuizError(errorMessage(err, 'Could not create the quiz.'));
+    } finally {
+      setQuizLoading(null);
+      setTimeout(() => quizRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+    }
+  };
+
   const totalSeconds = lesson.scenes.reduce((n, _, i) => n + sceneDuration(i), 0);
   const browserVoiceMissing = !useGeminiVoice && !hasVoiceFor(lesson.language);
 
@@ -272,14 +299,18 @@ export default function LessonPlayer({ lesson }: LessonPlayerProps) {
               <button onClick={togglePlay} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/15 hover:bg-white/25 text-white text-sm">
                 <RotateCcw className="w-4 h-4" /> Watch again
               </button>
-              {lesson.quiz.length > 0 && (
-                <button
-                  onClick={() => { setShowQuiz(true); if (document.fullscreenElement) document.exitFullscreen(); }}
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-sm"
-                >
-                  <ListChecks className="w-4 h-4" /> Take the quiz
-                </button>
-              )}
+              <button
+                onClick={() => openQuiz('quick')}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-sm"
+              >
+                <ListChecks className="w-4 h-4" /> Quick quiz (5)
+              </button>
+              <button
+                onClick={() => openQuiz('test')}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-sm"
+              >
+                <GraduationCap className="w-4 h-4" /> Full test (10)
+              </button>
             </div>
           </div>
         )}
@@ -340,12 +371,45 @@ export default function LessonPlayer({ lesson }: LessonPlayerProps) {
         ))}
       </div>
 
-      {showQuiz && lesson.quiz.length > 0 && (
-        <div className="p-5 rounded-2xl bg-slate-900/50 border border-slate-800/50">
-          <h3 className="text-lg font-semibold text-slate-100 mb-4">Quiz: {lesson.title}</h3>
-          <QuizView quiz={{ questions: lesson.quiz }} videoTitle={lesson.title} />
+      {/* Test yourself: generated only when asked for */}
+      <div ref={quizRef} className="p-5 rounded-2xl bg-slate-900/50 border border-slate-800/50 scroll-mt-28">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="mr-auto">
+            <h3 className="text-lg font-semibold text-slate-100">Test yourself</h3>
+            <p className="text-xs text-slate-500">Made from this lesson when you ask, in {lesson.language === 'en' ? 'English' : 'the lesson’s language'}</p>
+          </div>
+          <button
+            onClick={() => openQuiz('quick', quiz?.kind === 'quick')}
+            disabled={quizLoading !== null}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-sm"
+          >
+            {quizLoading === 'quick' ? <Loader2 className="w-4 h-4 animate-spin" /> : <ListChecks className="w-4 h-4" />}
+            {quiz?.kind === 'quick' && showQuiz ? 'New quick quiz' : 'Quick quiz (5)'}
+          </button>
+          <button
+            onClick={() => openQuiz('test', quiz?.kind === 'test')}
+            disabled={quizLoading !== null}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white text-sm"
+          >
+            {quizLoading === 'test' ? <Loader2 className="w-4 h-4 animate-spin" /> : <GraduationCap className="w-4 h-4" />}
+            {quiz?.kind === 'test' && showQuiz ? 'New full test' : 'Full test (10)'}
+          </button>
         </div>
-      )}
+
+        {showQuiz && (
+          <div className="mt-5">
+            {quizLoading && (
+              <p className="flex items-center justify-center gap-2 py-10 text-sm text-slate-400">
+                <Loader2 className="w-5 h-5 animate-spin text-indigo-400" /> Writing your {quizLoading === 'test' ? 'test' : 'quiz'}… (about 10 seconds)
+              </p>
+            )}
+            {quizError && !quizLoading && <p className="text-sm text-red-400 py-4">{quizError}</p>}
+            {quiz && !quizLoading && (
+              <QuizView key={`${quiz.kind}-${quiz.questions[0]?.question}`} quiz={{ questions: quiz.questions }} videoTitle={lesson.title} />
+            )}
+          </div>
+        )}
+      </div>
 
       {exporting && (
         <LessonExport lesson={lesson} audioBlobs={audioBlobs} images={images} captions={captions} onClose={() => setExporting(false)} />

@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase';
-import { Lesson, LessonAudience, LessonSummary, LibraryItem, Message, StudyDataMap, StudyLevel, StudyType, VideoData } from '../types';
+import { Lesson, LessonAudience, LessonQuizQuestion, LessonSummary, LibraryItem, Message, StudyDataMap, StudyLevel, StudyType, VideoData } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
@@ -204,6 +204,21 @@ export async function fetchLessonAudio(id: string, index: number): Promise<Blob>
   const res = await fetch(`${API_BASE_URL}/lessons/${id}/audio/${index}`, { headers: await authHeaders() });
   if (!res.ok) throw new ApiError('Could not load the narration audio', res.status, 'AUDIO_FAILED');
   return res.blob();
+}
+
+/** Generate (or fetch the saved) quiz for a finished lesson: quick = 5 questions, test = 10 */
+export async function generateLessonQuiz(id: string, kind: 'quick' | 'test', refresh = false) {
+  const res = await request<{ data: { kind: 'quick' | 'test'; questions: LessonQuizQuestion[] } }>(
+    `/lessons/${id}/quiz`, { method: 'POST', body: { kind, refresh } },
+  );
+  return res.data;
+}
+
+/** A scene's AI picture as an object URL for <img> (caller revokes it) */
+export async function fetchLessonImageUrl(id: string, index: number): Promise<string> {
+  const res = await fetch(`${API_BASE_URL}/lessons/${id}/image/${index}`, { headers: await authHeaders() });
+  if (!res.ok) throw new ApiError('Could not load a picture', res.status, 'IMAGE_FAILED');
+  return URL.createObjectURL(await res.blob());
 }
 
 /** A scene's AI picture, decoded and ready to draw (same-origin, so the canvas can still be recorded) */

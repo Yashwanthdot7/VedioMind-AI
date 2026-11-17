@@ -25,8 +25,10 @@
 - 🎬 **Video lessons (text → video)**: type a topic, paste notes, or pick a YouTube video, and get a narrated, animated explainer video
   - AI-written scene script for **Kids**, **Students** or **Teachers**, in any of the 15 languages
   - AI narration (Gemini text-to-speech, free tier) with 6 voices, plus captions
-  - **AI-generated pictures in every scene** (FLUX, free via Cloudflare Workers AI or Pollinations) with slow zoom-and-pan motion, or plain animated slides if you prefer
-  - Six scene layouts (title, key points, big fact, steps, compare, recap) and a quiz at the end
+  - **3D educational renders in every scene** (FLUX, free via Cloudflare Workers AI or Pollinations): cute Pixar-like 3D for kids, cutaway models for students and teachers, with slow zoom-and-pan motion; or plain animated slides if you prefer
+  - Six scene layouts (title, key points, big fact, steps, compare, recap)
+  - Live progress: the script, pictures and narration appear scene by scene as they're made
+  - **Quiz on demand**: the video is made first; a Quick quiz (5) or Full test (10, mixed difficulty) is generated only when you ask, so lessons finish faster
   - **Download as MP4**, recorded in your browser (no server rendering and no cost)
   - If the free AI voice quota runs out, lessons still play using your **browser's built-in voice**
 - 👤 **Accounts (Supabase)** — sign in with Google or email
@@ -182,6 +184,8 @@ All endpoints accept an optional `Authorization: Bearer <supabase access token>`
 | `POST` | `/api/lessons` | optional | Create a video lesson: `{ text }` or `{ videoId, analysisId? }`, plus `audience`, `language`, `length: short\|standard`, `voice?`. Returns at once (status `queued`) |
 | `GET` | `/api/lessons/:id` | owner | Lesson status/progress, or the full lesson when `done` |
 | `GET` | `/api/lessons/:id/audio/:n` | owner | Narration WAV for scene `n` |
+| `GET` | `/api/lessons/:id/image/:n` | owner | AI picture for scene `n` |
+| `POST` | `/api/lessons/:id/quiz` | owner | `{ kind: quick\|test, refresh? }`: make (or return the saved) 5-question quiz or 10-question test |
 | `GET` | `/api/lessons` | required | Your lessons |
 | `DELETE` | `/api/lessons/:id` | owner | Delete a lesson |
 | `GET` | `/api/lessons/options` | | Voices and lengths |

@@ -27,7 +27,8 @@ test('uses Cloudflare FLUX when configured', async () => {
     assert.match(calls[0].url, /accounts\/acc123\/ai\/run\/@cf\/black-forest-labs\/flux-1-schnell/);
     const body = JSON.parse(calls[0].opts.body);
     assert.match(body.prompt, /a volcano/);
-    assert.match(body.prompt, /cartoon/, 'kids style added');
+    assert.match(body.prompt, /3D render/, '3D style added');
+    assert.match(body.prompt, /Pixar-like/, 'kids get the friendly 3D style');
     assert.match(body.prompt, /no text/);
     assert.equal(calls[0].opts.headers.Authorization, 'Bearer tok');
 });

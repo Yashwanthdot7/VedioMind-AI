@@ -56,7 +56,7 @@ async function syncToDb(lesson) {
         script: {
             title: lesson.title, voice: lesson.voice, voiceMode: lesson.voiceMode, visuals: lesson.visuals, scenes: lesson.scenes, sourceVideo: lesson.sourceVideo || null,
         },
-        quiz: lesson.quiz,
+        quiz: lesson.quiz?.length ? { kind: lesson.quizKind || 'quick', questions: lesson.quiz } : [],
         video_path: dirOf(lesson.id),
         duration_sec: Math.round(lesson.durationSec || 0) || null,
         error: lesson.error || null,
@@ -87,7 +87,8 @@ function lessonFromRow(row) {
         source: row.source === 'youtube' ? 'video' : 'text',
         sourceVideo: script.sourceVideo || null,
         scenes: script.scenes || [],
-        quiz: row.quiz || [],
+        quiz: Array.isArray(row.quiz) ? row.quiz : (row.quiz?.questions || []),
+        quizKind: Array.isArray(row.quiz) ? (row.quiz.length ? 'quick' : null) : (row.quiz?.kind || null),
         durationSec: row.duration_sec,
         error: row.error,
         createdAt: row.created_at,
@@ -216,7 +217,7 @@ async function runJob(lesson, material) {
             material, audience: lesson.audience, language: lesson.language, length: lesson.length,
         });
         lesson.title = script.title || lesson.title;
-        lesson.quiz = script.quiz;
+        lesson.quiz = []; // made on demand, only if the viewer asks for it
         const wantPictures = lesson.visuals === 'pictures' && imageService.enabled();
         lesson.scenes = script.scenes.map((s) => ({
             ...s, audio: null, duration: null, image: null, imageStatus: wantPictures ? 'pending' : 'skipped',
@@ -255,6 +256,23 @@ async function runJob(lesson, material) {
     }
 }
 
+/** Generate (or return the saved) quiz/test for a finished lesson */
+const quizInFlight = new Map();
+async function ensureQuiz(lesson, kind, { refresh = false } = {}) {
+    if (!refresh && lesson.quiz?.length && lesson.quizKind === kind) return lesson.quiz;
+    const key = `${lesson.id}:${kind}`;
+    if (!quizInFlight.has(key)) {
+        quizInFlight.set(key, (async () => {
+            const questions = await lessonService.writeQuiz(lesson, kind);
+            lesson.quiz = questions;
+            lesson.quizKind = kind;
+            await save(lesson);
+            return questions;
+        })().finally(() => quizInFlight.delete(key)));
+    }
+    return quizInFlight.get(key);
+}
+
 /**
  * Create a lesson job and start processing in the background.
  * @returns the lesson (status "queued")
@@ -291,5 +309,5 @@ async function create({ userId, material, inputText, source, sourceVideo, audien
 }
 
 module.exports = {
-    create, get, listForUser, remove, audioPath, imagePath, isLessonId, STORAGE, _jobs: jobs, _runJob: runJob,
+    create, get, listForUser, remove, audioPath, imagePath, isLessonId, ensureQuiz, STORAGE, _jobs: jobs, _runJob: runJob,
 };

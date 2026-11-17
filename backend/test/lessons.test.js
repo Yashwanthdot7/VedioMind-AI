@@ -44,8 +44,24 @@ const SCRIPT = {
     ],
 };
 let lastPrompt = '';
+const QUIZ = {
+    questions: Array.from({ length: 12 }, (_, i) => ({
+        question: `Q${i + 1}?`, options: ['a', 'b', 'c', 'd'], answerIndex: i % 4, explanation: 'because',
+        difficulty: ['easy', 'medium', 'hard'][i % 3], scene: (i % 4) + 1,
+    })).concat([{ question: 'broken', options: ['a'], answerIndex: 3, explanation: '', difficulty: 'x', scene: 99 }]),
+};
+let quizPrompt = '';
+let quizCalls = 0;
 geminiService.withModel = async (_options, fn) => fn({
-    generateContent: async (prompt) => { lastPrompt = prompt; return { response: { text: () => JSON.stringify(SCRIPT) } }; },
+    generateContent: async (prompt) => {
+        if (prompt.startsWith('Write a ')) {
+            quizCalls += 1;
+            quizPrompt = prompt;
+            return { response: { text: () => JSON.stringify(QUIZ) } };
+        }
+        lastPrompt = prompt;
+        return { response: { text: () => JSON.stringify(SCRIPT) } };
+    },
 });
 
 // Fake Gemini TTS REST endpoint
@@ -106,7 +122,7 @@ test('creates a lesson from text: script, narration audio, quiz', async () => {
     assert.equal(lesson.scenes[2].layout, 'bullets', 'compare with an empty side falls back');
     assert.ok(lesson.scenes.every((s) => s.audio && s.duration === 1));
     assert.equal(lesson.durationSec, 4);
-    assert.equal(lesson.quiz.length, 1, 'invalid quiz question dropped');
+    assert.equal(lesson.quiz.length, 0, 'no quiz until the viewer asks for one');
     assert.match(lastPrompt, /Hindi/);
     assert.match(lastPrompt, /children aged 8-12/);
 
@@ -230,4 +246,46 @@ test('script prompt asks for English image prompts', async () => {
     await waitDone(res.body.data.id);
     assert.match(lastPrompt, /"imagePrompt" in English/);
     assert.match(lastPrompt, /Kannada/);
+});
+
+test('quiz is generated only on demand: quick quiz (5) and full test (10)', async () => {
+    const res = await post('/lessons', { text: 'Explain volcanoes, quiz me later', language: 'ta' });
+    const lesson = await waitDone(res.body.data.id);
+    assert.equal(lesson.quiz.length, 0);
+    const before = quizCalls;
+
+    const quick = await post(`/lessons/${lesson.id}/quiz`, { kind: 'quick' });
+    assert.equal(quick.status, 200, JSON.stringify(quick.body));
+    assert.equal(quick.body.data.questions.length, 5);
+    assert.match(quizPrompt, /5-question/);
+    assert.match(quizPrompt, /Tamil/);
+    assert.match(quizPrompt, /2 easy, 2 medium, 1 hard/);
+    assert.equal(quick.body.data.questions[0].scene, 0, 'scene numbers become 0-based');
+
+    // asking again returns the saved quiz without calling the AI
+    await post(`/lessons/${lesson.id}/quiz`, { kind: 'quick' });
+    assert.equal(quizCalls - before, 1);
+
+    const test10 = await post(`/lessons/${lesson.id}/quiz`, { kind: 'test' });
+    assert.equal(test10.body.data.questions.length, 10);
+    assert.match(quizPrompt, /3 easy, 5 medium, 2 hard/);
+    assert.ok(test10.body.data.questions.every((q) => q.options.length === 4), 'broken question dropped');
+
+    const saved = (await get(`/lessons/${lesson.id}`)).body.data;
+    assert.equal(saved.quiz.length, 10);
+    assert.equal(saved.quizKind, 'test');
+});
+
+test('quiz cannot be made before the lesson is ready', async () => {
+    const res = await post('/lessons', { text: 'A lesson that is still being made' });
+    const early = await post(`/lessons/${res.body.data.id}/quiz`, {});
+    assert.equal(early.status, 409);
+    await waitDone(res.body.data.id);
+});
+
+test('script prompt asks for 3D educational renders and no quiz', async () => {
+    const res = await post('/lessons', { text: 'Explain the heart and blood flow' });
+    await waitDone(res.body.data.id);
+    assert.match(lastPrompt, /3D educational render/);
+    assert.doesNotMatch(lastPrompt, /multiple-choice quiz/);
 });

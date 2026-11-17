@@ -21,10 +21,11 @@ const TIMEOUT_MS = 90000;
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+// 3D educational renders: models, cutaways and figures, like science-museum / textbook 3D art
 const STYLES = {
-    kids: 'bright colorful cartoon illustration, friendly characters, children\'s picture book style, soft shapes, cheerful',
-    student: 'clean modern digital illustration, educational, clear composition, vivid but realistic colors',
-    teacher: 'clear detailed educational illustration, realistic, textbook quality, neutral background',
+    kids: 'cute stylized 3D render, Pixar-like educational animation still, soft studio lighting, rounded friendly shapes, bright colors, clean background',
+    student: 'high-quality 3D educational render, detailed 3D model with cutaway / cross-section where useful, clean studio lighting, realistic materials, depth of field, Blender Cycles style',
+    teacher: 'detailed 3D scientific visualization, accurate cutaway model, museum-quality 3D render, soft neutral studio background, realistic materials and lighting',
 };
 const NEGATIVE = 'no text, no letters, no words, no captions, no watermark, no logo, safe for children';
 
