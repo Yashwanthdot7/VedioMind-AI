@@ -1,4 +1,3 @@
-const ytdl = require('@distube/ytdl-core');
 const { YoutubeTranscript } = require('youtube-transcript');
 const AppError = require('../lib/AppError');
 
@@ -32,21 +31,8 @@ function formatTimestamp(totalSeconds) {
 }
 
 class YouTubeService {
+    /** Video details: youtubei.js first, then YouTube's public oEmbed endpoint */
     async getVideoInfo(videoId) {
-        try {
-            const info = await ytdl.getBasicInfo(videoId);
-            const d = info.videoDetails;
-            const thumbs = d.thumbnails || [];
-            return {
-                videoId,
-                title: d.title,
-                duration: parseInt(d.lengthSeconds, 10) || null,
-                author: d.author?.name || d.ownerChannelName || null,
-                thumbnail: thumbs.length ? thumbs[thumbs.length - 1].url : `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
-            };
-        } catch (error) {
-            console.warn('ytdl getBasicInfo failed, trying youtubei.js:', error.message);
-        }
         try {
             return await this.getVideoInfoFromInnertube(videoId);
         } catch (error) {

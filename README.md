@@ -33,7 +33,7 @@
 | Backend | Node.js, Express, express-rate-limit |
 | AI | Google Gemini Flash (auto-selected, with fallback) — JSON-mode analysis, multi-turn chat, video transcription |
 | Data | Supabase — Postgres, Auth (Google + email), Row Level Security |
-| YouTube | Captions via `youtube-transcript` → `youtubei.js` → Gemini watching the video; metadata via ytdl-core → youtubei.js → oEmbed |
+| YouTube | Captions via `youtube-transcript` → `youtubei.js` → Gemini watching the video; metadata via youtubei.js → oEmbed |
 
 ---
 
