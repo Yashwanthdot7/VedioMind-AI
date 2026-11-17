@@ -1,141 +1,241 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Languages, ArrowLeft, Cloud, CloudOff } from 'lucide-react';
 import Header from './components/Header';
 import VideoPlayer from './components/VideoPlayer';
 import Transcript from './components/Transcript';
 import AIInsights from './components/AIInsights';
 import Chat from './components/Chat';
 import ProcessingOverlay from './components/ProcessingOverlay';
-import { ProcessingStatus, VideoData, Message, ProcessingStep } from './types';
-import { processVideo, askQuestion } from './services/apiService';
+import AuthModal from './components/AuthModal';
+import Library from './components/Library';
+import { useAuth } from './context/AuthContext';
+import { ProcessingStatus, VideoData, Message, ProcessingStep, PlayerHandle, LibraryItem } from './types';
+import { processVideo, sendChat, getLibraryEntry, clearChat } from './services/apiService';
+import { DEFAULT_LANGUAGE, LANGUAGES, languageLabel } from './constants/languages';
+import { errorMessage } from './lib/errors';
+
+type View = 'home' | 'dashboard' | 'library';
+
+const STEP_LABELS = ['Fetching video & captions', 'Generating AI insights', 'Preparing your dashboard'];
+const freshSteps = (): ProcessingStep[] => STEP_LABELS.map((label) => ({ label, completed: false }));
+
+const LANGUAGE_STORAGE_KEY = 'videomind.language';
+
+function loadLanguage(): string {
+  try {
+    const saved = localStorage.getItem(LANGUAGE_STORAGE_KEY);
+    if (saved && LANGUAGES.some((l) => l.code === saved)) return saved;
+  } catch {
+    /* storage unavailable */
+  }
+  return DEFAULT_LANGUAGE;
+}
+
+const greeting = (video: VideoData): Message => ({
+  id: 'greeting',
+  role: 'assistant',
+  content: `Hello! I've analysed **${video.title}**. Ask me anything about it — I'll point you to the exact moment in the video, like [0:00].`,
+  timestamp: new Date(),
+});
 
 function App() {
+  const { user, enabled: authEnabled } = useAuth();
+
+  const [view, setView] = useState<View>('home');
   const [status, setStatus] = useState<ProcessingStatus>(ProcessingStatus.IDLE);
   const [videoData, setVideoData] = useState<VideoData | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [showDashboard, setShowDashboard] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [language, setLanguage] = useState<string>(loadLanguage);
+  const [authOpen, setAuthOpen] = useState(false);
 
-  const [processingSteps, setProcessingSteps] = useState<ProcessingStep[]>([
-    { label: 'Fetching Video', completed: false },
-    { label: 'Transcribing Audio', completed: false },
-    { label: 'Analyzing Content', completed: false },
-  ]);
+  const [processingSteps, setProcessingSteps] = useState<ProcessingStep[]>(freshSteps);
   const [progress, setProgress] = useState(0);
 
-  const handleSummarize = async (url: string) => {
+  const playerRef = useRef<PlayerHandle | null>(null);
+  const [currentTime, setCurrentTime] = useState(0);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(LANGUAGE_STORAGE_KEY, language);
+    } catch {
+      /* storage unavailable */
+    }
+  }, [language]);
+
+  // Track playback position so the transcript can highlight the current line
+  useEffect(() => {
+    if (view !== 'dashboard') return;
+    const id = window.setInterval(async () => {
+      const player = playerRef.current;
+      if (!player) return;
+      try {
+        const t = await player.getCurrentTime();
+        if (typeof t === 'number' && !Number.isNaN(t)) setCurrentTime(t);
+      } catch {
+        /* player not ready */
+      }
+    }, 1000);
+    return () => window.clearInterval(id);
+  }, [view]);
+
+  const seekTo = useCallback((seconds: number) => {
+    const player = playerRef.current;
+    if (!player) return;
+    player.seekTo(seconds, true);
+    player.playVideo();
+    setCurrentTime(seconds);
+    document.getElementById('video-player')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, []);
+
+  const showVideo = (video: VideoData, history: Message[] = []) => {
+    playerRef.current = null;
+    setCurrentTime(0);
+    setVideoData(video);
+    setMessages([greeting(video), ...history]);
+    setView('dashboard');
+    window.scrollTo({ top: 0 });
+  };
+
+  const handleSummarize = async (url: string, lang: string = language) => {
     setStatus(ProcessingStatus.LOADING);
-    setShowDashboard(false);
     setError(null);
-    setProgress(0);
-    setProcessingSteps([
-      { label: 'Fetching Video', completed: false },
-      { label: 'Transcribing Audio', completed: false },
-      { label: 'Analyzing Content', completed: false },
-    ]);
+    setNotice(null);
+    setProgress(5);
+    setProcessingSteps(freshSteps());
+
+    // The server does everything in one request, so progress is an estimate
+    // that eases towards 90% and completes when the response arrives.
+    const started = Date.now();
+    const ticker = window.setInterval(() => {
+      const elapsed = (Date.now() - started) / 1000;
+      const estimate = Math.min(90, Math.round(90 * (1 - Math.exp(-elapsed / 12))));
+      setProgress((p) => Math.max(p, estimate));
+      if (elapsed > 4) setProcessingSteps((prev) => prev.map((s, i) => (i === 0 ? { ...s, completed: true } : s)));
+    }, 400);
 
     try {
-      // Step 1: Fetching video
-      setProgress(10);
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
-      setProcessingSteps((prev) => [
-        { ...prev[0], completed: true },
-        prev[1],
-        prev[2],
-      ]);
-      setProgress(33);
-
-      // Step 2: Get transcript
-      await new Promise((resolve) => setTimeout(resolve, 300));
-      setProcessingSteps((prev) => [
-        prev[0],
-        { ...prev[1], completed: true },
-        prev[2],
-      ]);
-      setProgress(66);
-
-      // Step 3: Process with AI (this is the actual API call)
-      const data = await processVideo(url);
-
-      setProcessingSteps((prev) => [
-        prev[0],
-        prev[1],
-        { ...prev[2], completed: true },
-      ]);
+      const { data, cached, saved } = await processVideo(url, lang);
+      window.clearInterval(ticker);
+      setProcessingSteps(STEP_LABELS.map((label) => ({ label, completed: true })));
       setProgress(100);
+      await new Promise((resolve) => setTimeout(resolve, 350));
 
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      let history: Message[] = [];
+      if (saved && data.analysisId) {
+        // Restore an earlier conversation about this video, if any
+        try {
+          const entry = await getLibraryEntry(data.analysisId);
+          history = entry.chat.messages.map((m) => ({ ...m, timestamp: new Date(m.timestamp) }));
+        } catch {
+          /* history is optional */
+        }
+      }
 
-      setVideoData(data);
-      setMessages([
-        {
-          id: '1',
-          role: 'assistant',
-          content: "Hello! I've analyzed this video. Feel free to ask me anything about the content.",
-          timestamp: new Date(),
-        },
-      ]);
+      showVideo(data, history);
       setStatus(ProcessingStatus.SUCCESS);
-      setShowDashboard(true);
-    } catch (err: any) {
+      if (cached) setNotice('Loaded instantly — this video was analysed before.');
+    } catch (err) {
+      window.clearInterval(ticker);
       console.error('Error processing video:', err);
-      setError(err.message || 'Failed to process video. Please try again.');
+      setError(errorMessage(err, 'Failed to process video. Please try again.'));
       setStatus(ProcessingStatus.ERROR);
       setProgress(0);
-      setProcessingSteps([
-        { label: 'Fetching Video', completed: false },
-        { label: 'Transcribing Audio', completed: false },
-        { label: 'Analyzing Content', completed: false },
-      ]);
+      setProcessingSteps(freshSteps());
     }
   };
 
   const handleSendMessage = async (content: string) => {
-    if (!videoData) return;
+    if (!videoData || isTyping) return;
 
     const userMessage: Message = {
-      id: Date.now().toString(),
+      id: `u-${Date.now()}`,
       role: 'user',
       content,
       timestamp: new Date(),
     };
-
+    // The greeting is UI-only; don't send it to the model
+    const history = [...messages.filter((m) => m.id !== 'greeting'), userMessage];
     setMessages((prev) => [...prev, userMessage]);
+    setIsTyping(true);
 
     try {
-      // Prepare video context for the API
-      const videoContext = {
-        title: videoData.title,
-        summary: videoData.summary,
-        transcript: videoData.transcript,
-      };
-
-      // Get answer from AI
-      const answer = await askQuestion(content, videoContext);
-
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
+      const answer = await sendChat(videoData, history);
+      setMessages((prev) => [...prev, {
+        id: `a-${Date.now()}`,
         role: 'assistant',
         content: answer,
         timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, assistantMessage]);
-    } catch (err: any) {
-      console.error('Error getting answer:', err);
-      const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
+      }]);
+    } catch (err) {
+      setMessages((prev) => [...prev, {
+        id: `e-${Date.now()}`,
         role: 'assistant',
-        content: 'Sorry, I encountered an error. Please try again.',
+        content: `Sorry, I couldn't answer that: ${errorMessage(err, 'please try again.')}`,
         timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, errorMessage]);
+      }]);
+    } finally {
+      setIsTyping(false);
     }
   };
 
+  const handleClearChat = async () => {
+    if (!videoData) return;
+    if (user && videoData.analysisId) {
+      try {
+        await clearChat(videoData.analysisId);
+      } catch (err) {
+        setError(errorMessage(err));
+        return;
+      }
+    }
+    setMessages([greeting(videoData)]);
+  };
+
+  const openLibraryItem = async (item: LibraryItem) => {
+    setStatus(ProcessingStatus.LOADING);
+    setProgress(60);
+    setProcessingSteps(STEP_LABELS.map((label, i) => ({ label, completed: i < 2 })));
+    try {
+      const entry = await getLibraryEntry(item.analysisId);
+      showVideo(entry.analysis, entry.chat.messages.map((m) => ({ ...m, timestamp: new Date(m.timestamp) })));
+      setStatus(ProcessingStatus.SUCCESS);
+      setNotice(null);
+    } catch (err) {
+      setStatus(ProcessingStatus.ERROR);
+      setError(errorMessage(err));
+    }
+  };
+
+  const openLibrary = () => {
+    if (!user) {
+      setAuthOpen(true);
+      return;
+    }
+    setError(null);
+    setView('library');
+    window.scrollTo({ top: 0 });
+  };
+
+  // If the user signs out while on the library page, go home
+  useEffect(() => {
+    if (!user && view === 'library') setView('home');
+  }, [user, view]);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
-      <Header onSummarize={handleSummarize} status={status} />
+      <Header
+        onSummarize={(url) => handleSummarize(url)}
+        status={status}
+        language={language}
+        onLanguageChange={setLanguage}
+        onOpenLibrary={openLibrary}
+        onOpenAuth={() => setAuthOpen(true)}
+        onGoHome={() => { setView('home'); setError(null); }}
+      />
 
       <ProcessingOverlay
         isVisible={status === ProcessingStatus.LOADING}
@@ -143,14 +243,93 @@ function App() {
         progress={progress}
       />
 
+      <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
+
       <AnimatePresence mode="wait">
-        {!showDashboard ? (
+        {view === 'library' && user ? (
           <motion.div
-            key="input"
+            key="library"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="pt-32 pb-16 px-4"
+            className="pt-36 md:pt-28 pb-16 px-4"
+          >
+            <Library onOpen={openLibraryItem} />
+          </motion.div>
+        ) : view === 'dashboard' && videoData ? (
+          <motion.div
+            key={`dashboard-${videoData.videoId}-${videoData.language}`}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.4 }}
+            className="pt-36 md:pt-28 pb-16 px-4"
+          >
+            <div className="max-w-7xl mx-auto">
+              <div className="flex flex-wrap items-center gap-3 mb-4 text-sm">
+                <button
+                  onClick={() => setView(user ? 'library' : 'home')}
+                  className="flex items-center gap-1.5 text-slate-400 hover:text-slate-200"
+                >
+                  <ArrowLeft className="w-4 h-4" /> {user ? 'Library' : 'Home'}
+                </button>
+                {authEnabled && (
+                  user && videoData.analysisId ? (
+                    <span className="flex items-center gap-1.5 text-emerald-400/80"><Cloud className="w-4 h-4" /> Saved to your library</span>
+                  ) : !user ? (
+                    <button onClick={() => setAuthOpen(true)} className="flex items-center gap-1.5 text-amber-300/80 hover:text-amber-200">
+                      <CloudOff className="w-4 h-4" /> Sign in to save this video and chat
+                    </button>
+                  ) : null
+                )}
+                {notice && <span className="text-slate-500">{notice}</span>}
+                {language !== videoData.language && (
+                  <button
+                    onClick={() => handleSummarize(`https://youtu.be/${videoData.videoId}`, language)}
+                    className="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 hover:bg-indigo-500/25"
+                  >
+                    <Languages className="w-4 h-4" /> Show this video in {languageLabel(language)}
+                  </button>
+                )}
+              </div>
+
+              {error && (
+                <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-sm">{error}</div>
+              )}
+
+              <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+                <div className="lg:col-span-3 space-y-6">
+                  <VideoPlayer
+                    videoId={videoData.videoId}
+                    title={videoData.title}
+                    metadata={videoData.metadata}
+                    onReady={(player) => { playerRef.current = player; }}
+                  />
+                  <Transcript segments={videoData.transcript} currentTime={currentTime} onSeek={seekTo} />
+                  {/* Chat below Smart Transcript */}
+                  <Chat
+                    messages={messages}
+                    onSendMessage={handleSendMessage}
+                    videoTitle={videoData.title}
+                    isTyping={isTyping}
+                    onSeek={seekTo}
+                    onClear={handleClearChat}
+                  />
+                </div>
+
+                <div className="lg:col-span-2 space-y-6">
+                  <AIInsights summary={videoData.summary} keyTakeaways={videoData.keyTakeaways} onSeek={seekTo} />
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        ) : (
+          <motion.div
+            key="home"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="pt-40 md:pt-32 pb-16 px-4"
           >
             <div className="max-w-2xl mx-auto text-center">
               <motion.div
@@ -169,7 +348,7 @@ function App() {
                   Transform Videos into Insights
                 </h1>
                 <p className="text-lg text-slate-400 max-w-lg mx-auto">
-                  Paste any YouTube URL above to get AI-powered summaries, transcripts, and interactive Q&A.
+                  Paste any YouTube URL above to get AI-powered summaries, transcripts and interactive Q&amp;A — in {languageLabel(language)} or 14 other languages.
                 </p>
               </motion.div>
 
@@ -190,12 +369,12 @@ function App() {
                 className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12"
               >
                 {[
-                  { icon: '📝', title: 'Smart Transcripts', desc: 'Time-stamped, searchable content' },
-                  { icon: '🧠', title: 'AI Insights', desc: 'Key takeaways & summaries' },
-                  { icon: '💬', title: 'Interactive Chat', desc: 'Ask questions about the video' },
-                ].map((feature, index) => (
+                  { icon: '📝', title: 'Smart Transcripts', desc: 'Searchable, time-stamped — click any line to jump there' },
+                  { icon: '🧠', title: 'AI Insights', desc: 'Summaries & key takeaways in your language' },
+                  { icon: '💬', title: 'Interactive Chat', desc: 'Ask questions, get answers with timestamps' },
+                ].map((feature) => (
                   <div
-                    key={index}
+                    key={feature.title}
                     className="p-6 bg-slate-900/50 border border-slate-800/50 rounded-2xl backdrop-blur-sm hover:border-indigo-500/30 transition-all"
                   >
                     <div className="text-4xl mb-3">{feature.icon}</div>
@@ -206,38 +385,7 @@ function App() {
               </motion.div>
             </div>
           </motion.div>
-        ) : videoData ? (
-          <motion.div
-            key="dashboard"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.4 }}
-            className="pt-24 pb-16 px-4"
-          >
-            <div className="max-w-7xl mx-auto">
-              <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-                <div className="lg:col-span-3 space-y-6">
-                  <VideoPlayer videoId={videoData.videoId} title={videoData.title} />
-                  <Transcript segments={videoData.transcript} />
-                  {/* Chat below Smart Transcript */}
-                  <Chat
-                    messages={messages}
-                    onSendMessage={handleSendMessage}
-                    videoTitle={videoData.title}
-                  />
-                </div>
-
-                <div className="lg:col-span-2 space-y-6">
-                  <AIInsights
-                    summary={videoData.summary}
-                    keyTakeaways={videoData.keyTakeaways}
-                  />
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        ) : null}
+        )}
       </AnimatePresence>
     </div>
   );

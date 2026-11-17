@@ -1,8 +1,10 @@
 const express = require('express');
-const router = express.Router();
 const videoController = require('../controllers/videoController');
+const { processLimiter } = require('../middleware/rateLimit');
 
-router.post('/process', videoController.processVideo);
+const router = express.Router();
+
+router.post('/process', processLimiter, videoController.processVideo);
 router.post('/info', videoController.getVideoInfo);
 
 module.exports = router;
