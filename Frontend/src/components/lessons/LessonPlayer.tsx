@@ -7,6 +7,8 @@ import { drawFrame, estimateDuration, HEIGHT, WIDTH } from '../../lib/lessonCanv
 import { fetchLessonAudio, fetchLessonImage, generateLessonQuiz } from '../../services/apiService';
 import { speak, stopSpeaking, hasVoiceFor } from '../../lib/speech';
 import { errorMessage } from '../../lib/errors';
+import { recordAttempt } from '../../lib/attempts';
+import { navigate } from '../../lib/navigation';
 import QuizView from '../study/QuizView';
 import LessonExport from './LessonExport';
 
@@ -405,7 +407,16 @@ export default function LessonPlayer({ lesson }: LessonPlayerProps) {
             )}
             {quizError && !quizLoading && <p className="text-sm text-red-400 py-4">{quizError}</p>}
             {quiz && !quizLoading && (
-              <QuizView key={`${quiz.kind}-${quiz.questions[0]?.question}`} quiz={{ questions: quiz.questions }} videoTitle={lesson.title} />
+              <QuizView
+                key={`${quiz.kind}-${quiz.questions[0]?.question}`}
+                quiz={{ questions: quiz.questions }}
+                videoTitle={lesson.title}
+                onOpenAnalytics={() => navigate('analytics')}
+                onComplete={async (result) => (await recordAttempt({
+                  source: 'lesson', kind: quiz.kind, title: lesson.title, language: lesson.language, level: lesson.audience,
+                  lessonId: lesson.id, videoId: lesson.sourceVideo?.videoId ?? null, ...result,
+                })).where}
+              />
             )}
           </div>
         )}

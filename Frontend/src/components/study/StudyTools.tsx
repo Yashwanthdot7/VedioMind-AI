@@ -4,6 +4,8 @@ import { GraduationCap, NotebookPen, ListChecks, Layers, Network, Loader2, Refre
 import { StudyDataMap, StudyLevel, StudyType, VideoData } from '../../types';
 import { getStudyMaterial } from '../../services/apiService';
 import { errorMessage } from '../../lib/errors';
+import { recordAttempt } from '../../lib/attempts';
+import { navigate } from '../../lib/navigation';
 import NotesView from './NotesView';
 import QuizView from './QuizView';
 import FlashcardsView from './FlashcardsView';
@@ -159,7 +161,18 @@ export default function StudyTools({ video, onSeek }: StudyToolsProps) {
         {active && entry?.status === 'ready' && (
           <motion.div key={`${active}:${level}:${entry.version}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
             {active === 'notes' && <NotesView notes={entry.data as StudyDataMap['notes']} videoTitle={video.title} videoId={video.videoId} onSeek={onSeek} />}
-            {active === 'quiz' && <QuizView quiz={entry.data as StudyDataMap['quiz']} videoTitle={video.title} onSeek={onSeek} />}
+            {active === 'quiz' && (
+              <QuizView
+                quiz={entry.data as StudyDataMap['quiz']}
+                videoTitle={video.title}
+                onSeek={onSeek}
+                onOpenAnalytics={() => navigate('analytics')}
+                onComplete={async (result) => (await recordAttempt({
+                  source: 'study', kind: 'quiz', title: video.title, language: video.language, level,
+                  analysisId: video.analysisId, videoId: video.videoId, ...result,
+                })).where}
+              />
+            )}
             {active === 'flashcards' && <FlashcardsView deck={entry.data as StudyDataMap['flashcards']} videoTitle={video.title} onSeek={onSeek} />}
             {active === 'mindmap' && <MindMapView map={entry.data as StudyDataMap['mindmap']} videoTitle={video.title} onSeek={onSeek} />}
 

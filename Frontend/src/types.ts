@@ -167,3 +167,43 @@ export type LessonQuizQuestion = StudyQuiz['questions'][number] & {
   /** 0-based scene the question is about */
   scene?: number | null;
 };
+
+// ------------------------------------------------------------------ quiz analytics
+
+export type Difficulty = 'easy' | 'medium' | 'hard';
+
+export interface AttemptAnswer {
+  question: string;
+  chosen: number;
+  answer: number;
+  correct?: boolean;
+  difficulty: Difficulty | null;
+}
+
+export interface AttemptInput {
+  source: 'study' | 'lesson';
+  kind: 'quiz' | 'quick' | 'test';
+  title: string;
+  language: string;
+  level?: string | null;
+  analysisId?: string | null;
+  lessonId?: string | null;
+  videoId?: string | null;
+  answers: AttemptAnswer[];
+  durationSec: number;
+}
+
+export interface QuizAttempt extends AttemptInput {
+  id: string;
+  total: number;
+  correct: number;
+  scorePct: number;
+  grade: string;
+  createdAt: string;
+}
+
+/** What QuizView reports when a quiz is finished */
+export interface QuizResult {
+  answers: AttemptAnswer[];
+  durationSec: number;
+}

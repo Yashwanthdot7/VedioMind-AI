@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useRef, useState } from 'react';
-import { Sparkles, Youtube, Languages, Library, LogIn, LogOut, ChevronDown, Clapperboard } from 'lucide-react';
+import { Sparkles, Youtube, Languages, Library, LogIn, LogOut, ChevronDown, Clapperboard, BarChart3 } from 'lucide-react';
 import { ProcessingStatus } from '../types';
 import { LANGUAGES } from '../constants/languages';
 import { useAuth } from '../context/AuthContext';
@@ -11,6 +11,7 @@ interface HeaderProps {
   onLanguageChange: (code: string) => void;
   onOpenLibrary: () => void;
   onOpenLessons: () => void;
+  onOpenAnalytics: () => void;
   onOpenAuth: () => void;
   onGoHome: () => void;
 }
@@ -76,7 +77,7 @@ function UserMenu({ onOpenLibrary }: { onOpenLibrary: () => void }) {
 }
 
 export default function Header({
-  onSummarize, status, language, onLanguageChange, onOpenLibrary, onOpenLessons, onOpenAuth, onGoHome,
+  onSummarize, status, language, onLanguageChange, onOpenLibrary, onOpenLessons, onOpenAnalytics, onOpenAuth, onGoHome,
 }: HeaderProps) {
   const { enabled: authEnabled, user, loading } = useAuth();
   const [url, setUrl] = useState('');
@@ -108,6 +109,13 @@ export default function Header({
               title="Create a video lesson"
             >
               <Clapperboard className="w-4 h-4" /> <span className="hidden lg:inline">Create video</span>
+            </button>
+            <button
+              onClick={onOpenAnalytics}
+              className="flex items-center gap-2 px-3 py-2 text-sm text-slate-300 hover:text-white hover:bg-slate-800/60 rounded-lg transition-colors"
+              title="Your quiz progress"
+            >
+              <BarChart3 className="w-4 h-4" /> <span className="hidden lg:inline">Analytics</span>
             </button>
             {authEnabled && !loading && (
               user ? (

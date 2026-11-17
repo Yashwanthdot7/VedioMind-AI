@@ -1,14 +1,21 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle2, XCircle, ArrowRight, RotateCcw, Trophy, Download } from 'lucide-react';
-import { StudyQuiz } from '../../types';
+import { CheckCircle2, XCircle, ArrowRight, RotateCcw, Trophy, Download, BarChart3 } from 'lucide-react';
+import { Difficulty, QuizResult, StudyQuiz } from '../../types';
+import { gradeClass, gradeFor } from '../../lib/grades';
 import TimestampChip from './TimestampChip';
 import { downloadText, slugify } from '../../lib/download';
 
+type QuizQuestion = StudyQuiz['questions'][number] & { difficulty?: Difficulty | null };
+
 interface QuizViewProps {
-  quiz: StudyQuiz;
+  quiz: { questions: QuizQuestion[] };
   videoTitle: string;
   onSeek?: (seconds: number) => void;
+  /** Called once per completed run; resolve with where it was saved to show a note */
+  onComplete?: (result: QuizResult) => Promise<'account' | 'browser' | null | void> | void;
+  /** Opens the analytics page from the score screen */
+  onOpenAnalytics?: () => void;
 }
 
 const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
@@ -27,7 +34,7 @@ function toMarkdown(quiz: StudyQuiz, title: string) {
   return out.join('\n');
 }
 
-export default function QuizView({ quiz, videoTitle, onSeek }: QuizViewProps) {
+export default function QuizView({ quiz, videoTitle, onSeek, onComplete, onOpenAnalytics }: QuizViewProps) {
   const total = quiz.questions.length;
   const [index, setIndex] = useState(0);
   const [answers, setAnswers] = useState<(number | null)[]>(() => quiz.questions.map(() => null));
@@ -42,9 +49,32 @@ export default function QuizView({ quiz, videoTitle, onSeek }: QuizViewProps) {
     setAnswers((prev) => prev.map((a, i) => (i === index ? optionIndex : a)));
   };
 
+  // Report each finished run once (for analytics)
+  const startedAt = useRef(Date.now());
+  const reported = useRef(false);
+  const [savedTo, setSavedTo] = useState<'account' | 'browser' | null>(null);
+  useEffect(() => {
+    if (!finished || reported.current || !onComplete) return;
+    reported.current = true;
+    const result: QuizResult = {
+      durationSec: (Date.now() - startedAt.current) / 1000,
+      answers: quiz.questions.map((q, i) => ({
+        question: q.question,
+        chosen: answers[i] ?? -1,
+        answer: q.answerIndex,
+        difficulty: q.difficulty ?? null,
+      })).filter((a) => a.chosen >= 0),
+    };
+    if (!result.answers.length) return;
+    Promise.resolve(onComplete(result)).then((where) => setSavedTo(where || null)).catch(() => {});
+  }, [finished, onComplete, quiz.questions, answers]);
+
   const restart = () => {
     setAnswers(quiz.questions.map(() => null));
     setIndex(0);
+    startedAt.current = Date.now();
+    reported.current = false;
+    setSavedTo(null);
   };
 
   const downloadButton = (
@@ -64,8 +94,23 @@ export default function QuizView({ quiz, videoTitle, onSeek }: QuizViewProps) {
       <div className="space-y-5 max-w-2xl mx-auto">
         <div className="text-center p-6 rounded-2xl bg-gradient-to-br from-indigo-500/10 to-purple-500/10 border border-indigo-500/20">
           <Trophy className="w-10 h-10 mx-auto text-amber-400 mb-2" />
-          <p className="text-3xl font-bold text-slate-100">{score} / {total}</p>
-          <p className="text-sm text-slate-400 mt-1">{message}</p>
+          <div className="flex items-center justify-center gap-3">
+            <p className="text-3xl font-bold text-slate-100">{score} / {total}</p>
+            <span className={`px-2.5 py-1 rounded-lg border text-sm font-bold ${gradeClass(gradeFor(pct))}`} aria-label={`Grade ${gradeFor(pct)}`}>
+              {gradeFor(pct)}
+            </span>
+          </div>
+          <p className="text-sm text-slate-400 mt-1">{pct}% · {message}</p>
+          {savedTo && (
+            <p className="text-xs text-slate-500 mt-2">
+              Saved to your analytics{savedTo === 'browser' ? ' on this browser' : ''}.
+              {onOpenAnalytics && (
+                <button onClick={onOpenAnalytics} className="ml-1 inline-flex items-center gap-1 text-indigo-300 hover:underline">
+                  <BarChart3 className="w-3 h-3" /> View progress
+                </button>
+              )}
+            </p>
+          )}
           <div className="flex justify-center gap-2 mt-4">
             <button onClick={restart} className="flex items-center gap-1.5 px-4 py-2 text-sm rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white">
               <RotateCcw className="w-4 h-4" /> Try again

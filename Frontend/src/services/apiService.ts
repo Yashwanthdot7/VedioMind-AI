@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase';
-import { Lesson, LessonAudience, LessonQuizQuestion, LessonSummary, LibraryItem, Message, StudyDataMap, StudyLevel, StudyType, VideoData } from '../types';
+import { AttemptInput, QuizAttempt, Lesson, LessonAudience, LessonQuizQuestion, LessonSummary, LibraryItem, Message, StudyDataMap, StudyLevel, StudyType, VideoData } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
@@ -226,6 +226,24 @@ export async function fetchLessonImage(id: string, index: number): Promise<Image
   const res = await fetch(`${API_BASE_URL}/lessons/${id}/image/${index}`, { headers: await authHeaders() });
   if (!res.ok) throw new ApiError('Could not load a picture', res.status, 'IMAGE_FAILED');
   return createImageBitmap(await res.blob());
+}
+
+// ------------------------------------------------------------------ quiz analytics
+
+export async function saveAttemptRemote(input: AttemptInput): Promise<QuizAttempt> {
+  return (await request<{ data: QuizAttempt }>('/quiz-attempts', { method: 'POST', body: input })).data;
+}
+
+export async function listAttemptsRemote(): Promise<QuizAttempt[]> {
+  return (await request<{ data: QuizAttempt[] }>('/quiz-attempts?limit=500')).data;
+}
+
+export async function deleteAttemptRemote(id: string): Promise<void> {
+  await request(`/quiz-attempts/${id}`, { method: 'DELETE' });
+}
+
+export async function clearAttemptsRemote(): Promise<void> {
+  await request('/quiz-attempts', { method: 'DELETE' });
 }
 
 // ------------------------------------------------------------------ library
