@@ -45,9 +45,38 @@ class YouTubeService {
                 thumbnail: thumbs.length ? thumbs[thumbs.length - 1].url : `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
             };
         } catch (error) {
-            console.warn('ytdl getBasicInfo failed, falling back to oEmbed:', error.message);
-            return this.getVideoInfoFromOEmbed(videoId);
+            console.warn('ytdl getBasicInfo failed, trying youtubei.js:', error.message);
         }
+        try {
+            return await this.getVideoInfoFromInnertube(videoId);
+        } catch (error) {
+            console.warn('youtubei.js info failed, falling back to oEmbed:', error.message);
+        }
+        return this.getVideoInfoFromOEmbed(videoId);
+    }
+
+    async getInnertube() {
+        const { Innertube } = await import('youtubei.js');
+        if (!this.innertube) {
+            this.innertube = Innertube.create({ retrieve_player: false, generate_session_locally: true })
+                .catch((err) => { this.innertube = null; throw err; });
+        }
+        return this.innertube;
+    }
+
+    async getVideoInfoFromInnertube(videoId) {
+        const yt = await this.getInnertube();
+        const info = await yt.getBasicInfo(videoId);
+        const b = info.basic_info || {};
+        if (!b.title) throw new Error('no title');
+        const thumbs = b.thumbnail || [];
+        return {
+            videoId,
+            title: b.title,
+            duration: Number(b.duration) || null,
+            author: b.author || b.channel?.name || null,
+            thumbnail: thumbs[0]?.url || `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
+        };
     }
 
     /** Lightweight fallback when ytdl breaks (it often does after YouTube changes) */
@@ -76,43 +105,73 @@ class YouTubeService {
 
     /**
      * Returns [{ text, timestamp, seconds }] merged into ~15s segments.
+     * Tries several caption sources because YouTube regularly breaks scrapers.
+     * Throws AppError NO_TRANSCRIPT if none of them work (the controller can
+     * then fall back to Gemini listening to the video).
      */
-    async getTranscript(videoId, durationSeconds = null) {
-        let items;
-        try {
-            items = await YoutubeTranscript.fetchTranscript(videoId);
-        } catch (error) {
-            const name = error?.constructor?.name || '';
-            console.warn(`Transcript fetch failed (${name}):`, error.message);
-            if (name.includes('TooManyRequest')) {
-                throw new AppError('YouTube is rate-limiting us right now. Please try again in a few minutes.', 503, 'YOUTUBE_RATE_LIMITED');
+    async getTranscript(videoId) {
+        const providers = [
+            ['youtube-transcript', () => this.fetchWithYoutubeTranscript(videoId)],
+            ['youtubei.js', () => this.fetchWithInnertube(videoId)],
+        ];
+        let rateLimited = false;
+
+        for (const [name, fetchLines] of providers) {
+            try {
+                const lines = await fetchLines();
+                if (lines.length > 0) {
+                    console.log(`Transcript for ${videoId}: ${lines.length} lines via ${name}`);
+                    return this.mergeSegments(lines);
+                }
+                console.warn(`Transcript via ${name}: empty result`);
+            } catch (error) {
+                const label = error?.constructor?.name || 'Error';
+                if (label.includes('TooManyRequest')) rateLimited = true;
+                console.warn(`Transcript via ${name} failed (${label}): ${error.message}`);
             }
-            throw new AppError(
-                'This video has no captions available, so it can\'t be processed yet. Try a video with subtitles/CC.',
-                422,
-                'NO_TRANSCRIPT',
-            );
         }
 
-        if (!Array.isArray(items) || items.length === 0) {
-            throw new AppError(
-                'This video has no captions available, so it can\'t be processed yet. Try a video with subtitles/CC.',
-                422,
-                'NO_TRANSCRIPT',
-            );
+        if (rateLimited) {
+            throw new AppError('YouTube is rate-limiting us right now. Please try again in a few minutes.', 503, 'YOUTUBE_RATE_LIMITED');
         }
+        throw new AppError(
+            'Could not get captions for this video. Try a video with subtitles/CC.',
+            422,
+            'NO_TRANSCRIPT',
+        );
+    }
 
-        // youtube-transcript returns seconds; guard against a future switch to milliseconds
-        const maxOffset = Math.max(...items.map((i) => Number(i.offset) || 0));
-        const looksLikeMs = durationSeconds
-            ? maxOffset > durationSeconds * 5
-            : maxOffset > 24 * 3600;
-        const toSeconds = (v) => (Number(v) || 0) / (looksLikeMs ? 1000 : 1);
+    /** Provider 1: youtube-transcript (InnerTube ANDROID player + timedtext) */
+    async fetchWithYoutubeTranscript(videoId) {
+        const items = await YoutubeTranscript.fetchTranscript(videoId);
+        if (!Array.isArray(items) || items.length === 0) return [];
 
-        return this.mergeSegments(items.map((i) => ({
-            start: toSeconds(i.offset),
-            text: decodeEntities(i.text),
-        })).filter((i) => i.text));
+        // This library returns milliseconds for srv3 captions and seconds for
+        // classic ones. Caption lines last ~1-10s, so a median duration above
+        // 50 can only mean milliseconds.
+        const durations = items.map((i) => Number(i.duration) || 0).sort((a, b) => a - b);
+        const medianDuration = durations[Math.floor(durations.length / 2)];
+        const divisor = medianDuration > 50 ? 1000 : 1;
+
+        return items
+            .map((i) => ({ start: (Number(i.offset) || 0) / divisor, text: decodeEntities(i.text) }))
+            .filter((i) => i.text);
+    }
+
+    /** Provider 2: youtubei.js — the same transcript panel the YouTube website uses */
+    async fetchWithInnertube(videoId) {
+        const yt = await this.getInnertube();
+        const info = await yt.getInfo(videoId);
+        const transcriptInfo = await info.getTranscript();
+        const segments = transcriptInfo?.transcript?.content?.body?.initial_segments || [];
+
+        return segments
+            .filter((seg) => seg && seg.start_ms !== undefined && seg.snippet)
+            .map((seg) => ({
+                start: (Number(seg.start_ms) || 0) / 1000,
+                text: decodeEntities(seg.snippet.toString ? seg.snippet.toString() : seg.snippet.text),
+            }))
+            .filter((i) => i.text);
     }
 
     mergeSegments(lines) {

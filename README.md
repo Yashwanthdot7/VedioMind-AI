@@ -31,9 +31,9 @@
 |---|---|
 | Frontend | React 18, TypeScript, Vite, Tailwind CSS, Framer Motion, Lucide icons, react-youtube |
 | Backend | Node.js, Express, express-rate-limit |
-| AI | Google Gemini (`gemini-2.5-flash` by default) — JSON-mode analysis + multi-turn chat |
+| AI | Google Gemini Flash (auto-selected, with fallback) — JSON-mode analysis, multi-turn chat, video transcription |
 | Data | Supabase — Postgres, Auth (Google + email), Row Level Security |
-| YouTube | `youtube-transcript` (captions), `@distube/ytdl-core` + oEmbed fallback (metadata) |
+| YouTube | Captions via `youtube-transcript` → `youtubei.js` → Gemini watching the video; metadata via ytdl-core → youtubei.js → oEmbed |
 
 ---
 
@@ -76,7 +76,7 @@ npm run dev              # http://localhost:3001
 | Variable | Required | Description |
 |---|---|---|
 | `GEMINI_API_KEY` | ✅ | Your Gemini key |
-| `GEMINI_MODEL` | | Defaults to `gemini-2.5-flash` |
+| `GEMINI_MODEL` | | Model to try first. Empty = newest Flash, with automatic fallback if a model is retired |
 | `PORT` | | Defaults to `3001` |
 | `CORS_ORIGINS` | | Comma-separated allowed frontend URLs (default `http://localhost:5173`) |
 | `SUPABASE_URL` | for accounts | Supabase → Project Settings → API |
@@ -173,8 +173,9 @@ cd Frontend && npm run typecheck && npm run lint
 
 ## ⚠️ Known limitations
 
-- Only videos **with captions/subtitles** can be processed for now. An audio-transcription fallback is planned.
-- YouTube changes its site often. If every video suddenly fails, update `youtube-transcript` and `@distube/ytdl-core` first.
+- Transcripts are fetched from YouTube captions first. If YouTube blocks that (it often does since its 2025 changes) or the video has no captions, **Gemini watches the video and transcribes it**. This works for public videos up to 90 minutes and uses your Gemini quota (free tier: about 8 hours of YouTube video per day).
+- Private and unlisted videos can't be processed.
+- Debug a video from the command line: `npm run check:video --prefix backend -- "<YouTube URL>" --ai`
 
 ## 🗺️ Roadmap
 
@@ -183,7 +184,7 @@ cd Frontend && npm run typecheck && npm run lint
 - [x] Supabase accounts, library and chat history
 - [ ] Study tools: notes, quiz, flashcards, mind map
 - [ ] Text → explainer video for kids, students and teachers (multi-language narration)
-- [ ] Audio transcription for videos without captions
+- [x] AI transcription for videos without captions
 - [ ] Deployment (Vercel + Render)
 
 ---

@@ -1,14 +1,43 @@
 const youtubeService = require('../services/youtubeService');
 const geminiService = require('../services/geminiService');
 const store = require('../services/analysisStore');
+const AppError = require('../lib/AppError');
+const { LIMITS } = require('../types/constants');
 const { extractVideoId, parseLanguage } = require('../utils/validators');
+
+/**
+ * Captions first (free and exact). If YouTube won't give us captions,
+ * let Gemini watch the video and transcribe it.
+ */
+async function getTranscriptWithFallback(videoId, videoInfo) {
+    try {
+        return await youtubeService.getTranscript(videoId);
+    } catch (error) {
+        if (error.code !== 'NO_TRANSCRIPT') throw error;
+    }
+
+    if (videoInfo.duration && videoInfo.duration > LIMITS.AI_TRANSCRIBE_MAX_SECONDS) {
+        throw new AppError(
+            `Captions aren't available and this video is too long for AI transcription (max ${LIMITS.AI_TRANSCRIBE_MAX_SECONDS / 60} minutes).`,
+            422,
+            'NO_TRANSCRIPT',
+        );
+    }
+
+    console.log(`No captions for ${videoId}; asking Gemini to transcribe the video`);
+    const lines = await geminiService.transcribeYouTube(videoId);
+    if (lines.length === 0) {
+        throw new AppError('Could not get a transcript for this video, even with AI. Try another video.', 422, 'NO_TRANSCRIPT');
+    }
+    return youtubeService.mergeSegments(lines);
+}
 
 // If two people submit the same video at once, only call Gemini once
 const inFlight = new Map();
 
 async function buildAnalysis(videoId, language, userId) {
     const videoInfo = await youtubeService.getVideoInfo(videoId);
-    const transcript = await youtubeService.getTranscript(videoId, videoInfo.duration);
+    const transcript = await getTranscriptWithFallback(videoId, videoInfo);
     const { summary, keyTakeaways } = await geminiService.analyzeVideo({
         title: videoInfo.title,
         transcript,

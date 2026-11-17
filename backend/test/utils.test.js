@@ -58,3 +58,75 @@ test('mergeSegments groups short caption lines into ~15s segments', () => {
     assert.equal(segments[0].timestamp, '0:00');
     assert.ok(segments[1].seconds >= 15);
 });
+
+test('youtube-transcript millisecond offsets are converted to seconds', async () => {
+    const { YoutubeTranscript } = require('youtube-transcript');
+    const original = YoutubeTranscript.fetchTranscript;
+    YoutubeTranscript.fetchTranscript = async () => [
+        { text: 'a', offset: 0, duration: 2500 },
+        { text: 'b', offset: 65000, duration: 3000 },
+    ];
+    try {
+        const lines = await youtubeService.fetchWithYoutubeTranscript('abcdefghijk');
+        assert.deepEqual(lines.map((l) => l.start), [0, 65]);
+    } finally {
+        YoutubeTranscript.fetchTranscript = original;
+    }
+});
+
+test('youtube-transcript second offsets are kept', async () => {
+    const { YoutubeTranscript } = require('youtube-transcript');
+    const original = YoutubeTranscript.fetchTranscript;
+    YoutubeTranscript.fetchTranscript = async () => [
+        { text: 'a', offset: 0, duration: 2.5 },
+        { text: 'b', offset: 65.2, duration: 3 },
+    ];
+    try {
+        const lines = await youtubeService.fetchWithYoutubeTranscript('abcdefghijk');
+        assert.deepEqual(lines.map((l) => l.start), [0, 65.2]);
+    } finally {
+        YoutubeTranscript.fetchTranscript = original;
+    }
+});
+
+test('getTranscript falls through providers and reports NO_TRANSCRIPT', async () => {
+    const a = youtubeService.fetchWithYoutubeTranscript;
+    const b = youtubeService.fetchWithInnertube;
+    youtubeService.fetchWithYoutubeTranscript = async () => [];
+    youtubeService.fetchWithInnertube = async () => [{ start: 3, text: 'from innertube' }];
+    try {
+        const segs = await youtubeService.getTranscript('abcdefghijk');
+        assert.equal(segs[0].text, 'from innertube');
+        youtubeService.fetchWithInnertube = async () => { throw new Error('boom'); };
+        await assert.rejects(() => youtubeService.getTranscript('abcdefghijk'), { code: 'NO_TRANSCRIPT' });
+    } finally {
+        youtubeService.fetchWithYoutubeTranscript = a;
+        youtubeService.fetchWithInnertube = b;
+    }
+});
+
+test('Gemini falls back to the next model when one is retired', async () => {
+    process.env.GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'test';
+    const gemini = require('../src/services/geminiService');
+    const tried = [];
+    const realGenAI = gemini.genAI;
+    gemini.activeModel = null;
+    gemini.genAI = {
+        getGenerativeModel: ({ model }) => ({
+            generateContent: async () => {
+                tried.push(model);
+                if (model !== 'gemini-3.5-flash') throw new Error(`[404 Not Found] models/${model} is not found`);
+                return { response: { text: () => '{"summary":"ok","keyTakeaways":["x"]}' } };
+            },
+        }),
+    };
+    try {
+        const out = await gemini.analyzeVideo({ title: 't', transcript: [], language: 'en' });
+        assert.equal(out.summary, 'ok');
+        assert.equal(gemini.activeModel, 'gemini-3.5-flash');
+        assert.ok(tried.indexOf('gemini-3.5-flash') > 0);
+    } finally {
+        gemini.genAI = realGenAI;
+        gemini.activeModel = null;
+    }
+});
