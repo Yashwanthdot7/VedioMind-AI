@@ -40,7 +40,7 @@
 ## 🚀 Getting Started
 
 ### Prerequisites
-- [Node.js](https://nodejs.org/) v18 or higher
+- [Node.js](https://nodejs.org/) **v20.19+ or v22.12+** (required by Vite 8)
 - A [Google Gemini API key](https://aistudio.google.com/app/apikey) (free tier works)
 - *(Optional)* a free [Supabase](https://supabase.com) project
 
