@@ -19,6 +19,7 @@ const make = (limit, message) => rateLimit({
 module.exports = {
     // Each video costs one Gemini call (two before caching), so keep this tight
     processLimiter: make(20, 'Too many videos processed. Please wait a few minutes and try again.'),
+    studyLimiter: make(40, 'Too many study tools generated. Please wait a few minutes and try again.'),
     chatLimiter: make(60, 'Too many questions in a short time. Please slow down a little.'),
     generalLimiter: make(300, 'Too many requests. Please try again shortly.'),
 };

@@ -9,6 +9,7 @@ import Chat from './components/Chat';
 import ProcessingOverlay from './components/ProcessingOverlay';
 import AuthModal from './components/AuthModal';
 import Library from './components/Library';
+import StudyTools from './components/study/StudyTools';
 import { useAuth } from './context/AuthContext';
 import { ProcessingStatus, VideoData, Message, ProcessingStep, PlayerHandle, LibraryItem } from './types';
 import { processVideo, sendChat, getLibraryEntry, clearChat } from './services/apiService';
@@ -319,6 +320,7 @@ function App() {
 
                 <div className="lg:col-span-2 space-y-6">
                   <AIInsights summary={videoData.summary} keyTakeaways={videoData.keyTakeaways} onSeek={seekTo} />
+                  <StudyTools key={`${videoData.videoId}:${videoData.language}`} video={videoData} onSeek={seekTo} />
                 </div>
               </div>
             </div>
@@ -370,7 +372,7 @@ function App() {
               >
                 {[
                   { icon: '📝', title: 'Smart Transcripts', desc: 'Searchable, time-stamped — click any line to jump there' },
-                  { icon: '🧠', title: 'AI Insights', desc: 'Summaries & key takeaways in your language' },
+                  { icon: '🧠', title: 'AI Insights & Study Tools', desc: 'Summaries, notes, quizzes, flashcards & mind maps in your language' },
                   { icon: '💬', title: 'Interactive Chat', desc: 'Ask questions, get answers with timestamps' },
                 ].map((feature) => (
                   <div

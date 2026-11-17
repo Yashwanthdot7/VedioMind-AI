@@ -16,6 +16,12 @@
 - 🧠 **AI Insights** — summary and key takeaways from Google Gemini
 - 🌐 **15 output languages** — English, Hindi, Kannada, Tamil, Telugu, Malayalam, Marathi, Bengali, Gujarati, Urdu, Spanish, French, German, Arabic, Japanese
 - 💬 **Chat with the video** — multi-turn conversation that remembers earlier questions; answers cite **clickable timestamps** like `[4:32]`
+- 🎓 **Study Tools** — one click turns any video into:
+  - 📒 **Notes** with sections, key terms and timestamps (download as Markdown)
+  - ✅ **Quiz** — 8 multiple-choice questions with explanations and a score (printable with answer key)
+  - 🃏 **Flashcards** — flip cards, shuffle, track what you know (export to Anki/Quizlet CSV)
+  - 🧠 **Mind map** — see how the ideas connect, click a branch to jump to it (download as SVG)
+  - Three levels: **Kids**, **Student** and **Teacher**, in any of the 15 languages
 - 👤 **Accounts (Supabase)** — sign in with Google or email
 - 📚 **My Library** — every video you summarise is saved with its chat history; search, favourite, or remove videos
 - ⚡ **Shared cache** — a video is analysed once per language; the next request is instant and costs no AI calls
@@ -152,6 +158,7 @@ All endpoints accept an optional `Authorization: Bearer <supabase access token>`
 | `POST` | `/api/video/info` | | `{ url }` → video metadata |
 | `POST` | `/api/chat/conversation` | optional | `{ messages, analysisId?, videoId, language }` → answer (saved when signed in) |
 | `POST` | `/api/chat/ask` | optional | Single question (legacy) |
+| `POST` | `/api/study/:type` | optional | `type` = `notes` \| `quiz` \| `flashcards` \| `mindmap`. Body: `{ videoId, analysisId?, language, level?: kids\|student\|teacher, refresh? }`. Cached per video, language and level |
 | `GET` | `/api/library` | required | Your saved videos |
 | `GET` | `/api/library/:analysisId` | required | Full analysis + saved chat |
 | `PATCH` | `/api/library/:analysisId` | required | `{ isFavorite }` |
@@ -182,7 +189,7 @@ cd Frontend && npm run typecheck && npm run lint
 - [x] Searchable transcript with click-to-seek
 - [x] Multi-language summaries and chat
 - [x] Supabase accounts, library and chat history
-- [ ] Study tools: notes, quiz, flashcards, mind map
+- [x] Study tools: notes, quiz, flashcards, mind map (Kids / Student / Teacher levels)
 - [ ] Text → explainer video for kids, students and teachers (multi-language narration)
 - [x] AI transcription for videos without captions
 - [ ] Deployment (Vercel + Render)

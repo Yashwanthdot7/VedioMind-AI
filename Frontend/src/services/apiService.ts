@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase';
-import { LibraryItem, Message, VideoData } from '../types';
+import { LibraryItem, Message, StudyDataMap, StudyLevel, StudyType, VideoData } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
@@ -95,6 +95,40 @@ export async function sendChat(video: VideoData, history: Message[]): Promise<st
         },
       });
       return res.answer;
+    }
+    throw err;
+  }
+}
+
+// ------------------------------------------------------------------ study tools
+
+export interface StudyResult<T extends StudyType> {
+  data: StudyDataMap[T];
+  cached: boolean;
+  createdAt: string;
+}
+
+export async function getStudyMaterial<T extends StudyType>(
+  video: VideoData,
+  type: T,
+  level: StudyLevel,
+  refresh = false,
+): Promise<StudyResult<T>> {
+  const base = {
+    analysisId: video.analysisId,
+    videoId: video.videoId,
+    language: video.language,
+    level,
+    refresh,
+  };
+  try {
+    return await request<StudyResult<T>>(`/study/${type}`, { method: 'POST', body: base });
+  } catch (err) {
+    if (err instanceof ApiError && err.code === 'CONTEXT_EXPIRED') {
+      return request<StudyResult<T>>(`/study/${type}`, {
+        method: 'POST',
+        body: { ...base, videoContext: { title: video.title, summary: video.summary, transcript: video.transcript } },
+      });
     }
     throw err;
   }

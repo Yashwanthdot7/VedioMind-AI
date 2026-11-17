@@ -237,3 +237,4 @@ class GeminiService {
 
 module.exports = new GeminiService();
 module.exports.formatTranscript = formatTranscript;
+module.exports.wrapGeminiError = wrapGeminiError;

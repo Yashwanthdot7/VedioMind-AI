@@ -241,7 +241,43 @@ async function clearChatHistory(userId, analysisId) {
     if (error) throw dbError(error, 'clearing the chat');
 }
 
+// ---------------------------------------------------------------- study materials
+
+/** Stored content is { level, data }; one row per analysis + type + language. */
+async function getStudyMaterial(analysisId, type, language, level) {
+    if (!supabase || !analysisId) return null;
+    const { data, error } = await supabase
+        .from('study_materials')
+        .select('content, created_at')
+        .eq('analysis_id', analysisId)
+        .eq('type', type)
+        .eq('language', language)
+        .maybeSingle();
+    if (error) {
+        console.warn('Loading study material failed:', error.message);
+        return null;
+    }
+    if (!data || data.content?.level !== level || !data.content?.data) return null;
+    return { data: data.content.data, createdAt: data.created_at };
+}
+
+async function saveStudyMaterial(analysisId, type, language, level, content) {
+    if (!supabase || !analysisId) return;
+    const { error } = await supabase
+        .from('study_materials')
+        .upsert({
+            analysis_id: analysisId,
+            type,
+            language,
+            content: { level, data: content },
+            created_at: new Date().toISOString(),
+        }, { onConflict: 'analysis_id,type,language' });
+    if (error) console.warn('Saving study material failed:', error.message);
+}
+
 module.exports = {
+    getStudyMaterial,
+    saveStudyMaterial,
     findAnalysis,
     getAnalysisById,
     saveAnalysis,
