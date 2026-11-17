@@ -1,0 +1,19 @@
+{
+  "name": "videomind-ai",
+  "version": "1.1.0",
+  "private": true,
+  "description": "VideoMind AI - run backend and frontend together",
+  "scripts": {
+    "setup": "npm install && npm install --prefix backend && npm install --prefix Frontend",
+    "dev": "concurrently -k -n backend,frontend -c green,cyan \"npm run dev --prefix backend\" \"npm run dev --prefix Frontend\"",
+    "start": "concurrently -k -n backend,frontend -c green,cyan \"npm start --prefix backend\" \"npm run preview --prefix Frontend\"",
+    "build": "npm run build --prefix Frontend",
+    "test": "npm test --prefix backend && npm run typecheck --prefix Frontend"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  },
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
+  }
+}

@@ -1,13 +1,26 @@
-const DEFAULT_MODEL = 'gemini-2.5-flash';
+// Tried in order until one works (Google retires model names regularly).
+// Set GEMINI_MODEL in .env to put your own choice first.
+const MODEL_CANDIDATES = ['gemini-flash-latest', 'gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-2.5-flash'];
 
 const LIMITS = {
-    // Gemini 2.5 Flash has a very large context window; this keeps cost and latency sane
+    // Flash models have a very large context window; this keeps cost and latency sane
     TRANSCRIPT_CHARS: 300000,
     CHAT_TRANSCRIPT_CHARS: 200000,
     MAX_TAKEAWAYS: 7,
+    // Longest video the AI fallback will transcribe (free tier: 8h of YouTube video per day)
+    AI_TRANSCRIBE_MAX_SECONDS: 90 * 60,
 };
 
 const PROMPTS = {
+    TRANSCRIBE: `Transcribe the speech in this video.
+
+- Write exactly what is said, in the language it is spoken. Do not translate or summarise.
+- Group the speech into segments of about 10-20 seconds, ending at natural sentence breaks.
+- "start" is when the segment begins, in whole seconds from the start of the video.
+- If there is no speech (music only), describe what is shown in short segments instead.
+
+Return a JSON array of {"start": number, "text": string}.`,
+
     ANALYZE: `You are an expert video content analyst. Analyse the YouTube video below using its transcript.
 Each transcript line starts with a [m:ss] timestamp.
 
@@ -39,4 +52,4 @@ Transcript (each line starts with a [m:ss] timestamp):
 {transcript}`,
 };
 
-module.exports = { DEFAULT_MODEL, LIMITS, PROMPTS };
+module.exports = { MODEL_CANDIDATES, LIMITS, PROMPTS };

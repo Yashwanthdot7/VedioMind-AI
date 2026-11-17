@@ -16,6 +16,12 @@
 - 🧠 **AI Insights** — summary and key takeaways from Google Gemini
 - 🌐 **15 output languages** — English, Hindi, Kannada, Tamil, Telugu, Malayalam, Marathi, Bengali, Gujarati, Urdu, Spanish, French, German, Arabic, Japanese
 - 💬 **Chat with the video** — multi-turn conversation that remembers earlier questions; answers cite **clickable timestamps** like `[4:32]`
+- 🎓 **Study Tools** — one click turns any video into:
+  - 📒 **Notes** with sections, key terms and timestamps (download as Markdown)
+  - ✅ **Quiz** — 8 multiple-choice questions with explanations and a score (printable with answer key)
+  - 🃏 **Flashcards** — flip cards, shuffle, track what you know (export to Anki/Quizlet CSV)
+  - 🧠 **Mind map** — see how the ideas connect, click a branch to jump to it (download as SVG)
+  - Three levels: **Kids**, **Student** and **Teacher**, in any of the 15 languages
 - 👤 **Accounts (Supabase)** — sign in with Google or email
 - 📚 **My Library** — every video you summarise is saved with its chat history; search, favourite, or remove videos
 - ⚡ **Shared cache** — a video is analysed once per language; the next request is instant and costs no AI calls
@@ -31,16 +37,16 @@
 |---|---|
 | Frontend | React 18, TypeScript, Vite, Tailwind CSS, Framer Motion, Lucide icons, react-youtube |
 | Backend | Node.js, Express, express-rate-limit |
-| AI | Google Gemini (`gemini-2.5-flash` by default) — JSON-mode analysis + multi-turn chat |
+| AI | Google Gemini Flash (auto-selected, with fallback) — JSON-mode analysis, multi-turn chat, video transcription |
 | Data | Supabase — Postgres, Auth (Google + email), Row Level Security |
-| YouTube | `youtube-transcript` (captions), `@distube/ytdl-core` + oEmbed fallback (metadata) |
+| YouTube | Captions via `youtube-transcript` → `youtubei.js` → Gemini watching the video; metadata via youtubei.js → oEmbed |
 
 ---
 
 ## 🚀 Getting Started
 
 ### Prerequisites
-- [Node.js](https://nodejs.org/) v18 or higher
+- [Node.js](https://nodejs.org/) **v20.19+ or v22.12+** (required by Vite 8)
 - A [Google Gemini API key](https://aistudio.google.com/app/apikey) (free tier works)
 - *(Optional)* a free [Supabase](https://supabase.com) project
 
@@ -51,7 +57,20 @@ git clone https://github.com/Yashwanthdot7/VedioMind-AI.git
 cd VedioMind-AI
 ```
 
-### 2. Backend
+### 2. Quick start (one command)
+
+From the project root:
+
+```bash
+npm run setup     # installs root, backend and frontend dependencies (first time only)
+npm run dev       # starts backend (:3001) and frontend (:5173) together
+```
+
+Create `backend/.env` and `Frontend/.env` first (see the tables below). Press `Ctrl+C` once to stop both.
+
+Prefer separate terminals? Use the steps below.
+
+### 2a. Backend (separately)
 
 ```bash
 cd backend
@@ -63,13 +82,13 @@ npm run dev              # http://localhost:3001
 | Variable | Required | Description |
 |---|---|---|
 | `GEMINI_API_KEY` | ✅ | Your Gemini key |
-| `GEMINI_MODEL` | | Defaults to `gemini-2.5-flash` |
+| `GEMINI_MODEL` | | Model to try first. Empty = newest Flash, with automatic fallback if a model is retired |
 | `PORT` | | Defaults to `3001` |
 | `CORS_ORIGINS` | | Comma-separated allowed frontend URLs (default `http://localhost:5173`) |
 | `SUPABASE_URL` | for accounts | Supabase → Project Settings → API |
-| `SUPABASE_SERVICE_ROLE_KEY` | for accounts | **Server only — never put this in the frontend** |
+| `SUPABASE_SECRET_KEY` | for accounts | The `sb_secret_…` key (or legacy `SUPABASE_SERVICE_ROLE_KEY`). **Server only — never put this in the frontend or commit it** |
 
-### 3. Frontend
+### 2b. Frontend (separately)
 
 ```bash
 cd Frontend
@@ -82,17 +101,17 @@ npm run dev              # http://localhost:5173
 |---|---|---|
 | `VITE_API_URL` | ✅ | Backend URL, e.g. `http://localhost:3001/api` |
 | `VITE_SUPABASE_URL` | for accounts | Same project URL as the backend |
-| `VITE_SUPABASE_ANON_KEY` | for accounts | The public **anon** key |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | for accounts | The public `sb_publishable_…` key (or legacy `VITE_SUPABASE_ANON_KEY`) |
 
-### 4. Supabase setup (optional, for accounts & library)
+### 3. Supabase setup (optional, for accounts & library)
 
 1. Create a project at [supabase.com](https://supabase.com).
 2. **SQL Editor → New query** → paste [`supabase/schema.sql`](supabase/schema.sql) → **Run**.
 3. **Authentication → URL Configuration**: set *Site URL* to your frontend URL (e.g. `http://localhost:5173`) and add it to *Redirect URLs*.
-4. **Authentication → Providers → Google**: enable it and paste a Google OAuth client ID/secret ([guide](https://supabase.com/docs/guides/auth/social-login/auth-google)). Email sign-in works without this step.
+4. **Authentication → Providers → Google**: enable it and paste a Google OAuth client ID/secret ([guide](https://supabase.com/docs/guides/auth/social-login/auth-google)). Then set `VITE_ENABLE_GOOGLE_AUTH=true` in `Frontend/.env` to show the button. Email sign-in works without this step.
 5. Put the URL and keys in both `.env` files and restart.
 
-The backend logs `Supabase: connected` on start when it's set up correctly. `GET /api/health` also reports `"database": true`.
+Then run `cd backend && npm run check:supabase`. It checks every table and storage bucket and tells you what is missing. The backend also logs `Supabase: connected` on start.
 
 ---
 
@@ -139,6 +158,7 @@ All endpoints accept an optional `Authorization: Bearer <supabase access token>`
 | `POST` | `/api/video/info` | | `{ url }` → video metadata |
 | `POST` | `/api/chat/conversation` | optional | `{ messages, analysisId?, videoId, language }` → answer (saved when signed in) |
 | `POST` | `/api/chat/ask` | optional | Single question (legacy) |
+| `POST` | `/api/study/:type` | optional | `type` = `notes` \| `quiz` \| `flashcards` \| `mindmap`. Body: `{ videoId, analysisId?, language, level?: kids\|student\|teacher, refresh? }`. Cached per video, language and level |
 | `GET` | `/api/library` | required | Your saved videos |
 | `GET` | `/api/library/:analysisId` | required | Full analysis + saved chat |
 | `PATCH` | `/api/library/:analysisId` | required | `{ isFavorite }` |
@@ -160,17 +180,18 @@ cd Frontend && npm run typecheck && npm run lint
 
 ## ⚠️ Known limitations
 
-- Only videos **with captions/subtitles** can be processed for now. An audio-transcription fallback is planned.
-- YouTube changes its site often. If every video suddenly fails, update `youtube-transcript` and `@distube/ytdl-core` first.
+- Transcripts are fetched from YouTube captions first. If YouTube blocks that (it often does since its 2025 changes) or the video has no captions, **Gemini watches the video and transcribes it**. This works for public videos up to 90 minutes and uses your Gemini quota (free tier: about 8 hours of YouTube video per day).
+- Private and unlisted videos can't be processed.
+- Debug a video from the command line: `npm run check:video --prefix backend -- "<YouTube URL>" --ai`
 
 ## 🗺️ Roadmap
 
 - [x] Searchable transcript with click-to-seek
 - [x] Multi-language summaries and chat
 - [x] Supabase accounts, library and chat history
-- [ ] Study tools: notes, quiz, flashcards, mind map
+- [x] Study tools: notes, quiz, flashcards, mind map (Kids / Student / Teacher levels)
 - [ ] Text → explainer video for kids, students and teachers (multi-language narration)
-- [ ] Audio transcription for videos without captions
+- [x] AI transcription for videos without captions
 - [ ] Deployment (Vercel + Render)
 
 ---

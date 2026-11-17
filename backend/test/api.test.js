@@ -21,6 +21,12 @@ geminiService.analyzeVideo = async ({ language }) => {
 let lastChatArgs = null;
 geminiService.chat = async (args) => { lastChatArgs = args; return 'See [0:20].'; };
 
+let transcribeCalls = 0;
+geminiService.transcribeYouTube = async () => {
+    transcribeCalls += 1;
+    return [{ start: 0, text: 'AI heard this.' }, { start: 30, text: 'And this.' }];
+};
+
 const app = require('../src/app');
 
 let server;
@@ -91,4 +97,18 @@ test('legacy /chat/ask still works', async () => {
 test('library requires accounts', async () => {
     const res = await fetch(`${base}/library`);
     assert.equal(res.status, 501);
+});
+
+test('falls back to AI transcription when captions are unavailable', async () => {
+    const AppError = require('../src/lib/AppError');
+    const original = youtubeService.getTranscript;
+    youtubeService.getTranscript = async () => { throw new AppError('none', 422, 'NO_TRANSCRIPT'); };
+    try {
+        const res = await post('/video/process', { url: 'https://youtu.be/nocaptions1' });
+        assert.equal(res.status, 200);
+        assert.equal(transcribeCalls, 1);
+        assert.equal(res.body.data.transcript[0].text.startsWith('AI heard this.'), true);
+    } finally {
+        youtubeService.getTranscript = original;
+    }
 });
