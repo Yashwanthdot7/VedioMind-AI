@@ -66,9 +66,9 @@ export default function NotesView({ notes, videoTitle, videoId, onSeek }: NotesV
         </button>
       </div>
 
-      {notes.overview && <p className="text-sm text-slate-300 leading-relaxed">{notes.overview}</p>}
+      {notes.overview && <p className="text-sm text-slate-300 leading-relaxed max-w-4xl">{notes.overview}</p>}
 
-      <div className="space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {notes.sections.map((section, i) => (
           <section key={i} className="p-4 rounded-xl bg-slate-950/40 border border-slate-800/60">
             <div className="flex items-center justify-between gap-3 mb-2">
@@ -85,7 +85,7 @@ export default function NotesView({ notes, videoTitle, videoId, onSeek }: NotesV
       {notes.keyTerms.length > 0 && (
         <div>
           <h4 className="text-xs font-semibold text-amber-400 uppercase tracking-wider mb-3">Key terms</h4>
-          <dl className="grid grid-cols-1 gap-2">
+          <dl className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
             {notes.keyTerms.map((k, i) => (
               <div key={i} className="p-3 rounded-lg bg-amber-500/5 border border-amber-500/15">
                 <dt className="text-sm font-semibold text-amber-200">{k.term}</dt>

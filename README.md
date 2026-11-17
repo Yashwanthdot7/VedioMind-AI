@@ -22,6 +22,12 @@
   - 🃏 **Flashcards** — flip cards, shuffle, track what you know (export to Anki/Quizlet CSV)
   - 🧠 **Mind map** — see how the ideas connect, click a branch to jump to it (download as SVG)
   - Three levels: **Kids**, **Student** and **Teacher**, in any of the 15 languages
+- 🎬 **Video lessons (text → video)**: type a topic, paste notes, or pick a YouTube video, and get a narrated, animated explainer video
+  - AI-written scene script for **Kids**, **Students** or **Teachers**, in any of the 15 languages
+  - AI narration (Gemini text-to-speech, free tier) with 6 voices, plus captions
+  - Animated slides drawn by the app (title, key points, big fact, steps, compare, recap) and a quiz at the end
+  - **Download as MP4**, recorded in your browser (no server rendering and no cost)
+  - If the free AI voice quota runs out, lessons still play using your **browser's built-in voice**
 - 👤 **Accounts (Supabase)** — sign in with Google or email
 - 📚 **My Library** — every video you summarise is saved with its chat history; search, favourite, or remove videos
 - ⚡ **Shared cache** — a video is analysed once per language; the next request is instant and costs no AI calls
@@ -159,6 +165,12 @@ All endpoints accept an optional `Authorization: Bearer <supabase access token>`
 | `POST` | `/api/chat/conversation` | optional | `{ messages, analysisId?, videoId, language }` → answer (saved when signed in) |
 | `POST` | `/api/chat/ask` | optional | Single question (legacy) |
 | `POST` | `/api/study/:type` | optional | `type` = `notes` \| `quiz` \| `flashcards` \| `mindmap`. Body: `{ videoId, analysisId?, language, level?: kids\|student\|teacher, refresh? }`. Cached per video, language and level |
+| `POST` | `/api/lessons` | optional | Create a video lesson: `{ text }` or `{ videoId, analysisId? }`, plus `audience`, `language`, `length: short\|standard`, `voice?`. Returns at once (status `queued`) |
+| `GET` | `/api/lessons/:id` | owner | Lesson status/progress, or the full lesson when `done` |
+| `GET` | `/api/lessons/:id/audio/:n` | owner | Narration WAV for scene `n` |
+| `GET` | `/api/lessons` | required | Your lessons |
+| `DELETE` | `/api/lessons/:id` | owner | Delete a lesson |
+| `GET` | `/api/lessons/options` | | Voices and lengths |
 | `GET` | `/api/library` | required | Your saved videos |
 | `GET` | `/api/library/:analysisId` | required | Full analysis + saved chat |
 | `PATCH` | `/api/library/:analysisId` | required | `{ isFavorite }` |
@@ -182,6 +194,8 @@ cd Frontend && npm run typecheck && npm run lint
 
 - Transcripts are fetched from YouTube captions first. If YouTube blocks that (it often does since its 2025 changes) or the video has no captions, **Gemini watches the video and transcribes it**. This works for public videos up to 90 minutes and uses your Gemini quota (free tier: about 8 hours of YouTube video per day).
 - Private and unlisted videos can't be processed.
+- **Everything runs on free tiers.** Keep billing off on your Gemini key and you can never be charged: hitting a limit only returns "try again later". Video lesson audio is stored on your own disk in `backend/storage/` (not in Supabase), so it doesn't use your Supabase quota.
+- MP4 export records in real time, so a 2-minute lesson takes about 2 minutes to save. Keep the tab open while it records. Chrome or Edge on Windows produce MP4; browsers that can't record MP4 save WebM instead.
 - Debug a video from the command line: `npm run check:video --prefix backend -- "<YouTube URL>" --ai`
 
 ## 🗺️ Roadmap
@@ -190,7 +204,7 @@ cd Frontend && npm run typecheck && npm run lint
 - [x] Multi-language summaries and chat
 - [x] Supabase accounts, library and chat history
 - [x] Study tools: notes, quiz, flashcards, mind map (Kids / Student / Teacher levels)
-- [ ] Text → explainer video for kids, students and teachers (multi-language narration)
+- [x] Text → explainer video for kids, students and teachers (multi-language narration, MP4 download)
 - [x] AI transcription for videos without captions
 - [ ] Deployment (Vercel + Render)
 

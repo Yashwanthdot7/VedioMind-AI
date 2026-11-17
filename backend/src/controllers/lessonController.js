@@ -1,0 +1,147 @@
+const fs = require('fs');
+const lessonJobs = require('../services/lessonJobs');
+const lessonService = require('../services/lessonService');
+const ttsService = require('../services/ttsService');
+const { resolveContext } = require('../services/contextResolver');
+const { isSupabaseEnabled } = require('../config/supabase');
+const AppError = require('../lib/AppError');
+const { parseLanguage } = require('../utils/validators');
+
+const AUDIENCES = ['kids', 'student', 'teacher'];
+const MIN_TEXT = 15;
+const MAX_TEXT = 20000;
+
+/** What the client may see (never the owner's id) */
+function publicLesson(lesson) {
+    const { userId, inputText, ...rest } = lesson;
+    return { ...rest, inputPreview: inputText ? inputText.slice(0, 200) : null };
+}
+
+/** Owner-only, except lessons made by guests (no account) which work by link */
+async function loadAccessible(req) {
+    const lesson = await lessonJobs.get(req.params.id);
+    if (!lesson) throw new AppError('Lesson not found', 404, 'NOT_FOUND');
+    if (lesson.userId && lesson.userId !== req.user?.id) {
+        throw new AppError('Lesson not found', 404, 'NOT_FOUND');
+    }
+    return lesson;
+}
+
+class LessonController {
+    /** GET /api/lessons/options — voices, audiences, lengths for the form */
+    options(_req, res) {
+        res.json({
+            success: true,
+            data: {
+                voices: ttsService.voices(),
+                audiences: AUDIENCES,
+                lengths: Object.fromEntries(Object.entries(lessonService.LENGTHS).map(([k, v]) => [k, v.label])),
+            },
+        });
+    }
+
+    /**
+     * POST /api/lessons
+     * { text } or { videoId, analysisId?, videoContext? } + { audience, language, length, voice }
+     */
+    async create(req, res, next) {
+        try {
+            const body = req.body || {};
+            const audience = body.audience ?? 'student';
+            if (!AUDIENCES.includes(audience)) throw new AppError('Unknown audience', 400, 'INVALID_AUDIENCE');
+            const language = parseLanguage(body.language);
+            const length = body.length ?? 'short';
+            if (!lessonService.LENGTHS[length]) throw new AppError('Unknown length', 400, 'INVALID_LENGTH');
+            const voice = body.voice && ttsService.voices()[body.voice] ? body.voice : undefined;
+
+            let material;
+            let source;
+            let sourceVideo = null;
+            let inputText = null;
+
+            if (typeof body.text === 'string' && body.text.trim()) {
+                inputText = body.text.trim();
+                if (inputText.length < MIN_TEXT) {
+                    throw new AppError('Please write a little more: a topic or a few sentences.', 400, 'TEXT_TOO_SHORT');
+                }
+                if (inputText.length > MAX_TEXT) {
+                    throw new AppError(`Text is too long (max ${MAX_TEXT.toLocaleString()} characters).`, 400, 'TEXT_TOO_LONG');
+                }
+                material = inputText;
+                source = 'text';
+            } else if (body.videoId || body.analysisId) {
+                const context = await resolveContext({ ...body, language: body.videoLanguage || language });
+                material = lessonService.materialFromVideo(context);
+                source = 'video';
+                sourceVideo = {
+                    videoId: context.videoId || body.videoId,
+                    analysisId: context.analysisId || null,
+                    title: context.title,
+                };
+            } else {
+                throw new AppError('Write a topic or some text, or pick a video.', 400, 'NO_INPUT');
+            }
+
+            const lesson = await lessonJobs.create({
+                userId: req.user?.id, material, inputText, source, sourceVideo, audience, language, length, voice,
+            });
+            res.status(202).json({ success: true, data: publicLesson(lesson) });
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    /** GET /api/lessons — your lessons (needs an account) */
+    async list(req, res, next) {
+        try {
+            if (!isSupabaseEnabled || !req.user) return res.json({ success: true, data: [] });
+            const items = await lessonJobs.listForUser(req.user.id);
+            res.json({ success: true, data: items });
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    /** GET /api/lessons/:id — status while processing, full lesson when done */
+    async get(req, res, next) {
+        try {
+            const lesson = await loadAccessible(req);
+            res.json({ success: true, data: publicLesson(lesson) });
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    /** GET /api/lessons/:id/audio/:index — narration WAV for one scene */
+    async audio(req, res, next) {
+        try {
+            const lesson = await loadAccessible(req);
+            const index = Number(req.params.index);
+            if (!Number.isInteger(index) || index < 0 || index >= lesson.scenes.length || !lesson.scenes[index].audio) {
+                throw new AppError('Audio not found', 404, 'NOT_FOUND');
+            }
+            const file = lessonJobs.audioPath(lesson.id, index);
+            if (!fs.existsSync(file)) {
+                throw new AppError('This lesson\'s audio is stored on another computer.', 404, 'AUDIO_MISSING');
+            }
+            res.set('Cache-Control', 'private, max-age=86400');
+            res.type('audio/wav').sendFile(file);
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    /** DELETE /api/lessons/:id */
+    async remove(req, res, next) {
+        try {
+            const lesson = await loadAccessible(req);
+            if (!lesson.userId) throw new AppError('Only lessons saved to an account can be deleted', 403, 'FORBIDDEN');
+            await lessonJobs.remove(lesson);
+            res.json({ success: true });
+        } catch (error) {
+            next(error);
+        }
+    }
+}
+
+module.exports = new LessonController();

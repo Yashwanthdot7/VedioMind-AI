@@ -104,14 +104,14 @@ export default function StudyTools({ video, onSeek }: StudyToolsProps) {
         </div>
       </div>
 
-      <div className="grid grid-cols-4 gap-1 p-2 border-b border-slate-800/50" role="tablist">
+      <div className="grid grid-cols-4 sm:flex gap-1 p-2 border-b border-slate-800/50" role="tablist">
         {TOOLS.map(({ type, label, icon: Icon }) => (
           <button
             key={type}
             role="tab"
             aria-selected={active === type}
             onClick={() => open(type)}
-            className={`flex flex-col items-center gap-1 py-2 rounded-lg text-xs font-medium transition-colors ${
+            className={`flex flex-col items-center gap-1 py-2 sm:px-8 rounded-lg text-xs font-medium transition-colors ${
               active === type ? 'bg-indigo-500/15 text-indigo-200' : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-200'
             }`}
           >
@@ -123,7 +123,7 @@ export default function StudyTools({ video, onSeek }: StudyToolsProps) {
 
       <div className="p-5" role="tabpanel">
         {!active && (
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             {TOOLS.map(({ type, label, icon: Icon, blurb }) => (
               <button
                 key={type}

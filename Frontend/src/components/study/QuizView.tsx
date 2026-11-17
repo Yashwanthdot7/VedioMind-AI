@@ -61,7 +61,7 @@ export default function QuizView({ quiz, videoTitle, onSeek }: QuizViewProps) {
     const pct = Math.round((score / total) * 100);
     const message = pct === 100 ? 'Perfect score! 🎉' : pct >= 70 ? 'Great job!' : pct >= 40 ? 'Good effort — review the ones you missed.' : 'Keep going — rewatch the parts below and try again.';
     return (
-      <div className="space-y-5">
+      <div className="space-y-5 max-w-2xl mx-auto">
         <div className="text-center p-6 rounded-2xl bg-gradient-to-br from-indigo-500/10 to-purple-500/10 border border-indigo-500/20">
           <Trophy className="w-10 h-10 mx-auto text-amber-400 mb-2" />
           <p className="text-3xl font-bold text-slate-100">{score} / {total}</p>
@@ -93,7 +93,7 @@ export default function QuizView({ quiz, videoTitle, onSeek }: QuizViewProps) {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 max-w-2xl mx-auto">
       <div className="flex items-center justify-between gap-3">
         <span className="text-xs text-slate-500">Question {index + 1} of {total}</span>
         {downloadButton}

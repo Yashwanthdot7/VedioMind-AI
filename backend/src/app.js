@@ -7,6 +7,7 @@ const videoRoutes = require('./routes/videoRoutes');
 const chatRoutes = require('./routes/chatRoutes');
 const libraryRoutes = require('./routes/libraryRoutes');
 const studyRoutes = require('./routes/studyRoutes');
+const lessonRoutes = require('./routes/lessonRoutes');
 const errorHandler = require('./middleware/errorHandler');
 const { optionalAuth } = require('./middleware/auth');
 const { generalLimiter } = require('./middleware/rateLimit');
@@ -55,6 +56,7 @@ app.use('/api/video', videoRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/library', libraryRoutes);
 app.use('/api/study', studyRoutes);
+app.use('/api/lessons', lessonRoutes);
 
 app.use('/api', (_req, _res, next) => next(new AppError('Endpoint not found', 404, 'NOT_FOUND')));
 
