@@ -51,7 +51,20 @@ git clone https://github.com/Yashwanthdot7/VedioMind-AI.git
 cd VedioMind-AI
 ```
 
-### 2. Backend
+### 2. Quick start (one command)
+
+From the project root:
+
+```bash
+npm run setup     # installs root, backend and frontend dependencies (first time only)
+npm run dev       # starts backend (:3001) and frontend (:5173) together
+```
+
+Create `backend/.env` and `Frontend/.env` first (see the tables below). Press `Ctrl+C` once to stop both.
+
+Prefer separate terminals? Use the steps below.
+
+### 2a. Backend (separately)
 
 ```bash
 cd backend
@@ -69,7 +82,7 @@ npm run dev              # http://localhost:3001
 | `SUPABASE_URL` | for accounts | Supabase → Project Settings → API |
 | `SUPABASE_SECRET_KEY` | for accounts | The `sb_secret_…` key (or legacy `SUPABASE_SERVICE_ROLE_KEY`). **Server only — never put this in the frontend or commit it** |
 
-### 3. Frontend
+### 2b. Frontend (separately)
 
 ```bash
 cd Frontend
@@ -84,7 +97,7 @@ npm run dev              # http://localhost:5173
 | `VITE_SUPABASE_URL` | for accounts | Same project URL as the backend |
 | `VITE_SUPABASE_PUBLISHABLE_KEY` | for accounts | The public `sb_publishable_…` key (or legacy `VITE_SUPABASE_ANON_KEY`) |
 
-### 4. Supabase setup (optional, for accounts & library)
+### 3. Supabase setup (optional, for accounts & library)
 
 1. Create a project at [supabase.com](https://supabase.com).
 2. **SQL Editor → New query** → paste [`supabase/schema.sql`](supabase/schema.sql) → **Run**.
