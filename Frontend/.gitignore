@@ -4,4 +4,7 @@
 .env.*.local
 
 # But keep example file
-!.env.example
+!.env.examplenode_modules/
+dist/
+.DS_Store
+*.log
