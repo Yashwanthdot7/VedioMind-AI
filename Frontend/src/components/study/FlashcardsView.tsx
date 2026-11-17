@@ -51,7 +51,7 @@ export default function FlashcardsView({ deck, videoTitle, onSeek }: FlashcardsV
   };
 
   return (
-    <div className="space-y-4" onKeyDown={onKeyDown}>
+    <div className="space-y-4 max-w-xl mx-auto" onKeyDown={onKeyDown}>
       <div className="flex items-center justify-between gap-2 text-xs text-slate-500">
         <span>Card {position + 1} of {total} · <span className="text-emerald-400">{known.size} known</span></span>
         <div className="flex gap-1">

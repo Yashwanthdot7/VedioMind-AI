@@ -197,8 +197,11 @@ export default function MindMapView({ map, videoTitle, onSeek }: MindMapViewProp
         </div>
       </div>
 
-      <div className="overflow-auto custom-scrollbar rounded-xl bg-slate-950/50 border border-slate-800/60 p-2 max-h-[28rem]">
-        <MindMapSvg map={map} onSeek={handleSeek} id="mindmap-svg" />
+      <div className="overflow-auto custom-scrollbar rounded-xl bg-slate-950/50 border border-slate-800/60 p-4 max-h-[36rem]">
+        {/* w-max + mx-auto: centred when it fits, scrollable from the left edge when it doesn't */}
+        <div className="w-max mx-auto">
+          <MindMapSvg map={map} onSeek={handleSeek} id="mindmap-svg" />
+        </div>
       </div>
 
       {expanded && createPortal(

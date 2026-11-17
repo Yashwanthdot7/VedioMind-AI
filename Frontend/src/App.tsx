@@ -318,10 +318,15 @@ function App() {
                   />
                 </div>
 
-                <div className="lg:col-span-2 space-y-6">
-                  <AIInsights summary={videoData.summary} keyTakeaways={videoData.keyTakeaways} onSeek={seekTo} />
-                  <StudyTools key={`${videoData.videoId}:${videoData.language}`} video={videoData} onSeek={seekTo} />
+                {/* Insights stay in view while you scroll the transcript and chat */}
+                <div className="lg:col-span-2 lg:sticky lg:top-28 lg:self-start">
+                  <AIInsights summary={videoData.summary} keyTakeaways={videoData.keyTakeaways} onSeek={seekTo} scrollable />
                 </div>
+              </div>
+
+              {/* Full width: room for notes, quiz, flashcards and the mind map */}
+              <div className="mt-6">
+                <StudyTools key={`${videoData.videoId}:${videoData.language}`} video={videoData} onSeek={seekTo} />
               </div>
             </div>
           </motion.div>
