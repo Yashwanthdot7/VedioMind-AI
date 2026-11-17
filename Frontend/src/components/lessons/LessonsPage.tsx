@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
-  Clapperboard, Sparkles, Youtube, PenLine, Loader2, CheckCircle2, AlertCircle, Trash2, ArrowLeft, Mic, Wand2,
+  Clapperboard, Sparkles, Youtube, PenLine, Loader2, CheckCircle2, AlertCircle, Trash2, ArrowLeft, Mic, Wand2, Image as ImageIcon, LayoutTemplate,
 } from 'lucide-react';
 import { Lesson, LessonAudience, LessonSummary, VideoData } from '../../types';
 import {
@@ -59,34 +59,53 @@ function rememberRecent(lesson: Lesson) {
 }
 
 function ProgressView({ lesson }: { lesson: Lesson }) {
-  const steps = [
-    { key: 'scripting', label: 'Writing the script', icon: PenLine },
-    { key: 'voice', label: lesson.scenes.length ? `Recording narration (${lesson.scenes.filter((s) => s.audio).length}/${lesson.scenes.length} scenes)` : 'Recording narration', icon: Mic },
-    { key: 'done', label: 'Lesson ready', icon: CheckCircle2 },
+  const n = lesson.scenes.length;
+  const voiced = lesson.scenes.filter((s) => s.audio).length;
+  const pictured = lesson.scenes.filter((s) => s.imageStatus === 'done' || s.imageStatus === 'failed').length;
+  const wantsPictures = lesson.visuals !== 'slides' && lesson.scenes.some((s) => s.imageStatus && s.imageStatus !== 'skipped');
+  const scripting = lesson.status === 'queued' || lesson.status === 'scripting';
+  const working = lesson.status === 'voice';
+
+  type Step = { label: string; icon: typeof PenLine; state: 'done' | 'active' | 'todo' };
+  const steps: Step[] = [
+    { label: 'Writing the script', icon: PenLine, state: scripting ? 'active' : 'done' },
   ];
-  const order = ['queued', 'scripting', 'voice', 'done'];
-  const current = Math.max(1, order.indexOf(lesson.status)); // 'queued' shows the first step as active
+  if (wantsPictures || (scripting && lesson.visuals !== 'slides')) {
+    steps.push({
+      label: n ? `Drawing pictures (${pictured}/${n} scenes)` : 'Drawing pictures',
+      icon: ImageIcon,
+      state: scripting ? 'todo' : pictured >= n && n > 0 ? 'done' : 'active',
+    });
+  }
+  steps.push({
+    label: n ? `Recording narration (${voiced}/${n} scenes)` : 'Recording narration',
+    icon: Mic,
+    state: scripting ? 'todo' : (working && (voiced < n && lesson.voiceMode !== 'browser')) ? 'active' : 'done',
+  });
+  steps.push({ label: 'Lesson ready', icon: CheckCircle2, state: lesson.status === 'done' ? 'done' : 'todo' });
+
   return (
     <div className="max-w-lg mx-auto py-10 text-center">
       <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 mb-4 shadow-lg shadow-indigo-500/30">
         <Loader2 className="w-8 h-8 text-white animate-spin" />
       </div>
       <h2 className="text-2xl font-bold text-slate-100 mb-1">Creating your video lesson</h2>
-      <p className="text-sm text-slate-400 mb-6">This usually takes 1–3 minutes. You can stay on this page.</p>
+      <p className="text-sm text-slate-400 mb-6">
+        This usually takes 1–3 minutes{wantsPictures ? ' (pictures can take a little longer on the free tier)' : ''}. You can stay on this page.
+      </p>
       <div className="h-2 bg-slate-800 rounded-full overflow-hidden mb-6">
         <div className="h-full bg-gradient-to-r from-indigo-500 to-purple-600 transition-all duration-700" style={{ width: `${Math.max(4, lesson.progress)}%` }} />
       </div>
       <div className="space-y-2 text-left">
-        {steps.map((step, i) => {
-          const state = current > i + 1 ? 'done' : current === i + 1 ? 'active' : 'todo';
-          const Icon = state === 'done' ? CheckCircle2 : step.icon;
+        {steps.map((step) => {
+          const Icon = step.state === 'done' ? CheckCircle2 : step.icon;
           return (
-            <div key={step.key} className={`flex items-center gap-3 p-3 rounded-lg border ${
-              state === 'done' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300'
-                : state === 'active' ? 'bg-indigo-500/10 border-indigo-500/30 text-indigo-200'
+            <div key={step.label} className={`flex items-center gap-3 p-3 rounded-lg border ${
+              step.state === 'done' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300'
+                : step.state === 'active' ? 'bg-indigo-500/10 border-indigo-500/30 text-indigo-200'
                   : 'bg-slate-800/30 border-slate-700/30 text-slate-500'
             }`}>
-              {state === 'active' ? <Loader2 className="w-5 h-5 animate-spin" /> : <Icon className="w-5 h-5" />}
+              {step.state === 'active' ? <Loader2 className="w-5 h-5 animate-spin" /> : <Icon className="w-5 h-5" />}
               <span className="text-sm font-medium">{step.label}</span>
             </div>
           );
@@ -105,6 +124,7 @@ export default function LessonsPage({ currentVideo, preferVideo, defaultLanguage
   const [language, setLanguage] = useState(defaultLanguage);
   const [length, setLength] = useState<'short' | 'standard'>('short');
   const [voice, setVoice] = useState<string>('');
+  const [visuals, setVisuals] = useState<'pictures' | 'slides'>('pictures');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -185,6 +205,7 @@ export default function LessonsPage({ currentVideo, preferVideo, defaultLanguage
         language,
         length,
         voice: voice || undefined,
+        visuals: options && !options.pictures ? 'slides' : visuals,
       });
       watch(lesson);
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -331,6 +352,31 @@ export default function LessonsPage({ currentVideo, preferVideo, defaultLanguage
           </div>
         </div>
 
+        <div>
+          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Visual style</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-w-2xl" role="radiogroup" aria-label="Visual style">
+            {[
+              { value: 'pictures' as const, icon: ImageIcon, label: 'AI pictures', hint: 'A generated illustration in every scene' },
+              { value: 'slides' as const, icon: LayoutTemplate, label: 'Simple slides', hint: 'Animated text slides, fastest' },
+            ].map((v) => {
+              const disabled = v.value === 'pictures' && options !== null && !options.pictures;
+              const selected = (disabled ? 'slides' : visuals) === v.value;
+              return (
+                <button
+                  key={v.value} role="radio" aria-checked={selected} disabled={disabled} onClick={() => setVisuals(v.value)}
+                  className={`flex items-start gap-3 p-3 rounded-xl border text-left disabled:opacity-40 ${selected ? 'border-indigo-500/60 bg-indigo-500/10' : 'border-slate-800 bg-slate-950/40 hover:border-slate-700'}`}
+                >
+                  <v.icon className="w-5 h-5 text-indigo-300 mt-0.5 shrink-0" />
+                  <span>
+                    <span className="block text-sm text-slate-200 font-medium">{v.label}</span>
+                    <span className="block text-[11px] text-slate-500 mt-0.5">{disabled ? 'Not available on this server' : v.hint}</span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         {error && <p className="text-sm text-red-400">{error}</p>}
 
         <div className="flex flex-wrap items-center gap-4">
@@ -343,7 +389,7 @@ export default function LessonsPage({ currentVideo, preferVideo, defaultLanguage
             Create video lesson
           </button>
           <p className="text-xs text-slate-500 flex items-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5" /> AI script + AI narration on Gemini’s free tier · animated slides · quiz at the end
+            <Sparkles className="w-3.5 h-3.5" /> Free: AI script &amp; narration (Gemini) · AI pictures ({options?.pictureProvider === 'cloudflare' ? 'Cloudflare FLUX' : 'Pollinations FLUX'}) · quiz at the end
           </p>
         </div>
       </div>

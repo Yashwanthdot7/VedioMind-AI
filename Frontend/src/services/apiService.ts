@@ -138,6 +138,8 @@ export async function getStudyMaterial<T extends StudyType>(
 
 export interface LessonOptions {
   voices: Record<string, string>;
+  pictures: boolean;
+  pictureProvider: 'cloudflare' | 'pollinations' | null;
   audiences: LessonAudience[];
   lengths: Record<string, string>;
 }
@@ -153,6 +155,7 @@ export interface CreateLessonInput {
   language: string;
   length: 'short' | 'standard';
   voice?: string;
+  visuals?: 'pictures' | 'slides';
 }
 
 export async function createLesson(input: CreateLessonInput): Promise<Lesson> {
@@ -161,6 +164,7 @@ export async function createLesson(input: CreateLessonInput): Promise<Lesson> {
     language: input.language,
     length: input.length,
     voice: input.voice,
+    visuals: input.visuals,
   };
   if (input.video) {
     Object.assign(body, {
@@ -200,6 +204,13 @@ export async function fetchLessonAudio(id: string, index: number): Promise<Blob>
   const res = await fetch(`${API_BASE_URL}/lessons/${id}/audio/${index}`, { headers: await authHeaders() });
   if (!res.ok) throw new ApiError('Could not load the narration audio', res.status, 'AUDIO_FAILED');
   return res.blob();
+}
+
+/** A scene's AI picture, decoded and ready to draw (same-origin, so the canvas can still be recorded) */
+export async function fetchLessonImage(id: string, index: number): Promise<ImageBitmap> {
+  const res = await fetch(`${API_BASE_URL}/lessons/${id}/image/${index}`, { headers: await authHeaders() });
+  if (!res.ok) throw new ApiError('Could not load a picture', res.status, 'IMAGE_FAILED');
+  return createImageBitmap(await res.blob());
 }
 
 // ------------------------------------------------------------------ library

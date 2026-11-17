@@ -32,6 +32,15 @@ export interface FrameInfo {
   duration: number;
   lessonTitle: string;
   captions: boolean;
+  /** AI picture for this scene (ImageBitmap / image), or null for the drawn slide */
+  image?: CanvasImageSource & { width: number; height: number } | null;
+}
+
+/** Text area of a layout: full width, or the left part when a picture panel is shown */
+interface Area {
+  x: number;
+  w: number;
+  icon: boolean;
 }
 
 // ------------------------------------------------------------------ helpers
@@ -130,22 +139,101 @@ function currentCaption(narration: string, progress: number) {
   return chunks[chunks.length - 1];
 }
 
+// ------------------------------------------------------------------ pictures
+
+type Picture = CanvasImageSource & { width: number; height: number };
+
+/**
+ * Draw a picture to cover a box, with a slow "Ken Burns" zoom and pan.
+ * Direction alternates per scene so consecutive scenes don't move the same way.
+ */
+function drawPictureCover(
+  ctx: CanvasRenderingContext2D, img: Picture, x: number, y: number, w: number, h: number,
+  progress: number, sceneIndex: number,
+) {
+  const zoom = 1.04 + 0.1 * progress;
+  const scale = Math.max(w / img.width, h / img.height) * zoom;
+  const dw = img.width * scale;
+  const dh = img.height * scale;
+  const dir = sceneIndex % 2 === 0 ? 1 : -1;
+  const panX = (dw - w) * (0.5 + dir * (progress - 0.5) * 0.6);
+  const panY = (dh - h) * 0.5;
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(x, y, w, h);
+  ctx.clip();
+  ctx.drawImage(img, x - panX, y - panY, dw, dh);
+  ctx.restore();
+}
+
+/** Full-screen picture with a dark overlay so white text stays readable */
+function drawPictureBackground(ctx: CanvasRenderingContext2D, img: Picture, progress: number, sceneIndex: number, from: 'left' | 'bottom') {
+  drawPictureCover(ctx, img, 0, 0, WIDTH, HEIGHT, progress, sceneIndex);
+  const g = from === 'left'
+    ? ctx.createLinearGradient(0, 0, WIDTH, 0)
+    : ctx.createLinearGradient(0, 0, 0, HEIGHT);
+  if (from === 'left') {
+    g.addColorStop(0, 'rgba(2,6,23,0.88)');
+    g.addColorStop(0.55, 'rgba(2,6,23,0.55)');
+    g.addColorStop(1, 'rgba(2,6,23,0.15)');
+  } else {
+    g.addColorStop(0, 'rgba(2,6,23,0.45)');
+    g.addColorStop(0.45, 'rgba(2,6,23,0.25)');
+    g.addColorStop(1, 'rgba(2,6,23,0.88)');
+  }
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, WIDTH, HEIGHT);
+}
+
+/** Rounded picture panel on the right (for key points and steps) */
+const PANEL = { x: 690, y: 112, w: 494, h: 470 };
+function drawPicturePanel(ctx: CanvasRenderingContext2D, img: Picture, time: number, progress: number, sceneIndex: number, accent: string) {
+  const a = appear(time, 0.15, 0.7);
+  ctx.save();
+  ctx.globalAlpha = a;
+  ctx.translate((1 - a) * 40, 0);
+  ctx.shadowColor = 'rgba(0,0,0,0.45)';
+  ctx.shadowBlur = 40;
+  roundRect(ctx, PANEL.x, PANEL.y, PANEL.w, PANEL.h, 28);
+  ctx.fillStyle = '#0f172a';
+  ctx.fill();
+  ctx.shadowBlur = 0;
+  roundRect(ctx, PANEL.x, PANEL.y, PANEL.w, PANEL.h, 28);
+  ctx.clip();
+  drawPictureCover(ctx, img, PANEL.x, PANEL.y, PANEL.w, PANEL.h, progress, sceneIndex);
+  ctx.restore();
+  ctx.save();
+  ctx.globalAlpha = a;
+  ctx.translate((1 - a) * 40, 0);
+  ctx.strokeStyle = accent;
+  ctx.globalAlpha = a * 0.6;
+  ctx.lineWidth = 3;
+  roundRect(ctx, PANEL.x, PANEL.y, PANEL.w, PANEL.h, 28);
+  ctx.stroke();
+  ctx.restore();
+}
+
 // ------------------------------------------------------------------ layouts
 
 const CONTENT_TOP = 120;
 const MARGIN = 96;
 
-function headingBlock(ctx: CanvasRenderingContext2D, heading: string, time: number, accent: string, y = CONTENT_TOP) {
+const FULL: Area = { x: MARGIN, w: WIDTH - MARGIN * 2, icon: true };
+
+function headingBlock(ctx: CanvasRenderingContext2D, heading: string, time: number, accent: string, area: Area = FULL, y = CONTENT_TOP) {
   const a = appear(time, 0.1);
   ctx.globalAlpha = a;
   ctx.fillStyle = '#ffffff';
-  ctx.font = font(52, 700);
+  ctx.font = font(area.w < 800 ? 46 : 52, 700);
   ctx.textAlign = 'left';
   ctx.textBaseline = 'top';
-  const lines = wrap(ctx, heading, WIDTH - MARGIN * 2 - 140, 2);
-  const end = drawLines(ctx, lines, MARGIN + (1 - a) * -30, y, 62);
+  ctx.shadowColor = 'rgba(0,0,0,0.35)';
+  ctx.shadowBlur = 12;
+  const lines = wrap(ctx, heading, area.w - (area.icon ? 140 : 0), 2);
+  const end = drawLines(ctx, lines, area.x + (1 - a) * -30, y, area.w < 800 ? 56 : 62);
+  ctx.shadowBlur = 0;
   ctx.fillStyle = accent;
-  ctx.fillRect(MARGIN, end + 14, 90 * a, 6);
+  ctx.fillRect(area.x, end + 14, 90 * a, 6);
   ctx.globalAlpha = 1;
   return end + 44;
 }
@@ -159,15 +247,19 @@ const itemDelay = (i: number, n: number, duration: number) => 0.6 + (i * Math.ma
 
 function drawTitle(ctx: CanvasRenderingContext2D, f: FrameInfo, accent: string) {
   const { scene, time } = f;
-  emoji(ctx, scene.icon, WIDTH / 2, 250, 150, easeBack((time - 0.1) / 0.7));
-  const a = appear(time, 0.5, 0.8);
+  const withPicture = Boolean(f.image);
+  if (!withPicture) emoji(ctx, scene.icon, WIDTH / 2, 250, 150, easeBack((time - 0.1) / 0.7));
+  const a = appear(time, withPicture ? 0.3 : 0.5, 0.8);
   ctx.globalAlpha = a;
   ctx.fillStyle = '#ffffff';
-  ctx.font = font(64, 800);
+  ctx.font = font(withPicture ? 72 : 64, 800);
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
+  ctx.shadowColor = 'rgba(0,0,0,0.5)';
+  ctx.shadowBlur = withPicture ? 24 : 0;
   const lines = wrap(ctx, scene.heading, WIDTH - 240, 2);
-  const end = drawLines(ctx, lines, WIDTH / 2, 360 + (1 - a) * 20, 76);
+  const end = drawLines(ctx, lines, WIDTH / 2, (withPicture ? 330 : 360) + (1 - a) * 20, withPicture ? 84 : 76);
+  ctx.shadowBlur = 0;
   ctx.fillStyle = accent;
   roundRect(ctx, WIDTH / 2 - 60 * a, end + 18, 120 * a, 6, 3);
   ctx.fill();
@@ -180,19 +272,22 @@ function drawTitle(ctx: CanvasRenderingContext2D, f: FrameInfo, accent: string) 
   ctx.globalAlpha = 1;
 }
 
-function drawList(ctx: CanvasRenderingContext2D, f: FrameInfo, accent: string, mode: 'bullets' | 'steps' | 'summary') {
+function drawList(ctx: CanvasRenderingContext2D, f: FrameInfo, accent: string, mode: 'bullets' | 'steps' | 'summary', area: Area = FULL) {
   const { scene, time, duration } = f;
-  cornerIcon(ctx, scene.icon, time);
-  let y = headingBlock(ctx, scene.heading, time, accent) + 10;
+  if (area.icon) cornerIcon(ctx, scene.icon, time);
+  let y = headingBlock(ctx, scene.heading, time, accent, area) + 10;
+  const narrow = area.w < 800;
   const items = scene.bullets;
   items.forEach((item, i) => {
     const a = appear(time, itemDelay(i, items.length, duration), 0.5);
     if (a <= 0) return;
     ctx.globalAlpha = a;
-    const x = MARGIN + (1 - a) * 40;
-    ctx.font = font(36, 500);
-    const lines = wrap(ctx, item, WIDTH - MARGIN * 2 - 100, 2);
-    const h = lines.length * 46 + 26;
+    const x = area.x + (1 - a) * 40;
+    const size = narrow ? 32 : 36;
+    const lineH = narrow ? 42 : 46;
+    ctx.font = font(size, 500);
+    const lines = wrap(ctx, item, area.w - 80, narrow ? 3 : 2);
+    const h = lines.length * lineH + 26;
 
     // marker
     if (mode === 'steps') {
@@ -213,9 +308,12 @@ function drawList(ctx: CanvasRenderingContext2D, f: FrameInfo, accent: string, m
     }
 
     ctx.fillStyle = '#ffffff';
-    ctx.font = font(36, 500);
+    ctx.font = font(size, 500);
     ctx.textAlign = 'left'; ctx.textBaseline = 'top';
-    drawLines(ctx, lines, x + 70, y + 8, 46);
+    ctx.shadowColor = 'rgba(0,0,0,0.35)';
+    ctx.shadowBlur = 10;
+    drawLines(ctx, lines, x + 70, y + 8, lineH);
+    ctx.shadowBlur = 0;
     y += h;
   });
   ctx.globalAlpha = 1;
@@ -267,7 +365,7 @@ function drawCompare(ctx: CanvasRenderingContext2D, f: FrameInfo, accent: string
     ctx.globalAlpha = a;
     ctx.save();
     ctx.translate(0, (1 - a) * 30);
-    ctx.fillStyle = 'rgba(255,255,255,0.08)';
+    ctx.fillStyle = f.image ? 'rgba(2,6,23,0.62)' : 'rgba(255,255,255,0.08)';
     ctx.strokeStyle = c === 0 ? accent : 'rgba(255,255,255,0.5)';
     ctx.lineWidth = 2;
     roundRect(ctx, x, y, colW, cardH, 24);
@@ -312,6 +410,30 @@ export function drawFrame(ctx: CanvasRenderingContext2D, f: FrameInfo) {
     ctx.fillRect(0, 0, WIDTH, HEIGHT);
   });
 
+  // AI picture (if any): full-screen background, or a panel for list layouts
+  const picture = f.image || null;
+  const panelLayout = f.scene.layout === 'bullets' || f.scene.layout === 'steps';
+  if (picture && !panelLayout) {
+    drawPictureBackground(ctx, picture, progress, f.sceneIndex, f.scene.layout === 'title' ? 'bottom' : 'left');
+  }
+
+  if (picture) {
+    // dark band so the top bar stays readable on bright pictures
+    const top = ctx.createLinearGradient(0, 0, 0, 130);
+    top.addColorStop(0, 'rgba(2,6,23,0.7)');
+    top.addColorStop(1, 'rgba(2,6,23,0)');
+    ctx.fillStyle = top;
+    ctx.fillRect(0, 0, WIDTH, 130);
+    if (f.scene.layout === 'title') {
+      // soft dark glow behind the centred title
+      const g = ctx.createRadialGradient(WIDTH / 2, 380, 40, WIDTH / 2, 380, 560);
+      g.addColorStop(0, 'rgba(2,6,23,0.6)');
+      g.addColorStop(1, 'rgba(2,6,23,0)');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, WIDTH, HEIGHT);
+    }
+  }
+
   // top bar: lesson title + scene counter
   ctx.globalAlpha = 0.75;
   ctx.fillStyle = '#ffffff';
@@ -324,13 +446,15 @@ export function drawFrame(ctx: CanvasRenderingContext2D, f: FrameInfo) {
   ctx.globalAlpha = 1;
 
   // scene content
+  const listArea: Area = picture && panelLayout ? { x: MARGIN - 20, w: PANEL.x - MARGIN - 20, icon: false } : FULL;
+  if (picture && panelLayout) drawPicturePanel(ctx, picture, time, progress, f.sceneIndex, palette.accent);
   switch (f.scene.layout) {
     case 'title': drawTitle(ctx, f, palette.accent); break;
     case 'fact': drawFact(ctx, f, palette.accent, palette.glow); break;
     case 'compare': drawCompare(ctx, f, palette.accent); break;
-    case 'steps': drawList(ctx, f, palette.accent, 'steps'); break;
-    case 'summary': drawList(ctx, f, palette.accent, 'summary'); break;
-    default: drawList(ctx, f, palette.accent, 'bullets');
+    case 'steps': drawList(ctx, f, palette.accent, 'steps', listArea); break;
+    case 'summary': drawList(ctx, f, palette.accent, 'summary', picture ? { x: MARGIN, w: 760, icon: false } : FULL); break;
+    default: drawList(ctx, f, palette.accent, 'bullets', listArea);
   }
 
   // captions

@@ -28,6 +28,7 @@ const LESSON_SCHEMA = {
                     icon: str('ONE emoji that represents this scene'),
                     heading: str('Slide heading, max 7 words'),
                     narration: str('What the narrator says during this scene'),
+                    imagePrompt: str('IN ENGLISH: a vivid, concrete description of ONE picture that illustrates this scene (subject, setting, action). No text or words in the picture.'),
                     bullets: strList('Short on-screen points (max 6 words each). bullets/steps: 2-4 items; summary: 3-4; others: empty'),
                     highlight: str('fact layout: a big number, word or short phrase to show. Otherwise empty'),
                     leftTitle: str('compare layout: left column title. Otherwise empty'),
@@ -35,7 +36,7 @@ const LESSON_SCHEMA = {
                     rightTitle: str('compare layout: right column title. Otherwise empty'),
                     right: strList('compare layout: 2-3 short points. Otherwise empty'),
                 },
-                required: ['layout', 'icon', 'heading', 'narration', 'bullets', 'highlight', 'leftTitle', 'left', 'rightTitle', 'right'],
+                required: ['layout', 'icon', 'heading', 'narration', 'imagePrompt', 'bullets', 'highlight', 'leftTitle', 'left', 'rightTitle', 'right'],
             },
         },
         quiz: {
@@ -86,9 +87,10 @@ Structure:
 - In between, choose the layout that best fits each idea: "bullets" (key points), "fact" (one striking number/word), "steps" (a process in order), "compare" (two things side by side).
 - Each scene's narration is ${len.words} words, spoken naturally and flowing on from the previous scene. Never read the bullets word for word; the slide supports what is said.
 - On-screen text must be very short.
+- For every scene, write "imagePrompt" in English: a concrete picture an illustrator could draw that shows the idea of the scene (e.g. "a cross-section of a volcano with glowing red magma rising through cracks"). Never ask for text, labels or diagrams with words.
 - Then write a 3-question multiple-choice quiz (4 options each) about the lesson.
 
-Write ALL text (titles, narration, slides, quiz) in ${languageName(language)}. Emojis stay as emojis.
+Write ALL text (titles, narration, slides, quiz) in ${languageName(language)}, except "imagePrompt", which is always in English. Emojis stay as emojis.
 Stay accurate to the material; do not invent facts.
 
 Material:
@@ -108,6 +110,7 @@ function normalise(raw) {
             icon: clean(s.icon, 16) || '💡',
             heading: clean(s.heading, 90),
             narration: clean(s.narration, 900),
+            imagePrompt: clean(s.imagePrompt, 600),
             bullets: list(s.bullets, 5, 90),
             highlight: clean(s.highlight, 40),
             leftTitle: clean(s.leftTitle, 40),

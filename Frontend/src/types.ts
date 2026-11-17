@@ -120,6 +120,9 @@ export interface LessonScene {
   right: string[];
   audio: string | null;
   duration: number | null;
+  imagePrompt?: string;
+  image?: string | null;
+  imageStatus?: 'pending' | 'done' | 'failed' | 'skipped';
 }
 
 export interface Lesson {
@@ -133,6 +136,9 @@ export interface Lesson {
   voice: string;
   voiceMode: 'gemini' | 'browser';
   voiceNotice?: string | null;
+  visuals?: 'pictures' | 'slides';
+  imageNotice?: string | null;
+  imageProvider?: string | null;
   source: 'text' | 'video';
   sourceVideo: { videoId: string; analysisId: string | null; title: string } | null;
   inputPreview?: string | null;

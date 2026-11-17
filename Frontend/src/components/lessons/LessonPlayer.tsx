@@ -4,7 +4,7 @@ import {
 } from 'lucide-react';
 import { Lesson } from '../../types';
 import { drawFrame, estimateDuration, HEIGHT, WIDTH } from '../../lib/lessonCanvas';
-import { fetchLessonAudio } from '../../services/apiService';
+import { fetchLessonAudio, fetchLessonImage } from '../../services/apiService';
 import { speak, stopSpeaking, hasVoiceFor } from '../../lib/speech';
 import { errorMessage } from '../../lib/errors';
 import QuizView from '../study/QuizView';
@@ -22,6 +22,7 @@ export default function LessonPlayer({ lesson }: LessonPlayerProps) {
 
   const [audioUrls, setAudioUrls] = useState<string[] | null>(useGeminiVoice ? null : []);
   const [audioBlobs, setAudioBlobs] = useState<Blob[]>([]);
+  const [images, setImages] = useState<(ImageBitmap | null)[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [sceneIndex, setSceneIndex] = useState(0);
   const [playing, setPlaying] = useState(false);
@@ -63,6 +64,23 @@ export default function LessonPlayer({ lesson }: LessonPlayerProps) {
     };
   }, [lesson.id, lesson.scenes, useGeminiVoice]);
 
+  // ---- load scene pictures (a missing picture just means that scene shows the drawn slide)
+  useEffect(() => {
+    let cancelled = false;
+    const loaded: (ImageBitmap | null)[] = [];
+    Promise.all(lesson.scenes.map((s, i) => (s.image
+      ? fetchLessonImage(lesson.id, i).catch(() => null)
+      : Promise.resolve(null))))
+      .then((bitmaps) => {
+        loaded.push(...bitmaps);
+        if (!cancelled) setImages(bitmaps);
+      });
+    return () => {
+      cancelled = true;
+      loaded.forEach((b) => b?.close());
+    };
+  }, [lesson.id, lesson.scenes]);
+
   const currentTime = useCallback(() => {
     if (useGeminiVoice) return audioRef.current?.currentTime ?? 0;
     const c = clock.current;
@@ -79,12 +97,13 @@ export default function LessonPlayer({ lesson }: LessonPlayerProps) {
       const time = finished ? duration : Math.min(currentTime(), duration);
       drawFrame(ctx, {
         scene, sceneIndex, sceneCount: lesson.scenes.length, time, duration, lessonTitle: lesson.title, captions,
+        image: images[sceneIndex] || null,
       });
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [scene, sceneIndex, lesson.scenes.length, lesson.title, captions, finished, currentTime, sceneDuration]);
+  }, [scene, sceneIndex, lesson.scenes.length, lesson.title, captions, finished, currentTime, sceneDuration, images]);
 
   // ---- move between scenes
   const next = useCallback(() => {
@@ -144,7 +163,8 @@ export default function LessonPlayer({ lesson }: LessonPlayerProps) {
 
   useEffect(() => () => stopSpeaking(), []);
 
-  const ready = audioUrls !== null;
+  const picturesExpected = lesson.scenes.some((s) => s.image);
+  const ready = audioUrls !== null && (!picturesExpected || images.length === lesson.scenes.length);
 
   const togglePlay = () => {
     if (!ready) return;
@@ -192,6 +212,12 @@ export default function LessonPlayer({ lesson }: LessonPlayerProps) {
 
   return (
     <div className="space-y-4">
+      {lesson.imageNotice && (
+        <div className="flex items-start gap-2 p-3 rounded-xl bg-slate-800/60 border border-slate-700/60 text-slate-300 text-sm">
+          <Info className="w-4 h-4 mt-0.5 shrink-0" />
+          <span>{lesson.imageNotice}</span>
+        </div>
+      )}
       {lesson.voiceNotice && (
         <div className="flex items-start gap-2 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-sm">
           <Info className="w-4 h-4 mt-0.5 shrink-0" />
@@ -222,7 +248,7 @@ export default function LessonPlayer({ lesson }: LessonPlayerProps) {
         {!ready && !loadError && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-slate-950/70 text-slate-300">
             <Loader2 className="w-8 h-8 animate-spin text-indigo-400" />
-            <span className="text-sm">Loading narration…</span>
+            <span className="text-sm">Loading {picturesExpected ? 'pictures and narration' : 'narration'}…</span>
           </div>
         )}
         {loadError && (
@@ -322,7 +348,7 @@ export default function LessonPlayer({ lesson }: LessonPlayerProps) {
       )}
 
       {exporting && (
-        <LessonExport lesson={lesson} audioBlobs={audioBlobs} captions={captions} onClose={() => setExporting(false)} />
+        <LessonExport lesson={lesson} audioBlobs={audioBlobs} images={images} captions={captions} onClose={() => setExporting(false)} />
       )}
     </div>
   );
