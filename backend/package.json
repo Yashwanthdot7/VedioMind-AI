@@ -6,7 +6,8 @@
     "scripts": {
         "start": "node src/app.js",
         "dev": "nodemon src/app.js",
-        "test": "node --test test/*.test.js"
+        "test": "node --test test/*.test.js",
+        "check:supabase": "node scripts/checkSupabase.js"
     },
     "engines": {
         "node": ">=18"

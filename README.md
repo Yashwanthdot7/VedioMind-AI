@@ -67,7 +67,7 @@ npm run dev              # http://localhost:3001
 | `PORT` | | Defaults to `3001` |
 | `CORS_ORIGINS` | | Comma-separated allowed frontend URLs (default `http://localhost:5173`) |
 | `SUPABASE_URL` | for accounts | Supabase → Project Settings → API |
-| `SUPABASE_SERVICE_ROLE_KEY` | for accounts | **Server only — never put this in the frontend** |
+| `SUPABASE_SECRET_KEY` | for accounts | The `sb_secret_…` key (or legacy `SUPABASE_SERVICE_ROLE_KEY`). **Server only — never put this in the frontend or commit it** |
 
 ### 3. Frontend
 
@@ -82,7 +82,7 @@ npm run dev              # http://localhost:5173
 |---|---|---|
 | `VITE_API_URL` | ✅ | Backend URL, e.g. `http://localhost:3001/api` |
 | `VITE_SUPABASE_URL` | for accounts | Same project URL as the backend |
-| `VITE_SUPABASE_ANON_KEY` | for accounts | The public **anon** key |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | for accounts | The public `sb_publishable_…` key (or legacy `VITE_SUPABASE_ANON_KEY`) |
 
 ### 4. Supabase setup (optional, for accounts & library)
 
@@ -92,7 +92,7 @@ npm run dev              # http://localhost:5173
 4. **Authentication → Providers → Google**: enable it and paste a Google OAuth client ID/secret ([guide](https://supabase.com/docs/guides/auth/social-login/auth-google)). Email sign-in works without this step.
 5. Put the URL and keys in both `.env` files and restart.
 
-The backend logs `Supabase: connected` on start when it's set up correctly. `GET /api/health` also reports `"database": true`.
+Then run `cd backend && npm run check:supabase`. It checks every table and storage bucket and tells you what is missing. The backend also logs `Supabase: connected` on start.
 
 ---
 
