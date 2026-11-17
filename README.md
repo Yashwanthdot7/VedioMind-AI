@@ -102,7 +102,7 @@ npm run dev              # http://localhost:5173
 1. Create a project at [supabase.com](https://supabase.com).
 2. **SQL Editor → New query** → paste [`supabase/schema.sql`](supabase/schema.sql) → **Run**.
 3. **Authentication → URL Configuration**: set *Site URL* to your frontend URL (e.g. `http://localhost:5173`) and add it to *Redirect URLs*.
-4. **Authentication → Providers → Google**: enable it and paste a Google OAuth client ID/secret ([guide](https://supabase.com/docs/guides/auth/social-login/auth-google)). Email sign-in works without this step.
+4. **Authentication → Providers → Google**: enable it and paste a Google OAuth client ID/secret ([guide](https://supabase.com/docs/guides/auth/social-login/auth-google)). Then set `VITE_ENABLE_GOOGLE_AUTH=true` in `Frontend/.env` to show the button. Email sign-in works without this step.
 5. Put the URL and keys in both `.env` files and restart.
 
 Then run `cd backend && npm run check:supabase`. It checks every table and storage bucket and tells you what is missing. The backend also logs `Supabase: connected` on start.

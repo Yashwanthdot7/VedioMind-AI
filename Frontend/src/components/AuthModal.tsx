@@ -6,6 +6,9 @@ import { errorMessage } from '../lib/errors';
 
 type Mode = 'signin' | 'signup' | 'reset';
 
+// Google sign-in needs setup in Google Cloud + Supabase, so it's opt-in
+const GOOGLE_ENABLED = import.meta.env.VITE_ENABLE_GOOGLE_AUTH === 'true';
+
 interface AuthModalProps {
   open: boolean;
   onClose: () => void;
@@ -108,7 +111,7 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
               Save your videos, summaries and chats across devices.
             </p>
 
-            {mode !== 'reset' && (
+            {mode !== 'reset' && GOOGLE_ENABLED && (
               <>
                 <button
                   onClick={handleGoogle}
