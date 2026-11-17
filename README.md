@@ -1,43 +1,39 @@
 # 🎬 VideoMind AI
 
-> Transform any YouTube video into AI-powered summaries, smart transcripts, and an interactive chat assistant — instantly.
+> Transform any YouTube video into AI-powered summaries, smart transcripts, and an interactive chat assistant — in 15 languages.
 
 ![Tech Stack](https://img.shields.io/badge/Frontend-React%20%2B%20TypeScript-blue?style=flat-square&logo=react)
 ![Backend](https://img.shields.io/badge/Backend-Node.js%20%2B%20Express-green?style=flat-square&logo=node.js)
 ![AI](https://img.shields.io/badge/AI-Google%20Gemini-orange?style=flat-square&logo=google)
+![Database](https://img.shields.io/badge/Database-Supabase-3ECF8E?style=flat-square&logo=supabase)
 ![License](https://img.shields.io/badge/License-MIT-lightgrey?style=flat-square)
 
 ---
 
 ## ✨ Features
 
-- 📝 **Smart Transcript** — Auto-generated, time-stamped, searchable transcript for any YouTube video
-- 🧠 **AI Insights** — Concise summaries and key takeaways powered by Google Gemini
-- 💬 **Chat with Video** — Ask questions about the video content and get instant AI answers
-- ⚡ **Real-time Processing** — Animated progress overlay with step-by-step status updates
-- 🎨 **Modern UI** — Sleek dark interface with smooth Framer Motion animations
+- 📝 **Smart Transcript** — time-stamped, **searchable** transcript; click any line to jump the video there, and the line that's playing is highlighted
+- 🧠 **AI Insights** — summary and key takeaways from Google Gemini
+- 🌐 **15 output languages** — English, Hindi, Kannada, Tamil, Telugu, Malayalam, Marathi, Bengali, Gujarati, Urdu, Spanish, French, German, Arabic, Japanese
+- 💬 **Chat with the video** — multi-turn conversation that remembers earlier questions; answers cite **clickable timestamps** like `[4:32]`
+- 👤 **Accounts (Supabase)** — sign in with Google or email
+- 📚 **My Library** — every video you summarise is saved with its chat history; search, favourite, or remove videos
+- ⚡ **Shared cache** — a video is analysed once per language; the next request is instant and costs no AI calls
+- 🛡️ **Rate limiting, input validation and clear error messages**
+
+> Supabase is optional. Without it the app runs in **guest mode**: everything works, but nothing is saved.
 
 ---
 
 ## 🛠️ Tech Stack
 
-### Frontend
-| Technology | Purpose |
+| Layer | Technology |
 |---|---|
-| React 18 + TypeScript | UI framework |
-| Vite | Build tool & dev server |
-| Tailwind CSS | Styling |
-| Framer Motion | Animations |
-| Lucide React | Icons |
-
-### Backend
-| Technology | Purpose |
-|---|---|
-| Node.js + Express | REST API server |
-| Google Generative AI (Gemini) | AI summarisation & chat |
-| youtube-transcript | YouTube transcript extraction |
-| ytdl-core / yt-dlp | Video metadata fetching |
-| fluent-ffmpeg | Audio processing |
+| Frontend | React 18, TypeScript, Vite, Tailwind CSS, Framer Motion, Lucide icons, react-youtube |
+| Backend | Node.js, Express, express-rate-limit |
+| AI | Google Gemini (`gemini-2.5-flash` by default) — JSON-mode analysis + multi-turn chat |
+| Data | Supabase — Postgres, Auth (Google + email), Row Level Security |
+| YouTube | `youtube-transcript` (captions), `@distube/ytdl-core` + oEmbed fallback (metadata) |
 
 ---
 
@@ -45,111 +41,141 @@
 
 ### Prerequisites
 - [Node.js](https://nodejs.org/) v18 or higher
-- A [Google Gemini API Key](https://aistudio.google.com/app/apikey) (free)
+- A [Google Gemini API key](https://aistudio.google.com/app/apikey) (free tier works)
+- *(Optional)* a free [Supabase](https://supabase.com) project
 
-### 1. Clone the Repository
+### 1. Clone
 
 ```bash
-git clone https://github.com/your-username/videomind-ai.git
-cd videomind-ai
+git clone https://github.com/Yashwanthdot7/VedioMind-AI.git
+cd VedioMind-AI
 ```
 
-### 2. Set Up the Backend
+### 2. Backend
 
 ```bash
 cd backend
 npm install
-
-# Create your environment file
-cp .env.example .env
+cp .env.example .env     # then edit .env
+npm run dev              # http://localhost:3001
 ```
 
-Open `backend/.env` and add your Gemini API key:
+| Variable | Required | Description |
+|---|---|---|
+| `GEMINI_API_KEY` | ✅ | Your Gemini key |
+| `GEMINI_MODEL` | | Defaults to `gemini-2.5-flash` |
+| `PORT` | | Defaults to `3001` |
+| `CORS_ORIGINS` | | Comma-separated allowed frontend URLs (default `http://localhost:5173`) |
+| `SUPABASE_URL` | for accounts | Supabase → Project Settings → API |
+| `SUPABASE_SERVICE_ROLE_KEY` | for accounts | **Server only — never put this in the frontend** |
 
-```env
-PORT=3001
-GEMINI_API_KEY=your_gemini_api_key_here
-NODE_ENV=development
-```
-
-Start the backend server:
-
-```bash
-npm run dev
-```
-
-The API will be available at `http://localhost:3001`
-
-### 3. Set Up the Frontend
-
-Open a new terminal:
+### 3. Frontend
 
 ```bash
 cd Frontend
 npm install
-npm run dev
+cp .env.example .env     # then edit .env
+npm run dev              # http://localhost:5173
 ```
 
-The app will be available at `http://localhost:5173`
+| Variable | Required | Description |
+|---|---|---|
+| `VITE_API_URL` | ✅ | Backend URL, e.g. `http://localhost:3001/api` |
+| `VITE_SUPABASE_URL` | for accounts | Same project URL as the backend |
+| `VITE_SUPABASE_ANON_KEY` | for accounts | The public **anon** key |
+
+### 4. Supabase setup (optional, for accounts & library)
+
+1. Create a project at [supabase.com](https://supabase.com).
+2. **SQL Editor → New query** → paste [`supabase/schema.sql`](supabase/schema.sql) → **Run**.
+3. **Authentication → URL Configuration**: set *Site URL* to your frontend URL (e.g. `http://localhost:5173`) and add it to *Redirect URLs*.
+4. **Authentication → Providers → Google**: enable it and paste a Google OAuth client ID/secret ([guide](https://supabase.com/docs/guides/auth/social-login/auth-google)). Email sign-in works without this step.
+5. Put the URL and keys in both `.env` files and restart.
+
+The backend logs `Supabase: connected` on start when it's set up correctly. `GET /api/health` also reports `"database": true`.
 
 ---
 
 ## 📁 Project Structure
 
 ```
-VideoMind AI/
+VedioMind-AI/
 ├── backend/
 │   ├── src/
-│   │   ├── controllers/      # Request handlers
-│   │   ├── routes/           # API route definitions
-│   │   ├── services/         # Business logic (Gemini AI, transcript)
-│   │   ├── middleware/       # Error handling
-│   │   ├── utils/            # Helper functions
-│   │   ├── types/            # Shared constants
-│   │   └── app.js            # Express app entry point
-│   ├── .env.example          # Environment variable template
-│   └── package.json
-│
-└── Frontend/
-    ├── src/
-    │   ├── components/
-    │   │   ├── Header.tsx         # URL input & navigation
-    │   │   ├── VideoPlayer.tsx    # Embedded YouTube player
-    │   │   ├── Transcript.tsx     # Smart transcript panel
-    │   │   ├── AIInsights.tsx     # Summary & key takeaways
-    │   │   ├── Chat.tsx           # Interactive Q&A chat
-    │   │   └── ProcessingOverlay.tsx
-    │   ├── services/
-    │   │   └── apiService.ts      # Backend API calls
-    │   ├── App.tsx                # Main layout & state
-    │   └── types.ts               # TypeScript interfaces
-    └── package.json
+│   │   ├── config/          # Supabase client, supported languages
+│   │   ├── controllers/     # video, chat, library request handlers
+│   │   ├── lib/             # AppError, in-memory LRU cache
+│   │   ├── middleware/      # auth, rate limiting, error handling
+│   │   ├── routes/          # API route definitions
+│   │   ├── services/        # Gemini, YouTube, analysisStore (cache + Supabase)
+│   │   ├── types/           # prompts and limits
+│   │   ├── utils/           # input validation
+│   │   └── app.js           # Express app entry point
+│   └── test/                # node:test unit + API tests (YouTube & Gemini mocked)
+├── Frontend/
+│   └── src/
+│       ├── components/      # Header, VideoPlayer, Transcript, AIInsights, Chat,
+│       │                    # RichText, AuthModal, Library, ProcessingOverlay
+│       ├── context/         # AuthContext (Supabase auth)
+│       ├── constants/       # languages
+│       ├── lib/             # supabase client, time helpers, errors
+│       ├── services/        # apiService (backend calls)
+│       └── App.tsx
+└── supabase/
+    └── schema.sql           # tables, RLS policies, storage buckets
 ```
 
 ---
 
 ## 🔌 API Endpoints
 
-| Method | Endpoint | Description |
-|---|---|---|
-| `POST` | `/api/video/process` | Process a YouTube URL and return transcript + summary |
-| `POST` | `/api/chat/ask` | Ask a question about the processed video |
-| `GET` | `/api/health` | Health check |
+All endpoints accept an optional `Authorization: Bearer <supabase access token>` header.
+
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| `GET` | `/api/health` | | Status, plus whether AI and database are configured |
+| `GET` | `/api/languages` | | Supported output languages |
+| `POST` | `/api/video/process` | optional | `{ url, language }` → transcript, summary, takeaways (cached; saved to library when signed in) |
+| `POST` | `/api/video/info` | | `{ url }` → video metadata |
+| `POST` | `/api/chat/conversation` | optional | `{ messages, analysisId?, videoId, language }` → answer (saved when signed in) |
+| `POST` | `/api/chat/ask` | optional | Single question (legacy) |
+| `GET` | `/api/library` | required | Your saved videos |
+| `GET` | `/api/library/:analysisId` | required | Full analysis + saved chat |
+| `PATCH` | `/api/library/:analysisId` | required | `{ isFavorite }` |
+| `DELETE` | `/api/library/:analysisId` | required | Remove video and its chat |
+| `DELETE` | `/api/library/:analysisId/chat` | required | Clear the chat only |
+
+Errors are returned as `{ success: false, code, error }`, e.g. `NO_TRANSCRIPT`, `INVALID_URL`, `RATE_LIMITED`.
 
 ---
 
-## 🖼️ How It Works
+## 🧪 Tests
 
-1. **Paste** a YouTube URL into the search bar
-2. VideoMind AI **fetches** the video transcript and metadata
-3. **Google Gemini** analyses the content and generates a summary & key takeaways
-4. Browse the **Smart Transcript**, read **AI Insights**, or **chat** directly with the video
+```bash
+cd backend && npm test
+cd Frontend && npm run typecheck && npm run lint
+```
+
+---
+
+## ⚠️ Known limitations
+
+- Only videos **with captions/subtitles** can be processed for now. An audio-transcription fallback is planned.
+- YouTube changes its site often. If every video suddenly fails, update `youtube-transcript` and `@distube/ytdl-core` first.
+
+## 🗺️ Roadmap
+
+- [x] Searchable transcript with click-to-seek
+- [x] Multi-language summaries and chat
+- [x] Supabase accounts, library and chat history
+- [ ] Study tools: notes, quiz, flashcards, mind map
+- [ ] Text → explainer video for kids, students and teachers (multi-language narration)
+- [ ] Audio transcription for videos without captions
+- [ ] Deployment (Vercel + Render)
 
 ---
 
 ## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
 
 1. Fork the project
 2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
@@ -159,8 +185,6 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ---
 
----
-
 ## 👨‍💻 Author
 
-Built with ❤️ using React, Node.js, and Google Gemini AI.
+**Yashwanth D** ([@Yashwanthdot7](https://github.com/Yashwanthdot7)) — built with React, Node.js, Supabase and Google Gemini.

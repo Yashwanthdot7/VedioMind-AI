@@ -1,41 +1,42 @@
-const GEMINI_MODELS = {
-    TEXT: 'gemini-2.5-flash',
+const DEFAULT_MODEL = 'gemini-2.5-flash';
+
+const LIMITS = {
+    // Gemini 2.5 Flash has a very large context window; this keeps cost and latency sane
+    TRANSCRIPT_CHARS: 300000,
+    CHAT_TRANSCRIPT_CHARS: 200000,
+    MAX_TAKEAWAYS: 7,
 };
 
 const PROMPTS = {
-    SUMMARY: `You are an expert video content analyzer. Your task is to provide a comprehensive yet concise summary of the following YouTube video.
+    ANALYZE: `You are an expert video content analyst. Analyse the YouTube video below using its transcript.
+Each transcript line starts with a [m:ss] timestamp.
 
-Title: {title}
-Transcript: {transcript}
+Write ALL output in {language}, even if the transcript is in another language.
 
-Please provide:
-1. A high-level overview (2-3 sentences).
-2. Key discussion points.
-3. A concluding summary.
+Return JSON with:
+- "summary": Markdown. Start with a 2-3 sentence overview paragraph. Then a blank line and the key discussion points as "- " bullet points (use **bold** for key terms). Then a blank line and a one-paragraph conclusion. No headings.
+- "keyTakeaways": 5 to 7 concise, actionable, insightful takeaways (plain text, one sentence each).
 
-Focus on the most important information and maintain a professional tone.`,
+Video title: {title}
 
-    KEY_TAKEAWAYS: `Analyze the following video transcript and extract the most important "Key Takeaways".
+Transcript:
+{transcript}`,
 
-Transcript: {transcript}
+    CHAT_SYSTEM: `You are VideoMind AI, a friendly assistant that answers questions about one YouTube video, using its transcript and summary below.
 
-Return the results as a JSON array of strings, for example:
-["Takeaway 1", "Takeaway 2", "Takeaway 3"]
+Rules:
+- Reply in {language} unless the user clearly writes in another language; then reply in their language.
+- Base answers on the video. If the video doesn't cover something, say so briefly, then you may add general knowledge clearly marked as not from the video.
+- When you refer to a specific part of the video, cite its timestamp in square brackets exactly like [4:32] so the user can jump there.
+- Keep answers clear and well structured. Use short paragraphs or "- " bullet points.
 
-Ensure the takeaways are actionable and insightful.`,
+Video title: {title}
 
-    CHAT: `You are VideoMind AI, a helpful assistant that answers questions about YouTube videos based on their transcripts and summaries.
+Summary:
+{summary}
 
-Video Title: {title}
-Summary: {summary}
-Transcript Context: {transcript}
-
-User Question: {question}
-
-Please answer the question accurately based on the provided context. If the information is not present in the context, politely inform the user.`,
+Transcript (each line starts with a [m:ss] timestamp):
+{transcript}`,
 };
 
-module.exports = {
-    GEMINI_MODELS,
-    PROMPTS,
-};
+module.exports = { DEFAULT_MODEL, LIMITS, PROMPTS };

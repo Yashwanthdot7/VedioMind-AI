@@ -1,18 +1,27 @@
 import { useState, useRef, useEffect } from 'react';
-import { MessageCircle, Send, Bot, User, Maximize2, X, Sparkles, Video } from 'lucide-react';
+import { MessageCircle, Send, Bot, User, Maximize2, X, Sparkles, Video, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Message } from '../types';
+import RichText from './RichText';
 
 interface ChatProps {
   messages: Message[];
   onSendMessage: (content: string) => void;
   videoTitle?: string;
+  isTyping?: boolean;
+  onSeek?: (seconds: number) => void;
+  onClear?: () => void;
 }
 
-export default function Chat({ messages, onSendMessage, videoTitle }: ChatProps) {
+const SUGGESTIONS = [
+  'Explain this video like I\'m 10 years old',
+  'What are the most important points?',
+  'Make 5 quiz questions from this video',
+];
+
+export default function Chat({ messages, onSendMessage, videoTitle, isTyping = false, onSeek, onClear }: ChatProps) {
   const [input, setInput] = useState('');
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [isTyping, setIsTyping] = useState(false);
   const [showTransition, setShowTransition] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -43,15 +52,19 @@ export default function Chat({ messages, onSendMessage, videoTitle }: ChatProps)
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (input.trim()) {
+    if (input.trim() && !isTyping) {
       onSendMessage(input.trim());
       setInput('');
-
-      // Show typing indicator
-      setIsTyping(true);
-      setTimeout(() => setIsTyping(false), 1500);
     }
   };
+
+  // Leaving fullscreen should land the user back on the video when they click a timestamp
+  const handleSeek = onSeek
+    ? (seconds: number) => {
+        setIsFullscreen(false);
+        onSeek(seconds);
+      }
+    : undefined;
 
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
@@ -61,7 +74,7 @@ export default function Chat({ messages, onSendMessage, videoTitle }: ChatProps)
   const ChatContent = (
     <div className={`${isFullscreen
         ? 'fixed inset-0 z-[9999] flex flex-col'
-        : 'mt-6 rounded-2xl overflow-hidden backdrop-blur-sm flex flex-col h-[500px]'
+        : 'rounded-2xl overflow-hidden backdrop-blur-sm flex flex-col h-[500px]'
       } ${isFullscreen
         ? 'bg-gradient-to-br from-[#0A0A1F] via-[#0F123D] to-[#1E293B]'
         : 'bg-slate-900/50 border border-slate-800/50'
@@ -91,6 +104,17 @@ export default function Chat({ messages, onSendMessage, videoTitle }: ChatProps)
             </div>
           </div>
 
+          <div className="flex items-center gap-2">
+          {onClear && messages.length > 1 && (
+            <button
+              onClick={onClear}
+              className={`p-2 rounded-full ${isFullscreen ? 'bg-white/5 hover:bg-white/10' : 'bg-slate-800/50 hover:bg-slate-700/50'} transition-all`}
+              title="Clear conversation"
+              aria-label="Clear conversation"
+            >
+              <Trash2 className="w-4 h-4 text-slate-400" />
+            </button>
+          )}
           <button
             onClick={toggleFullscreen}
             className={`p-2 rounded-full ${isFullscreen
@@ -105,6 +129,7 @@ export default function Chat({ messages, onSendMessage, videoTitle }: ChatProps)
               <Maximize2 className="w-4 h-4 text-slate-400" />
             )}
           </button>
+          </div>
         </div>
       </div>
 
@@ -138,9 +163,11 @@ export default function Chat({ messages, onSendMessage, videoTitle }: ChatProps)
                     : 'bg-slate-800/50 text-slate-200 border border-slate-700/50'
                 }`}
             >
-              <p className="text-sm leading-relaxed whitespace-pre-line">
-                {message.content}
-              </p>
+              {message.role === 'assistant' ? (
+                <RichText text={message.content} onSeek={handleSeek} className="text-sm" />
+              ) : (
+                <p className="text-sm leading-relaxed whitespace-pre-line">{message.content}</p>
+              )}
             </div>
 
             {message.role === 'user' && (
@@ -153,6 +180,20 @@ export default function Chat({ messages, onSendMessage, videoTitle }: ChatProps)
             )}
           </motion.div>
         ))}
+
+        {messages.length <= 1 && !isTyping && (
+          <div className="flex flex-wrap gap-2 pt-2">
+            {SUGGESTIONS.map((q) => (
+              <button
+                key={q}
+                onClick={() => onSendMessage(q)}
+                className="px-3 py-1.5 text-xs rounded-full border border-indigo-500/30 bg-indigo-500/10 text-indigo-300 hover:bg-indigo-500/20 transition-colors"
+              >
+                {q}
+              </button>
+            ))}
+          </div>
+        )}
 
         {isTyping && (
           <motion.div
@@ -178,7 +219,6 @@ export default function Chat({ messages, onSendMessage, videoTitle }: ChatProps)
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSubmit(e)}
             placeholder={isFullscreen ? "Ask VideoMind AI anything about this video..." : "Ask anything about the video..."}
             className={`flex-1 px-5 py-3 rounded-full ${isFullscreen
                 ? 'bg-white/10 border border-indigo-400/30 text-white placeholder-slate-400'
@@ -187,7 +227,7 @@ export default function Chat({ messages, onSendMessage, videoTitle }: ChatProps)
           />
           <button
             type="submit"
-            disabled={!input.trim()}
+            disabled={!input.trim() || isTyping}
             className={`${isFullscreen
                 ? 'p-3 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600'
                 : 'px-6 py-3 bg-indigo-600 hover:bg-indigo-500'

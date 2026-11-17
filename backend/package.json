@@ -1,24 +1,25 @@
 {
     "name": "videomind-ai-backend",
-    "version": "1.0.0",
-    "description": "Backend for VideoMind AI - YouTube video transcription and summarization",
+    "version": "1.1.0",
+    "description": "Backend for VideoMind AI - YouTube video transcription, summarisation and chat",
     "main": "src/app.js",
     "scripts": {
         "start": "node src/app.js",
-        "dev": "nodemon src/app.js"
+        "dev": "nodemon src/app.js",
+        "test": "node --test test/*.test.js"
+    },
+    "engines": {
+        "node": ">=18"
     },
     "dependencies": {
         "@distube/ytdl-core": "^4.13.5",
         "@google/generative-ai": "^0.24.1",
-        "axios": "^1.13.6",
+        "@supabase/supabase-js": "^2.57.4",
         "cors": "^2.8.6",
         "dotenv": "^16.6.1",
         "express": "^4.22.1",
-        "fluent-ffmpeg": "^2.1.3",
-        "uuid": "^9.0.1",
-        "youtube-dl-exec": "^2.1.8",
-        "youtube-transcript": "^1.2.1",
-        "ytdl-core": "^4.11.5"
+        "express-rate-limit": "^7.5.0",
+        "youtube-transcript": "^1.2.1"
     },
     "devDependencies": {
         "nodemon": "^3.1.14"

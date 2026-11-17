@@ -1,8 +1,10 @@
 const express = require('express');
-const router = express.Router();
 const chatController = require('../controllers/chatController');
+const { chatLimiter } = require('../middleware/rateLimit');
 
-router.post('/ask', chatController.askQuestion);
-router.post('/conversation', chatController.conversation);
+const router = express.Router();
+
+router.post('/conversation', chatLimiter, chatController.conversation);
+router.post('/ask', chatLimiter, chatController.askQuestion);
 
 module.exports = router;
