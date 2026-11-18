@@ -218,6 +218,7 @@ async function runJob(lesson, material) {
         });
         lesson.title = script.title || lesson.title;
         lesson.quiz = []; // made on demand, only if the viewer asks for it
+        lesson.planning = script.planning || null;
         const wantPictures = lesson.visuals === 'pictures' && imageService.enabled();
         lesson.scenes = script.scenes.map((s) => ({
             ...s, audio: null, duration: null, image: null, imageStatus: wantPictures ? 'pending' : 'skipped',

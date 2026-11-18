@@ -180,6 +180,12 @@ export default function LessonsPage({ currentVideo, preferVideo, defaultLanguage
                 {AUDIENCES.find((a) => a.value === active.audience)?.label} · {languageLabel(active.language)}
                 {active.sourceVideo && <> · from “{active.sourceVideo.title}”</>}
               </p>
+              {active.planning?.method === 'textrank' && (
+                <p className="text-xs text-ink-500 mt-1" title="TextRank picked the key sentences so the lesson covers the whole material">
+                  Long material: {active.planning.kept} key sentences of {active.planning.sentences} were used
+                  ({Math.round(active.planning.inputChars / 1000)}k → {Math.round((active.planning.outputChars || 0) / 1000)}k characters).
+                </p>
+              )}
             </div>
             <LessonPlayer key={active.id} lesson={active} />
           </motion.div>

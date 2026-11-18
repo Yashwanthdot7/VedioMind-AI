@@ -213,6 +213,21 @@ cd Frontend && npm run typecheck && npm run lint
 
 ---
 
+## 📏 Scene planning (TextRank), measured
+
+Long material is condensed before the lesson script is written: TextRank ranks every sentence, the best ones are kept in their original order, and one key idea per scene is suggested across the whole text. It needs no API calls and works in any script (Hindi, Tamil, captions without punctuation…). Set `LESSON_PLANNER=off` to turn it off.
+
+On the [benchmark](backend/eval/scene-planning/) (6 hand-labelled texts, same size budget for every method):
+
+| Budget 25% of the text | Key points covered | ROUGE-1 recall |
+|---|---:|---:|
+| First part only (plain cut-off) | 25% | 0.277 |
+| Evenly spaced sentences | 36% | 0.304 |
+| Random sentences (30 runs) | 41% | 0.346 |
+| **TextRank** | **47%** | **0.409** |
+
+Full tables and limits: [RESULTS.md](backend/eval/scene-planning/RESULTS.md). Reproduce with `node backend/scripts/compareScenePlanning.js`.
+
 ## ⚠️ Known limitations
 
 - Transcripts are fetched from YouTube captions first. If YouTube blocks that (it often does since its 2025 changes) or the video has no captions, **Gemini watches the video and transcribes it**. This works for public videos up to 90 minutes and uses your Gemini quota (free tier: about 8 hours of YouTube video per day).

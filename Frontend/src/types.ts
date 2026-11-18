@@ -138,6 +138,8 @@ export interface Lesson {
   voiceNotice?: string | null;
   visuals?: 'pictures' | 'slides';
   imageNotice?: string | null;
+  /** How long material was condensed before writing the script */
+  planning?: { method: 'textrank' | 'none'; inputChars: number; outputChars?: number; sentences?: number; kept?: number; ideas?: number } | null;
   imageProvider?: string | null;
   source: 'text' | 'video';
   sourceVideo: { videoId: string; analysisId: string | null; title: string } | null;

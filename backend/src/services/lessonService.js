@@ -1,8 +1,9 @@
 const { SchemaType } = require('@google/generative-ai');
 const AppError = require('../lib/AppError');
 const geminiService = require('./geminiService');
-const { formatTranscript, wrapGeminiError } = require('./geminiService');
+const { wrapGeminiError } = require('./geminiService');
 const { languageName } = require('../config/languages');
+const textrank = require('./textrank');
 
 /**
  * Writes the script for a narrated video lesson: a list of scenes, each with
@@ -60,12 +61,29 @@ const AUDIENCE = {
 };
 
 const LENGTHS = {
-    short: { scenes: '5-6', words: '25-35', label: 'about 1 minute' },
-    standard: { scenes: '8-10', words: '30-45', label: 'about 2-3 minutes' },
+    short: { scenes: '5-6', sceneCount: 6, words: '25-35', label: 'about 1 minute', budget: 6000 },
+    standard: { scenes: '8-10', sceneCount: 9, words: '30-45', label: 'about 2-3 minutes', budget: 10000 },
 };
 
-function buildPrompt({ material, audience, language, length }) {
+/** Planner: "textrank" (default) condenses long material first; "off" sends it as is */
+const plannerEnabled = () => (process.env.LESSON_PLANNER || 'textrank').toLowerCase() !== 'off';
+
+/**
+ * Long material (big notes, a 40-minute transcript) is condensed to its key sentences
+ * with TextRank, and one key idea per scene is suggested, spread across the material.
+ * Short material goes to the model unchanged.
+ */
+function planMaterial(material, length) {
+    const len = LENGTHS[length] || LENGTHS.short;
+    if (!plannerEnabled()) return { planned: false, material, plan: [], stats: null };
+    return textrank.planLesson(material, { maxChars: len.budget, sceneCount: len.sceneCount });
+}
+
+function buildPrompt({ material, audience, language, length, plan = [] }) {
     const len = LENGTHS[length];
+    const planText = plan.length
+        ? `\nThe material was condensed to its key sentences. Suggested key ideas, in order (one or two scenes each; merge or skip if they repeat):\n${plan.map((p, i) => `${i + 1}. ${p}`).join('\n')}\n`
+        : '';
     return `You are an expert educator and video script writer. Create a narrated explainer video lesson (${len.label}) from the material below.
 
 ${AUDIENCE[audience].guide}
@@ -79,7 +97,7 @@ Structure:
 
 Write ALL text (titles, narration, slides) in ${languageName(language)}, except "imagePrompt", which is always in English. Emojis stay as emojis.
 Stay accurate to the material; do not invent facts.
-
+${planText}
 Material:
 ${material}`;
 }
@@ -196,18 +214,20 @@ ${scenes}`;
     return questions;
 }
 
-/** Material from a processed YouTube video */
+/** Material from a processed YouTube video (plain transcript text: timestamps aren't needed for a lesson) */
 function materialFromVideo(context) {
+    const transcript = (context.transcript || []).map((s) => s.text).join(' ').replace(/\s+/g, ' ').slice(0, 120000);
     return `Video title: ${context.title}
 
 Summary:
 ${context.summary || ''}
 
 Transcript:
-${formatTranscript(context.transcript, 120000)}`;
+${transcript}`;
 }
 
 async function writeScript({ material, audience, language, length }) {
+    const planning = planMaterial(material, length);
     const options = {
         generationConfig: {
             responseMimeType: 'application/json',
@@ -219,7 +239,7 @@ async function writeScript({ material, audience, language, length }) {
     let raw;
     try {
         raw = await geminiService.withModel(options, async (model) => {
-            const result = await model.generateContent(buildPrompt({ material, audience, language, length }));
+            const result = await model.generateContent(buildPrompt({ material: planning.material, audience, language, length, plan: planning.plan }));
             return result.response.text();
         });
     } catch (error) {
@@ -235,9 +255,12 @@ async function writeScript({ material, audience, language, length }) {
     if (lesson.scenes.length < 2) {
         throw new AppError('The AI could not write a lesson from this material. Try adding more detail.', 422, 'AI_BAD_OUTPUT');
     }
+    lesson.planning = planning.planned
+        ? { method: 'textrank', ...planning.stats, ideas: planning.plan.length }
+        : { method: 'none', inputChars: String(material).length };
     return lesson;
 }
 
 module.exports = {
-    LAYOUTS, AUDIENCE, LENGTHS, LESSON_SCHEMA, QUIZ_KINDS, buildPrompt, normalise, normaliseQuiz, materialFromVideo, writeScript, writeQuiz,
+    LAYOUTS, AUDIENCE, LENGTHS, LESSON_SCHEMA, QUIZ_KINDS, buildPrompt, planMaterial, normalise, normaliseQuiz, materialFromVideo, writeScript, writeQuiz,
 };
