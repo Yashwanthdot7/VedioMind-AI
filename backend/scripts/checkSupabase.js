@@ -5,8 +5,8 @@
 require('dotenv').config();
 const { supabase } = require('../src/config/supabase');
 
-const TABLES = ['profiles', 'video_analyses', 'user_library', 'chat_sessions', 'chat_messages', 'study_materials', 'generated_videos'];
-const BUCKETS = ['uploads', 'generated-videos'];
+const TABLES = ['profiles', 'video_analyses', 'user_library', 'chat_sessions', 'chat_messages', 'study_materials', 'generated_videos', 'quiz_attempts', 'courses'];
+const BUCKETS = ['uploads', 'generated-videos', 'lessons'];
 
 (async () => {
     if (!supabase) {
@@ -21,7 +21,7 @@ const BUCKETS = ['uploads', 'generated-videos'];
         if (error) {
             ok = false;
             const hint = error.code === '42P01' || /does not exist|schema cache/i.test(error.message)
-                ? ' → run supabase/schema.sql in the SQL Editor'
+                ? ' → run supabase/schema.sql (or the newest migration) in the SQL Editor'
                 : /invalid|jwt|api key/i.test(error.message) ? ' → check SUPABASE_SECRET_KEY' : '';
             console.log(`✗ table ${table}: ${error.message}${hint}`);
         } else {
@@ -37,7 +37,7 @@ const BUCKETS = ['uploads', 'generated-videos'];
         for (const name of BUCKETS) {
             const found = buckets.some((b) => b.id === name);
             if (!found) ok = false;
-            console.log(`${found ? '✓' : '✗'} bucket ${name}${found ? '' : ' → run supabase/schema.sql'}`);
+            console.log(`${found ? '✓' : '✗'} bucket ${name}${found ? '' : ' → run supabase/schema.sql (or the newest migration)'}`);
         }
     }
 

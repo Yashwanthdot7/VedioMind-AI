@@ -1,59 +1,88 @@
-# 🎬 VideoMind AI
+# VideoMind AI
 
-> Transform any YouTube video into AI-powered summaries, smart transcripts, and an interactive chat assistant — in 15 languages.
+Turn any YouTube video into a transcript, summary, study kit and a tutor you can question, or turn a topic into a narrated video lesson or a short course. In 15 languages, including 8 Indian ones, on free tiers only.
 
-![Tech Stack](https://img.shields.io/badge/Frontend-React%20%2B%20TypeScript-blue?style=flat-square&logo=react)
-![Backend](https://img.shields.io/badge/Backend-Node.js%20%2B%20Express-green?style=flat-square&logo=node.js)
-![AI](https://img.shields.io/badge/AI-Google%20Gemini-orange?style=flat-square&logo=google)
-![Database](https://img.shields.io/badge/Database-Supabase-3ECF8E?style=flat-square&logo=supabase)
+[![CI](https://github.com/Yashwanthdot7/VedioMind-AI/actions/workflows/ci.yml/badge.svg)](https://github.com/Yashwanthdot7/VedioMind-AI/actions/workflows/ci.yml)
+![React](https://img.shields.io/badge/React%2018-TypeScript-blue?style=flat-square&logo=react)
+![Node](https://img.shields.io/badge/Node.js-Express-green?style=flat-square&logo=node.js)
+![Gemini](https://img.shields.io/badge/AI-Google%20Gemini-orange?style=flat-square&logo=google)
+![Supabase](https://img.shields.io/badge/Database-Supabase-3ECF8E?style=flat-square&logo=supabase)
 ![License](https://img.shields.io/badge/License-MIT-lightgrey?style=flat-square)
 
----
+![Demo: summarize a video, ask the tutor, make a 4-module course and play it](docs/demo.gif)
 
-## ✨ Features
+<sub>Demo recorded against the local test backend (a stand-in YouTube player and canned AI replies), so it runs offline. Real runs use YouTube and Gemini.</sub>
 
-- 📝 **Smart Transcript** — time-stamped, **searchable** transcript; click any line to jump the video there, and the line that's playing is highlighted
-- 🧠 **AI Insights** — summary and key takeaways from Google Gemini
-- 🌐 **15 output languages** — English, Hindi, Kannada, Tamil, Telugu, Malayalam, Marathi, Bengali, Gujarati, Urdu, Spanish, French, German, Arabic, Japanese
-- 💬 **Chat with the video** — multi-turn conversation that remembers earlier questions; answers cite **clickable timestamps** like `[4:32]`
-- 🎓 **Study Tools** — one click turns any video into:
-  - 📒 **Notes** with sections, key terms and timestamps (download as Markdown)
-  - ✅ **Quiz** — 8 multiple-choice questions with explanations and a score (printable with answer key)
-  - 🃏 **Flashcards** — flip cards, shuffle, track what you know (export to Anki/Quizlet CSV)
-  - 🧠 **Mind map** — see how the ideas connect, click a branch to jump to it (download as SVG)
-  - Three levels: **Kids**, **Student** and **Teacher**, in any of the 15 languages
-- 🎬 **Video lessons (text → video)**: type a topic, paste notes, or pick a YouTube video, and get a narrated, animated explainer video
-  - AI-written scene script for **Kids**, **Students** or **Teachers**, in any of the 15 languages
-  - AI narration (Gemini text-to-speech, free tier) with 6 voices, plus captions
-  - **3D educational renders in every scene** (FLUX, free via Cloudflare Workers AI or Pollinations): cute Pixar-like 3D for kids, cutaway models for students and teachers, with slow zoom-and-pan motion; or plain animated slides if you prefer
-  - Six scene layouts (title, key points, big fact, steps, compare, recap)
-  - Live progress: the script, pictures and narration appear scene by scene as they're made
-  - **Quiz on demand**: the video is made first; a Quick quiz (5) or Full test (10, mixed difficulty) is generated only when you ask, so lessons finish faster
-  - **Download as MP4**, recorded in your browser (no server rendering and no cost)
-  - If the free AI voice quota runs out, lessons still play using your **browser's built-in voice**
-- 📊 **Quiz analytics**: every quiz and test is saved with its score and an A+ to D grade. The **Analytics** page shows summary tiles (quizzes, average, best, day streak, time spent), score over time, accuracy by difficulty, grade spread, quizzes worth revisiting, and the full history, with date-range and quiz-type filters. History is saved to your account when signed in, otherwise in your browser (and can be imported after signing in).
-- 👤 **Accounts (Supabase)** — sign in with Google or email
-- 📚 **My Library** — every video you summarise is saved with its chat history; search, favourite, or remove videos
-- ⚡ **Shared cache** — a video is analysed once per language; the next request is instant and costs no AI calls
-- 🛡️ **Rate limiting, input validation and clear error messages**
+## What it does
 
-> Supabase is optional. Without it the app runs in **guest mode**: everything works, but nothing is saved.
+**Understand a video.** Paste a YouTube link and get:
+- a searchable transcript that follows the video and jumps to any line
+- a summary with key takeaways
+- a chat tutor whose answers cite clickable timestamps
 
----
+**Study it.** One click makes notes, an 8-question quiz, flashcards or a mind map, at Kids, Student or Teacher level. Notes export as Markdown, flashcards as Anki or Quizlet CSV, and the mind map as SVG.
 
-## 🛠️ Tech Stack
+**Learn a topic as video.** Type a topic, paste notes, or pick a summarized video:
+- **One lesson:** a narrated explainer with a 3D-style AI picture in every scene, Gemini voices, captions and MP4 download.
+- **A course:** the same material split into 3 to 5 modules that build on each other. Module 1 plays while the rest are being made.
+- Quizzes and tests are made only when you ask for them.
+
+**Track progress.** Every quiz is graded A+ to D. The progress page shows score over time, accuracy by difficulty, streaks and the questions worth revisiting.
+
+## Engineering highlights
+
+- **TextRank scene planning, measured.** Long notes and 40-minute transcripts are condensed to their key sentences before the script is written. It works in any script, including captions with no punctuation. On a hand-labelled benchmark with a 25% budget it covers nearly twice as many key points as cutting the text off (47% vs 25%, details below).
+- **Course pipeline.** Gemini outlines the modules. Each sentence of the source then goes to the module it's about, and the modules are generated one at a time as background jobs with live progress. If one module fails, the course keeps the others.
+- **Free-tier design, with no paid fallback anywhere:**
+  - Transcripts: YouTube captions → youtubei.js → Gemini watching the video.
+  - Pictures: Cloudflare FLUX → Pollinations → drawn slides.
+  - Voice: Gemini TTS → the browser's own voice.
+  - Hitting a quota degrades the result instead of sending a bill.
+- **Background jobs.** Lessons and courses return at once and fill in scene by scene: script, then pictures and narration in parallel. Files are kept in Supabase Storage so they survive restarts on free hosts.
+- **MP4 export in the browser.** A canvas renderer plus MediaRecorder, so there is no render server.
+- **Multi-script UI.** The Anek type family covers Latin and seven Indian scripts.
+- **Security.** Supabase Row Level Security, server-computed quiz grades, per-user rate limits, and the secret key kept on the server.
+- **Tests.** 67 backend tests (YouTube, Gemini, voice and pictures faked) plus typecheck, lint and build, run on every push by [GitHub Actions](.github/workflows/ci.yml).
+
+## Architecture
+
+```mermaid
+flowchart LR
+  UI[React + Vite<br/>Tailwind, Framer Motion] -->|REST + Supabase JWT| API[Express API]
+  UI -->|sign in| Auth[Supabase Auth]
+  API --> YT[YouTube captions<br/>youtubei.js]
+  API --> G[Gemini Flash<br/>analysis, chat, scripts, TTS]
+  API --> IMG[Cloudflare FLUX<br/>or Pollinations]
+  API --> TR[TextRank planner]
+  API --> DB[(Supabase Postgres<br/>RLS)]
+  API --> ST[(Supabase Storage<br/>lesson files)]
+  UI -->|canvas + MediaRecorder| MP4[MP4 download]
+```
+
+## Scene planning, measured
+
+What should the script writer read when the material is too long for it? Four methods were compared at the same character budget on [6 hand-labelled texts](backend/eval/scene-planning/): lecture transcripts, textbook notes, unpunctuated auto-captions and a Hindi text.
+
+| Budget: 25% of the text | Key points covered | ROUGE-1 recall | ROUGE-2 recall |
+|---|---:|---:|---:|
+| First part only (plain cut-off, the old behaviour) | 25% | 0.277 | 0.099 |
+| Evenly spaced sentences | 36% | 0.304 | 0.108 |
+| Random sentences (mean of 30 runs) | 41% | 0.346 | 0.128 |
+| **TextRank** | **47%** | **0.409** | **0.173** |
+
+The 40% budget shows the same order. The set is small, and one document shows no gain; both are noted in [RESULTS.md](backend/eval/scene-planning/RESULTS.md) and the [benchmark README](backend/eval/scene-planning/README.md). To reproduce, run `node backend/scripts/compareScenePlanning.js`. Add `--live` to compare real Gemini lessons (needs a key). CI prints the table on every run.
+
+## Tech stack
 
 | Layer | Technology |
 |---|---|
-| Frontend | React 18, TypeScript, Vite, Tailwind CSS, Framer Motion, Lucide icons, react-youtube |
-| Backend | Node.js, Express, express-rate-limit |
-| AI | Google Gemini Flash (auto-selected, with fallback) — JSON-mode analysis, multi-turn chat, video transcription |
-| Data | Supabase — Postgres, Auth (Google + email), Row Level Security |
-| YouTube | Captions via `youtube-transcript` → `youtubei.js` → Gemini watching the video; metadata via youtubei.js → oEmbed |
+| Frontend | React 18, TypeScript, Vite 8, Tailwind CSS, Framer Motion, Lucide, react-youtube |
+| Backend | Node.js, Express, express-rate-limit, node:test |
+| AI | Gemini Flash (auto-selected with fallback): JSON-mode analysis, chat, scripts, course outlines, TTS. FLUX.1-schnell for pictures |
+| Data | Supabase Postgres, Auth (email, optional Google), Row Level Security, Storage |
+| CI | GitHub Actions: backend tests, frontend typecheck, lint and build |
 
----
-
-## 🚀 Getting Started
+## Getting started
 
 ### Prerequisites
 - [Node.js](https://nodejs.org/) **v20.19+ or v22.12+** (required by Vite 8)
@@ -98,6 +127,7 @@ npm run dev              # http://localhost:3001
 | `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN` | optional | Free AI pictures (~170/day, no card). See below |
 | `POLLINATIONS_TOKEN` | optional | Pictures work without it; a free token makes them faster |
 | `SUPABASE_URL` | for accounts | Supabase → Project Settings → API |
+| `LESSON_PLANNER` | | `textrank` (default) condenses long lesson material first; `off` sends it as is |
 | `SUPABASE_SECRET_KEY` | for accounts | The `sb_secret_…` key (or legacy `SUPABASE_SERVICE_ROLE_KEY`). **Server only — never put this in the frontend or commit it** |
 
 ### 2b. Frontend (separately)
@@ -130,47 +160,44 @@ The free plan gives 10,000 Neurons a day, about 170 pictures (about 25 lessons).
 
 1. Create a project at [supabase.com](https://supabase.com).
 2. **SQL Editor → New query** → paste [`supabase/schema.sql`](supabase/schema.sql) → **Run**.
-   - Already ran it before quiz analytics existed? Just run [`supabase/migrations/002_quiz_attempts.sql`](supabase/migrations/002_quiz_attempts.sql) once.
+   - Already ran it before? Run the migrations you don't have yet, once each: [`002_quiz_attempts.sql`](supabase/migrations/002_quiz_attempts.sql) (quiz analytics), [`003_courses.sql`](supabase/migrations/003_courses.sql) (courses and the lesson files bucket).
 3. **Authentication → URL Configuration**: set *Site URL* to your frontend URL (e.g. `http://localhost:5173`) and add it to *Redirect URLs*.
 4. **Authentication → Providers → Google**: enable it and paste a Google OAuth client ID/secret ([guide](https://supabase.com/docs/guides/auth/social-login/auth-google)). Then set `VITE_ENABLE_GOOGLE_AUTH=true` in `Frontend/.env` to show the button. Email sign-in works without this step.
 5. Put the URL and keys in both `.env` files and restart.
 
 Then run `cd backend && npm run check:supabase`. It checks every table and storage bucket and tells you what is missing. The backend also logs `Supabase: connected` on start.
 
----
-
-## 📁 Project Structure
+## Project structure
 
 ```
 VedioMind-AI/
 ├── backend/
 │   ├── src/
-│   │   ├── config/          # Supabase client, supported languages
-│   │   ├── controllers/     # video, chat, library request handlers
-│   │   ├── lib/             # AppError, in-memory LRU cache
-│   │   ├── middleware/      # auth, rate limiting, error handling
-│   │   ├── routes/          # API route definitions
-│   │   ├── services/        # Gemini, YouTube, analysisStore (cache + Supabase)
-│   │   ├── types/           # prompts and limits
-│   │   ├── utils/           # input validation
-│   │   └── app.js           # Express app entry point
-│   └── test/                # node:test unit + API tests (YouTube & Gemini mocked)
-├── Frontend/
-│   └── src/
-│       ├── components/      # Header, VideoPlayer, Transcript, AIInsights, Chat,
-│       │                    # RichText, AuthModal, Library, ProcessingOverlay
-│       ├── context/         # AuthContext (Supabase auth)
-│       ├── constants/       # languages
-│       ├── lib/             # supabase client, time helpers, errors
-│       ├── services/        # apiService (backend calls)
-│       └── App.tsx
-└── supabase/
-    └── schema.sql           # tables, RLS policies, storage buckets
+│   │   ├── controllers/   video, chat, library, study, lessons, courses, quiz attempts
+│   │   ├── services/      gemini, youtube, textrank, lessonService/Jobs, courseService/Jobs,
+│   │   │                  lessonFiles (disk + Supabase Storage), tts, images, study
+│   │   ├── middleware/    auth, rate limits, errors
+│   │   └── app.js
+│   ├── eval/scene-planning/   labelled benchmark texts and results
+│   ├── scripts/               compareScenePlanning, checkSupabase, checkVideo
+│   └── test/                  node:test suites (external services faked)
+├── Frontend/src/
+│   ├── components/
+│   │   ├── shell/         sidebar, mobile tab bar, link bar
+│   │   ├── home/          home page
+│   │   ├── lessons/       lesson form, player, progress, MP4 export, course player
+│   │   ├── study/         notes, quiz, flashcards, mind map
+│   │   └── analytics/     progress page and charts
+│   ├── lib/               lesson canvas renderer, attempts, analytics, speech
+│   └── services/          API client
+├── supabase/              schema.sql and migrations
+└── .github/workflows/     CI
 ```
 
----
+## API
 
-## 🔌 API Endpoints
+<details>
+<summary>All endpoints</summary>
 
 All endpoints accept an optional `Authorization: Bearer <supabase access token>` header.
 
@@ -191,6 +218,10 @@ All endpoints accept an optional `Authorization: Bearer <supabase access token>`
 | `GET` | `/api/lessons` | required | Your lessons |
 | `DELETE` | `/api/lessons/:id` | owner | Delete a lesson |
 | `GET` | `/api/lessons/options` | | Voices and lengths |
+| `POST` | `/api/courses` | optional | Create a course: same body as a lesson plus `modules: 3-5`. Returns at once; modules are made one after another |
+| `GET` | `/api/courses/:id` | owner | Course outline with every module's status, progress and `lessonId` |
+| `GET` | `/api/courses` | required | Your courses |
+| `DELETE` | `/api/courses/:id` | owner | Delete a course and all its module lessons |
 | `GET` | `/api/quiz-attempts` | required | Your quiz history, newest first |
 | `POST` | `/api/quiz-attempts` | required | Save a finished quiz `{ source, kind, title, language, answers[{chosen, answer, difficulty}], durationSec, … }`. Score and grade are computed on the server |
 | `DELETE` | `/api/quiz-attempts[/:id]` | required | Delete one attempt, or clear your history |
@@ -202,49 +233,38 @@ All endpoints accept an optional `Authorization: Bearer <supabase access token>`
 
 Errors are returned as `{ success: false, code, error }`, e.g. `NO_TRANSCRIPT`, `INVALID_URL`, `RATE_LIMITED`.
 
----
+</details>
 
-## 🧪 Tests
+## Tests
 
 ```bash
-cd backend && npm test
-cd Frontend && npm run typecheck && npm run lint
+cd backend && npm test                      # 67 tests, no network or API key needed
+cd Frontend && npm run typecheck && npm run lint && npm run build
+node backend/scripts/compareScenePlanning.js   # scene planning benchmark
 ```
 
----
-
-## ⚠️ Known limitations
+## Known limitations
 
 - Transcripts are fetched from YouTube captions first. If YouTube blocks that (it often does since its 2025 changes) or the video has no captions, **Gemini watches the video and transcribes it**. This works for public videos up to 90 minutes and uses your Gemini quota (free tier: about 8 hours of YouTube video per day).
 - Private and unlisted videos can't be processed.
-- **Everything runs on free tiers.** Keep billing off on your Gemini key and you can never be charged: hitting a limit only returns "try again later". Video lesson audio is stored on your own disk in `backend/storage/` (not in Supabase), so it doesn't use your Supabase quota.
+- **Everything runs on free tiers.** Keep billing off on your Gemini key and you can never be charged: hitting a limit only returns "try again later". Lesson files (narration WAV, pictures) are kept on disk and, when Supabase is set up, in a private Storage bucket (free plan: 1 GB, about 300 one-minute lessons).
 - MP4 export records in real time, so a 2-minute lesson takes about 2 minutes to save. Keep the tab open while it records. Chrome or Edge on Windows produce MP4; browsers that can't record MP4 save WebM instead.
 - Debug a video from the command line: `npm run check:video --prefix backend -- "<YouTube URL>" --ai`
 
-## 🗺️ Roadmap
+## Roadmap
 
-- [x] Searchable transcript with click-to-seek
-- [x] Multi-language summaries and chat
-- [x] Supabase accounts, library and chat history
-- [x] Study tools: notes, quiz, flashcards, mind map (Kids / Student / Teacher levels)
-- [x] Text → explainer video for kids, students and teachers (multi-language narration, MP4 download)
-- [x] AI transcription for videos without captions
-- [x] Quiz analytics: score history, grades, charts
-- [ ] Frontend redesign
-- [ ] Deployment (Vercel + Render)
+- [x] Searchable transcript, summaries and chat in 15 languages
+- [x] Accounts, library and chat history (Supabase)
+- [x] Study tools at three levels
+- [x] Text to narrated video lessons with AI pictures and MP4 download
+- [x] Quiz analytics
+- [x] Frontend redesign
+- [x] TextRank scene planning, measured
+- [x] Course mode
+- [ ] Free deployment (Vercel + Render)
 
----
+## Author
 
-## 🤝 Contributing
+**Yashwanth D** ([@Yashwanthdot7](https://github.com/Yashwanthdot7)), Information Science & Engineering, BGSCET Bengaluru.
 
-1. Fork the project
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
----
-
-## 👨‍💻 Author
-
-**Yashwanth D** ([@Yashwanthdot7](https://github.com/Yashwanthdot7)) — built with React, Node.js, Supabase and Google Gemini.
+Licensed under the [MIT License](LICENSE).

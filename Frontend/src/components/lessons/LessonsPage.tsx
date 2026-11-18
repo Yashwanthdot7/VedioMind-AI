@@ -1,17 +1,18 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
-  Clapperboard, Sparkles, Youtube, PenLine, Loader2, AlertCircle, Trash2, ArrowLeft, Wand2, Image as ImageIcon, LayoutTemplate,
+  Clapperboard, Sparkles, Youtube, PenLine, Loader2, AlertCircle, Trash2, ArrowLeft, Wand2, Image as ImageIcon, LayoutTemplate, ListTree, Film,
 } from 'lucide-react';
-import { Lesson, LessonAudience, LessonSummary, VideoData } from '../../types';
+import { Course, CourseSummary, Lesson, LessonAudience, LessonSummary, VideoData } from '../../types';
 import {
-  createLesson, deleteLesson, getLesson, getLessonOptions, listLessons, LessonOptions,
+  createCourse, createLesson, deleteCourse, deleteLesson, getCourse, getLesson, getLessonOptions, listCourses, listLessons, LessonOptions,
 } from '../../services/apiService';
 import { LANGUAGES, languageLabel } from '../../constants/languages';
 import { useAuth } from '../../context/AuthContext';
 import { errorMessage } from '../../lib/errors';
 import LessonPlayer from './LessonPlayer';
 import LessonProgress from './LessonProgress';
+import CoursePlayer from './CoursePlayer';
 
 interface LessonsPageProps {
   /** The video open on the dashboard, offered as a source */
@@ -61,6 +62,29 @@ function rememberRecent(lesson: Lesson) {
   }
 }
 
+const RECENT_COURSES_KEY = 'videomind.recentCourses';
+
+function loadRecentCourses(): CourseSummary[] {
+  try {
+    const raw = localStorage.getItem(RECENT_COURSES_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+function rememberCourse(course: Course) {
+  try {
+    const item: CourseSummary = {
+      id: course.id, title: course.title, status: course.status, language: course.language,
+      audience: course.audience, moduleCount: course.modules.length || course.moduleCount, createdAt: course.createdAt,
+    };
+    const list = [item, ...loadRecentCourses().filter((c) => c.id !== course.id)].slice(0, 20);
+    localStorage.setItem(RECENT_COURSES_KEY, JSON.stringify(list));
+  } catch {
+    /* storage unavailable */
+  }
+}
+
 export default function LessonsPage({ currentVideo, preferVideo, defaultLanguage, initialText = '' }: LessonsPageProps) {
   const { user } = useAuth();
   const [options, setOptions] = useState<LessonOptions | null>(null);
@@ -71,12 +95,17 @@ export default function LessonsPage({ currentVideo, preferVideo, defaultLanguage
   const [length, setLength] = useState<'short' | 'standard'>('short');
   const [voice, setVoice] = useState<string>('');
   const [visuals, setVisuals] = useState<'pictures' | 'slides'>('pictures');
+  const [format, setFormat] = useState<'lesson' | 'course'>('lesson');
+  const [moduleCount, setModuleCount] = useState(4);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [active, setActive] = useState<Lesson | null>(null);
   const [lessons, setLessons] = useState<LessonSummary[]>([]);
+  const [activeCourse, setActiveCourse] = useState<Course | null>(null);
+  const [courses, setCourses] = useState<CourseSummary[]>([]);
   const pollRef = useRef<number>(0);
+  const coursePollRef = useRef<number>(0);
 
   useEffect(() => {
     getLessonOptions().then(setOptions).catch(() => {});
@@ -85,12 +114,15 @@ export default function LessonsPage({ currentVideo, preferVideo, defaultLanguage
   const refreshList = useCallback(async () => {
     if (user) {
       try {
-        setLessons(await listLessons());
+        const [l, c] = await Promise.all([listLessons(), listCourses().catch(() => [])]);
+        setLessons(l);
+        setCourses(c);
       } catch {
         /* list is optional */
       }
     } else {
       setLessons(loadRecent());
+      setCourses(loadRecentCourses());
     }
   }, [user]);
 
@@ -115,6 +147,47 @@ export default function LessonsPage({ currentVideo, preferVideo, defaultLanguage
   }, [user, refreshList]);
 
   useEffect(() => () => window.clearTimeout(pollRef.current), []);
+
+  // Poll a course until every module is made
+  const watchCourse = useCallback((course: Course) => {
+    window.clearTimeout(coursePollRef.current);
+    setActiveCourse(course);
+    if (!user) rememberCourse(course);
+    if (course.status === 'done' || course.status === 'failed') {
+      refreshList();
+      return;
+    }
+    coursePollRef.current = window.setTimeout(async () => {
+      try {
+        watchCourse(await getCourse(course.id));
+      } catch (err) {
+        setActiveCourse({ ...course, status: 'failed', error: errorMessage(err) });
+      }
+    }, 3000);
+  }, [user, refreshList]);
+
+  useEffect(() => () => window.clearTimeout(coursePollRef.current), []);
+
+  const openCourse = async (id: string) => {
+    setError(null);
+    try {
+      watchCourse(await getCourse(id));
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (err) {
+      setError(errorMessage(err));
+    }
+  };
+
+  const removeCourse = async (item: CourseSummary) => {
+    if (!window.confirm(`Delete the course “${item.title}” and all its modules?`)) return;
+    try {
+      if (user) await deleteCourse(item.id);
+      else localStorage.setItem(RECENT_COURSES_KEY, JSON.stringify(loadRecentCourses().filter((c) => c.id !== item.id)));
+      refreshList();
+    } catch (err) {
+      setError(errorMessage(err));
+    }
+  };
 
   const open = async (id: string) => {
     setError(null);
@@ -144,16 +217,16 @@ export default function LessonsPage({ currentVideo, preferVideo, defaultLanguage
     setError(null);
     setSubmitting(true);
     try {
-      const lesson = await createLesson({
+      const common = {
         text: source === 'text' ? text : undefined,
         video: source === 'video' && currentVideo ? currentVideo : undefined,
         audience,
         language,
-        length,
         voice: voice || undefined,
-        visuals: options && !options.pictures ? 'slides' : visuals,
-      });
-      watch(lesson);
+        visuals: options && !options.pictures ? 'slides' as const : visuals,
+      };
+      if (format === 'course') watchCourse(await createCourse({ ...common, modules: moduleCount }));
+      else watch(await createLesson({ ...common, length }));
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
       setError(errorMessage(err));
@@ -163,6 +236,18 @@ export default function LessonsPage({ currentVideo, preferVideo, defaultLanguage
   };
 
   const canSubmit = !submitting && (source === 'video' ? Boolean(currentVideo) : text.trim().length >= 15);
+
+  // ---------------------------------------------------------------- active course
+  if (activeCourse) {
+    return (
+      <div className="max-w-6xl mx-auto">
+        <button onClick={() => { window.clearTimeout(coursePollRef.current); setActiveCourse(null); refreshList(); }} className="flex items-center gap-1.5 text-sm text-ink-400 hover:text-ink-200 mb-4">
+          <ArrowLeft className="w-4 h-4" /> All video lessons
+        </button>
+        <CoursePlayer course={activeCourse} />
+      </div>
+    );
+  }
 
   // ---------------------------------------------------------------- active lesson
   if (active) {
@@ -180,6 +265,12 @@ export default function LessonsPage({ currentVideo, preferVideo, defaultLanguage
                 {AUDIENCES.find((a) => a.value === active.audience)?.label} · {languageLabel(active.language)}
                 {active.sourceVideo && <> · from “{active.sourceVideo.title}”</>}
               </p>
+              {active.planning?.method === 'textrank' && (
+                <p className="text-xs text-ink-500 mt-1" title="TextRank picked the key sentences so the lesson covers the whole material">
+                  Long material: {active.planning.kept} key sentences of {active.planning.sentences} were used
+                  ({Math.round(active.planning.inputChars / 1000)}k → {Math.round((active.planning.outputChars || 0) / 1000)}k characters).
+                </p>
+              )}
             </div>
             <LessonPlayer key={active.id} lesson={active} />
           </motion.div>
@@ -256,6 +347,28 @@ export default function LessonsPage({ currentVideo, preferVideo, defaultLanguage
           ) : null}
         </div>
 
+        {/* format */}
+        <div>
+          <p className="text-xs font-semibold text-ink-400 mb-2">What should it make?</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-w-2xl" role="radiogroup" aria-label="Format">
+            {[
+              { value: 'lesson' as const, icon: Film, label: 'One video lesson', hint: 'One narrated lesson, about 1 to 3 minutes' },
+              { value: 'course' as const, icon: ListTree, label: 'A course with modules', hint: 'Split into 3 to 5 short lessons that build on each other' },
+            ].map((f) => (
+              <button
+                key={f.value} role="radio" aria-checked={format === f.value} onClick={() => setFormat(f.value)}
+                className={`flex items-start gap-3 p-3 rounded-xl border text-left ${format === f.value ? 'border-turmeric-500/60 bg-turmeric-500/10' : 'border-ink-800 bg-ink-950/40 hover:border-ink-700'}`}
+              >
+                <f.icon className="w-5 h-5 text-turmeric-300 mt-0.5 shrink-0" />
+                <span>
+                  <span className="block text-sm text-ink-200 font-medium">{f.label}</span>
+                  <span className="block text-[11px] text-ink-500 mt-0.5">{f.hint}</span>
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* options */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <div>
@@ -279,13 +392,22 @@ export default function LessonsPage({ currentVideo, preferVideo, defaultLanguage
                 {LANGUAGES.map((l) => <option key={l.code} value={l.code} className="bg-ink-900">{l.native}</option>)}
               </select>
             </label>
-            <label className="block">
-              <span className="block text-xs font-semibold text-ink-400 mb-2">Length</span>
-              <select value={length} onChange={(e) => setLength(e.target.value as 'short' | 'standard')} className="w-full px-3 py-2.5 bg-ink-950/60 border border-ink-700/50 rounded-xl text-sm text-ink-200 focus:outline-none focus:ring-2 focus:ring-turmeric-500">
-                <option value="short" className="bg-ink-900">Short (~1 min)</option>
-                <option value="standard" className="bg-ink-900">Standard (~2–3 min)</option>
-              </select>
-            </label>
+            {format === 'course' ? (
+              <label className="block">
+                <span className="block text-xs font-semibold text-ink-400 mb-2">Modules</span>
+                <select value={moduleCount} onChange={(e) => setModuleCount(Number(e.target.value))} className="w-full px-3 py-2.5 bg-ink-950/60 border border-ink-700/50 rounded-xl text-sm text-ink-200 focus:outline-none focus:ring-2 focus:ring-turmeric-500">
+                  {[3, 4, 5].map((n) => <option key={n} value={n} className="bg-ink-900">{n} modules (~{n} min)</option>)}
+                </select>
+              </label>
+            ) : (
+              <label className="block">
+                <span className="block text-xs font-semibold text-ink-400 mb-2">Length</span>
+                <select value={length} onChange={(e) => setLength(e.target.value as 'short' | 'standard')} className="w-full px-3 py-2.5 bg-ink-950/60 border border-ink-700/50 rounded-xl text-sm text-ink-200 focus:outline-none focus:ring-2 focus:ring-turmeric-500">
+                  <option value="short" className="bg-ink-900">Short (~1 min)</option>
+                  <option value="standard" className="bg-ink-900">Standard (~2–3 min)</option>
+                </select>
+              </label>
+            )}
             <label className="block col-span-2">
               <span className="block text-xs font-semibold text-ink-400 mb-2">Narrator voice</span>
               <select value={voice} onChange={(e) => setVoice(e.target.value)} className="w-full px-3 py-2.5 bg-ink-950/60 border border-ink-700/50 rounded-xl text-sm text-ink-200 focus:outline-none focus:ring-2 focus:ring-turmeric-500">
@@ -329,16 +451,41 @@ export default function LessonsPage({ currentVideo, preferVideo, defaultLanguage
           <button
             onClick={submit}
             disabled={!canSubmit}
-            className="flex items-center gap-2 px-6 py-3 rounded-xl disabled:cursor-not-allowed text-white font-semibold bg-turmeric-400 text-ink-950 hover:bg-turmeric-300"
+            className="flex items-center gap-2 px-6 py-3 rounded-xl disabled:cursor-not-allowed disabled:bg-ink-800 disabled:text-ink-500 font-semibold bg-turmeric-400 text-ink-950 hover:bg-turmeric-300"
           >
             {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Wand2 className="w-5 h-5" />}
-            Create video lesson
+            {format === 'course' ? `Create a ${moduleCount}-module course` : 'Create video lesson'}
           </button>
           <p className="text-xs text-ink-500 flex items-center gap-1.5">
             <Sparkles className="w-3.5 h-3.5" /> Free to make. Gemini writes and narrates the script, {options?.pictureProvider === 'cloudflare' ? 'Cloudflare FLUX' : 'Pollinations FLUX'} draws the pictures, and the quiz is made only when you ask.
           </p>
         </div>
       </div>
+
+      {/* my courses */}
+      {courses.length > 0 && (
+        <div className="mt-10">
+          <h2 className="text-lg font-semibold text-ink-200 mb-4">{user ? 'Your courses' : 'Recent courses on this browser'}</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {courses.map((item) => (
+              <div key={item.id} className="group flex items-center gap-3 p-4 rounded-xl bg-ink-900/50 border border-ink-800/60 hover:border-turmeric-500/40 transition-colors">
+                <button onClick={() => openCourse(item.id)} className="flex-1 flex items-center gap-3 min-w-0 text-left">
+                  <ListTree className="w-7 h-7 text-turmeric-300 shrink-0" />
+                  <span className="min-w-0">
+                    <span className="block text-sm font-medium text-ink-200 truncate">{item.title}</span>
+                    <span className="block text-xs text-ink-500 mt-0.5">
+                      {item.status === 'failed' ? 'Failed' : item.status === 'done' ? `${item.moduleCount} modules, ${languageLabel(item.language)}` : 'Being made…'}
+                    </span>
+                  </span>
+                </button>
+                <button onClick={() => removeCourse(item)} className="p-2 rounded-lg text-ink-600 hover:text-red-400 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 focus:opacity-100" aria-label={`Delete ${item.title}`}>
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* my lessons */}
       {lessons.length > 0 && (

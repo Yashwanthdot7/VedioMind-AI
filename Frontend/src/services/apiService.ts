@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase';
-import { AttemptInput, QuizAttempt, Lesson, LessonAudience, LessonQuizQuestion, LessonSummary, LibraryItem, Message, StudyDataMap, StudyLevel, StudyType, VideoData } from '../types';
+import { AttemptInput, Course, CourseSummary, QuizAttempt, Lesson, LessonAudience, LessonQuizQuestion, LessonSummary, LibraryItem, Message, StudyDataMap, StudyLevel, StudyType, VideoData } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
@@ -158,7 +158,7 @@ export interface CreateLessonInput {
   visuals?: 'pictures' | 'slides';
 }
 
-export async function createLesson(input: CreateLessonInput): Promise<Lesson> {
+function lessonBody(input: CreateLessonInput): Record<string, unknown> {
   const body: Record<string, unknown> = {
     audience: input.audience,
     language: input.language,
@@ -175,16 +175,41 @@ export async function createLesson(input: CreateLessonInput): Promise<Lesson> {
   } else {
     body.text = input.text;
   }
+  return body;
+}
+
+/** POST, resending the video's transcript if the server no longer has it cached */
+async function postWithVideo<T>(path: string, body: Record<string, unknown>, video?: VideoData): Promise<T> {
   try {
-    return (await request<{ data: Lesson }>('/lessons', { method: 'POST', body })).data;
+    return (await request<{ data: T }>(path, { method: 'POST', body })).data;
   } catch (err) {
-    if (err instanceof ApiError && err.code === 'CONTEXT_EXPIRED' && input.video) {
-      const v = input.video;
-      body.videoContext = { title: v.title, summary: v.summary, transcript: v.transcript };
-      return (await request<{ data: Lesson }>('/lessons', { method: 'POST', body })).data;
+    if (err instanceof ApiError && err.code === 'CONTEXT_EXPIRED' && video) {
+      body.videoContext = { title: video.title, summary: video.summary, transcript: video.transcript };
+      return (await request<{ data: T }>(path, { method: 'POST', body })).data;
     }
     throw err;
   }
+}
+
+export async function createLesson(input: CreateLessonInput): Promise<Lesson> {
+  return postWithVideo<Lesson>('/lessons', lessonBody(input), input.video);
+}
+
+export async function createCourse(input: Omit<CreateLessonInput, 'length'> & { modules: number }): Promise<Course> {
+  const body = { ...lessonBody({ ...input, length: 'short' }), modules: input.modules };
+  return postWithVideo<Course>('/courses', body, input.video);
+}
+
+export async function getCourse(id: string): Promise<Course> {
+  return (await request<{ data: Course }>(`/courses/${id}`)).data;
+}
+
+export async function listCourses(): Promise<CourseSummary[]> {
+  return (await request<{ data: CourseSummary[] }>('/courses')).data;
+}
+
+export async function deleteCourse(id: string): Promise<void> {
+  await request(`/courses/${id}`, { method: 'DELETE' });
 }
 
 export async function getLesson(id: string): Promise<Lesson> {

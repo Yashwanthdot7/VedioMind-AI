@@ -1,16 +1,12 @@
-const fs = require('fs');
+const path = require('path');
 const lessonJobs = require('../services/lessonJobs');
 const lessonService = require('../services/lessonService');
 const ttsService = require('../services/ttsService');
 const imageService = require('../services/imageService');
-const { resolveContext } = require('../services/contextResolver');
 const { isSupabaseEnabled } = require('../config/supabase');
 const AppError = require('../lib/AppError');
-const { parseLanguage } = require('../utils/validators');
+const { readLessonInput, AUDIENCES } = require('./lessonInput');
 
-const AUDIENCES = ['kids', 'student', 'teacher'];
-const MIN_TEXT = 15;
-const MAX_TEXT = 20000;
 
 /** What the client may see (never the owner's id) */
 function publicLesson(lesson) {
@@ -49,46 +45,8 @@ class LessonController {
      */
     async create(req, res, next) {
         try {
-            const body = req.body || {};
-            const audience = body.audience ?? 'student';
-            if (!AUDIENCES.includes(audience)) throw new AppError('Unknown audience', 400, 'INVALID_AUDIENCE');
-            const language = parseLanguage(body.language);
-            const length = body.length ?? 'short';
-            if (!lessonService.LENGTHS[length]) throw new AppError('Unknown length', 400, 'INVALID_LENGTH');
-            const voice = body.voice && ttsService.voices()[body.voice] ? body.voice : undefined;
-            const visuals = body.visuals === 'slides' ? 'slides' : 'pictures';
-
-            let material;
-            let source;
-            let sourceVideo = null;
-            let inputText = null;
-
-            if (typeof body.text === 'string' && body.text.trim()) {
-                inputText = body.text.trim();
-                if (inputText.length < MIN_TEXT) {
-                    throw new AppError('Please write a little more: a topic or a few sentences.', 400, 'TEXT_TOO_SHORT');
-                }
-                if (inputText.length > MAX_TEXT) {
-                    throw new AppError(`Text is too long (max ${MAX_TEXT.toLocaleString()} characters).`, 400, 'TEXT_TOO_LONG');
-                }
-                material = inputText;
-                source = 'text';
-            } else if (body.videoId || body.analysisId) {
-                const context = await resolveContext({ ...body, language: body.videoLanguage || language });
-                material = lessonService.materialFromVideo(context);
-                source = 'video';
-                sourceVideo = {
-                    videoId: context.videoId || body.videoId,
-                    analysisId: context.analysisId || null,
-                    title: context.title,
-                };
-            } else {
-                throw new AppError('Write a topic or some text, or pick a video.', 400, 'NO_INPUT');
-            }
-
-            const lesson = await lessonJobs.create({
-                userId: req.user?.id, material, inputText, source, sourceVideo, audience, language, length, voice, visuals,
-            });
+            const input = await readLessonInput(req.body || {});
+            const lesson = await lessonJobs.create({ userId: req.user?.id, ...input });
             res.status(202).json({ success: true, data: publicLesson(lesson) });
         } catch (error) {
             next(error);
@@ -124,12 +82,10 @@ class LessonController {
             if (!Number.isInteger(index) || index < 0 || index >= lesson.scenes.length || !lesson.scenes[index].audio) {
                 throw new AppError('Audio not found', 404, 'NOT_FOUND');
             }
-            const file = lessonJobs.audioPath(lesson.id, index);
-            if (!fs.existsSync(file)) {
-                throw new AppError('This lesson\'s audio is stored on another computer.', 404, 'AUDIO_MISSING');
-            }
+            const wav = await lessonJobs.readAudio(lesson.id, index);
+            if (!wav) throw new AppError('This lesson\'s audio could not be found. Please create the lesson again.', 404, 'AUDIO_MISSING');
             res.set('Cache-Control', 'private, max-age=86400');
-            res.type('audio/wav').sendFile(file);
+            res.type('audio/wav').send(wav);
         } catch (error) {
             next(error);
         }
@@ -142,12 +98,10 @@ class LessonController {
             const index = Number(req.params.index);
             const scene = Number.isInteger(index) ? lesson.scenes[index] : null;
             if (!scene || !scene.image) throw new AppError('Picture not found', 404, 'NOT_FOUND');
-            const file = lessonJobs.imagePath(lesson.id, scene.image);
-            if (!fs.existsSync(file)) {
-                throw new AppError('This lesson\'s pictures are stored on another computer.', 404, 'IMAGE_MISSING');
-            }
+            const picture = await lessonJobs.readImage(lesson.id, scene.image);
+            if (!picture) throw new AppError('This lesson\'s pictures could not be found. Please create the lesson again.', 404, 'IMAGE_MISSING');
             res.set('Cache-Control', 'private, max-age=86400');
-            res.sendFile(file);
+            res.type(path.extname(scene.image)).send(picture);
         } catch (error) {
             next(error);
         }

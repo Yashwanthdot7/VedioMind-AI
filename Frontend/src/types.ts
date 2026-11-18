@@ -138,6 +138,10 @@ export interface Lesson {
   voiceNotice?: string | null;
   visuals?: 'pictures' | 'slides';
   imageNotice?: string | null;
+  courseId?: string | null;
+  moduleIndex?: number | null;
+  /** How long material was condensed before writing the script */
+  planning?: { method: 'textrank' | 'none'; inputChars: number; outputChars?: number; sentences?: number; kept?: number; ideas?: number } | null;
   imageProvider?: string | null;
   source: 'text' | 'video';
   sourceVideo: { videoId: string; analysisId: string | null; title: string } | null;
@@ -206,4 +210,42 @@ export interface QuizAttempt extends AttemptInput {
 export interface QuizResult {
   answers: AttemptAnswer[];
   durationSec: number;
+}
+
+export type CourseStatus = 'queued' | 'outlining' | 'building' | 'done' | 'failed';
+export type ModuleStatus = LessonStatus | 'waiting';
+
+export interface CourseModule {
+  index: number;
+  title: string;
+  goal: string;
+  keyPoints: string[];
+  lessonId: string | null;
+  status: ModuleStatus;
+  progress: number;
+  icon: string | null;
+  durationSec?: number | null;
+}
+
+export interface Course {
+  id: string;
+  title: string;
+  status: CourseStatus;
+  progress: number;
+  language: string;
+  audience: LessonAudience;
+  moduleCount: number;
+  modules: CourseModule[];
+  error: string | null;
+  createdAt: string;
+}
+
+export interface CourseSummary {
+  id: string;
+  title: string;
+  status: CourseStatus;
+  language: string;
+  audience: LessonAudience;
+  moduleCount: number;
+  createdAt: string;
 }
