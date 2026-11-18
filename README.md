@@ -2,7 +2,7 @@
 
 Turn any YouTube video into a transcript, summary, study kit and a tutor you can question, or turn a topic into a narrated video lesson or a short course. In 15 languages, including 8 Indian ones, on free tiers only.
 
-[![CI](https://github.com/Yashwanthdot7/VedioMind-AI/actions/workflows/ci.yml/badge.svg)](https://github.com/Yashwanthdot7/VedioMind-AI/actions/workflows/ci.yml)
+[![CI](https://github.com/Yashwanthdot7/VideoMind-AI/actions/workflows/ci.yml/badge.svg)](https://github.com/Yashwanthdot7/VideoMind-AI/actions/workflows/ci.yml)
 ![React](https://img.shields.io/badge/React%2018-TypeScript-blue?style=flat-square&logo=react)
 ![Node](https://img.shields.io/badge/Node.js-Express-green?style=flat-square&logo=node.js)
 ![Gemini](https://img.shields.io/badge/AI-Google%20Gemini-orange?style=flat-square&logo=google)
@@ -107,8 +107,8 @@ A calm learning app: a jet black background, royal amethyst for actions and the 
 ### 1. Clone
 
 ```bash
-git clone https://github.com/Yashwanthdot7/VedioMind-AI.git
-cd VedioMind-AI
+git clone https://github.com/Yashwanthdot7/VideoMind-AI.git
+cd VideoMind-AI
 ```
 
 ### 2. Quick start (one command)
@@ -185,7 +185,7 @@ Then run `cd backend && npm run check:supabase`. It checks every table and stora
 ## Project structure
 
 ```
-VedioMind-AI/
+VideoMind-AI/
 ├── backend/
 │   ├── src/
 │   │   ├── controllers/   video, chat, library, study, lessons, courses, quiz attempts
