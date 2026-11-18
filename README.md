@@ -22,7 +22,7 @@ Turn any YouTube video into a transcript, summary, study kit and a tutor you can
 
 **Study it.** One click makes notes, an 8-question quiz, flashcards or a mind map, at Kids, Student or Teacher level. Notes export as Markdown, flashcards as Anki or Quizlet CSV, and the mind map as SVG.
 
-**Learn a topic as video.** Type a topic, paste notes, or pick a summarized video:
+**Learn a topic as video.** Type a topic, paste notes, upload a PDF or Word chapter (read on your device, with a page range), or pick a summarized video:
 - **One lesson:** a narrated explainer with a 3D-style AI picture in every scene, Gemini voices, captions and MP4 download.
 - **A course:** the same material split into 3 to 5 modules that build on each other. Module 1 plays while the rest are being made.
 - Quizzes and tests are made only when you ask for them.
@@ -42,9 +42,10 @@ Turn any YouTube video into a transcript, summary, study kit and a tutor you can
   - Hitting a quota degrades the result instead of sending a bill.
 - **Background jobs.** Lessons and courses return at once and fill in scene by scene: script, then pictures and narration in parallel. Files are kept in Supabase Storage so they survive restarts on free hosts.
 - **MP4 export in the browser.** A canvas renderer plus MediaRecorder, so there is no render server.
+- **File upload with no server.** PDF (pdf.js) and Word (mammoth) text is pulled out in the browser and loaded only when a file is picked, so the main bundle stays at about 67 kB gzipped. Scanned PDFs get a clear message instead of an empty lesson.
 - **Multi-script UI.** The Anek type family covers Latin and seven Indian scripts.
 - **Security.** Owner-only edits on shared items (a test caught and fixed a student-delete hole), Supabase Row Level Security, server-computed quiz grades, per-user rate limits, and the secret key kept on the server.
-- **Tests.** 70 backend tests (YouTube, Gemini, voice and pictures faked) plus typecheck, lint and build, run on every push by [GitHub Actions](.github/workflows/ci.yml).
+- **Tests.** 71 backend tests (YouTube, Gemini, voice and pictures faked) plus typecheck, lint and build, run on every push by [GitHub Actions](.github/workflows/ci.yml).
 
 ## Architecture
 
@@ -243,7 +244,7 @@ Errors are returned as `{ success: false, code, error }`, e.g. `NO_TRANSCRIPT`, 
 ## Tests
 
 ```bash
-cd backend && npm test                      # 70 tests, no network or API key needed
+cd backend && npm test                      # 71 tests, no network or API key needed
 cd Frontend && npm run typecheck && npm run lint && npm run build
 node backend/scripts/compareScenePlanning.js   # scene planning benchmark
 ```

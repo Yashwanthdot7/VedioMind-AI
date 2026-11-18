@@ -289,3 +289,18 @@ test('script prompt asks for 3D educational renders and no quiz', async () => {
     assert.match(lastPrompt, /3D educational render/);
     assert.doesNotMatch(lastPrompt, /multiple-choice quiz/);
 });
+
+test('a long uploaded chapter (up to 100k characters) is accepted and condensed; more is refused', async () => {
+    const chapter = JSON.parse(require('fs').readFileSync(require('path').join(__dirname, '../eval/scene-planning/water-cycle-notes.json'), 'utf8')).text;
+    const long = Array.from({ length: 30 }, () => chapter).join('\n\n').slice(0, 75000);
+    const res = await post('/lessons', { text: long, visuals: 'slides' });
+    assert.equal(res.status, 202);
+    const lesson = await waitDone(res.body.data.id);
+    assert.equal(lesson.status, 'done', lesson.error);
+    assert.equal(lesson.planning.method, 'textrank');
+    assert.ok(lastPrompt.length < 15000, 'the model gets the key sentences, not the whole chapter');
+
+    const tooLong = await post('/lessons', { text: 'a '.repeat(50001) });
+    assert.equal(tooLong.status, 400);
+    assert.equal(tooLong.body.code, 'TEXT_TOO_LONG');
+});
