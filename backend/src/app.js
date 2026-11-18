@@ -9,6 +9,7 @@ const libraryRoutes = require('./routes/libraryRoutes');
 const studyRoutes = require('./routes/studyRoutes');
 const lessonRoutes = require('./routes/lessonRoutes');
 const courseRoutes = require('./routes/courseRoutes');
+const shareRoutes = require('./routes/shareRoutes');
 const attemptRoutes = require('./routes/attemptRoutes');
 const errorHandler = require('./middleware/errorHandler');
 const { optionalAuth } = require('./middleware/auth');
@@ -60,6 +61,7 @@ app.use('/api/library', libraryRoutes);
 app.use('/api/study', studyRoutes);
 app.use('/api/lessons', lessonRoutes);
 app.use('/api/courses', courseRoutes);
+app.use('/api/shared', shareRoutes);
 app.use('/api/quiz-attempts', attemptRoutes);
 
 app.use('/api', (_req, _res, next) => next(new AppError('Endpoint not found', 404, 'NOT_FOUND')));

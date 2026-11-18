@@ -13,6 +13,7 @@ import { errorMessage } from '../../lib/errors';
 import LessonPlayer from './LessonPlayer';
 import LessonProgress from './LessonProgress';
 import CoursePlayer from './CoursePlayer';
+import ShareButton from '../share/ShareButton';
 
 interface LessonsPageProps {
   /** The video open on the dashboard, offered as a source */
@@ -260,7 +261,16 @@ export default function LessonsPage({ currentVideo, preferVideo, defaultLanguage
         {active.status === 'done' ? (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
             <div className="mb-4">
-              <h1 className="font-semiwide text-2xl md:text-3xl font-extrabold tracking-tight text-ink-50">{active.title}</h1>
+              <div className="flex flex-wrap items-start gap-3">
+                <h1 className="font-semiwide text-2xl md:text-3xl font-extrabold tracking-tight text-ink-50 mr-auto">{active.title}</h1>
+                {active.isOwner && !active.courseId && (
+                  <ShareButton
+                    kind="lesson" id={active.id} title={active.title}
+                    isPublic={Boolean(active.isPublic)} shareSlug={active.shareSlug || null}
+                    onChange={(st) => setActive((a) => (a ? { ...a, ...st } : a))}
+                  />
+                )}
+              </div>
               <p className="text-sm text-ink-500 mt-1">
                 {AUDIENCES.find((a) => a.value === active.audience)?.label} · {languageLabel(active.language)}
                 {active.sourceVideo && <> · from “{active.sourceVideo.title}”</>}

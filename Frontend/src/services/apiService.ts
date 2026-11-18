@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase';
-import { AttemptInput, Course, CourseSummary, QuizAttempt, Lesson, LessonAudience, LessonQuizQuestion, LessonSummary, LibraryItem, Message, StudyDataMap, StudyLevel, StudyType, VideoData } from '../types';
+import { AttemptInput, Course, CourseSummary, ShareState, SharedTarget, QuizAttempt, Lesson, LessonAudience, LessonQuizQuestion, LessonSummary, LibraryItem, Message, StudyDataMap, StudyLevel, StudyType, VideoData } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
@@ -302,3 +302,16 @@ export async function removeFromLibrary(analysisId: string): Promise<void> {
 export async function clearChat(analysisId: string): Promise<void> {
   await request(`/library/${analysisId}/chat`, { method: 'DELETE' });
 }
+
+// ------------------------------------------------------------------ class links
+
+export async function setSharing(kind: 'lesson' | 'course', id: string, isPublic: boolean): Promise<ShareState> {
+  const path = kind === 'course' ? `/courses/${id}/share` : `/lessons/${id}/share`;
+  return (await request<{ data: ShareState }>(path, { method: 'POST', body: { public: isPublic } })).data;
+}
+
+export async function resolveShare(slug: string): Promise<SharedTarget> {
+  return (await request<{ data: SharedTarget }>(`/shared/${encodeURIComponent(slug)}`)).data;
+}
+
+export const shareUrl = (slug: string) => `${window.location.origin}/?s=${slug}`;

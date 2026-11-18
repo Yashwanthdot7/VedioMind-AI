@@ -79,6 +79,8 @@ async function syncToDb(lesson) {
         video_path: `${files.BUCKET}/${lesson.id}`,
         duration_sec: Math.round(lesson.durationSec || 0) || null,
         error: lesson.error || null,
+        is_public: Boolean(lesson.isPublic),
+        share_slug: lesson.shareSlug || null,
     }, { onConflict: 'id' });
     if (error) console.warn('Saving lesson to Supabase failed:', error.message);
 }
@@ -105,6 +107,8 @@ function lessonFromRow(row) {
         visuals: script.visuals || 'slides',
         source: row.source === 'youtube' ? 'video' : 'text',
         sourceVideo: script.sourceVideo || null,
+        isPublic: Boolean(row.is_public),
+        shareSlug: row.share_slug || null,
         courseId: script.courseId || null,
         moduleIndex: script.moduleIndex ?? null,
         scenes: script.scenes || [],
@@ -297,7 +301,7 @@ async function ensureQuiz(lesson, kind, { refresh = false } = {}) {
  * Create a lesson job and start processing in the background.
  * @returns the lesson (status "queued")
  */
-async function create({ userId, material, inputText, source, sourceVideo, audience, language, length, voice, visuals, courseId = null, moduleIndex = null, title = null, context = '' }) {
+async function create({ userId, material, inputText, source, sourceVideo, audience, language, length, voice, visuals, courseId = null, moduleIndex = null, title = null, context = '', isPublic = false }) {
     const lesson = {
         id: crypto.randomUUID(),
         userId: userId || null,
@@ -315,6 +319,8 @@ async function create({ userId, material, inputText, source, sourceVideo, audien
         voice: voice || ttsService.defaultVoice(audience),
         voiceMode: 'gemini',
         voiceNotice: null,
+        isPublic: Boolean(isPublic),
+        shareSlug: null,
         visuals: visuals === 'slides' ? 'slides' : 'pictures',
         imageProvider: null,
         imageNotice: null,
@@ -333,11 +339,19 @@ async function create({ userId, material, inputText, source, sourceVideo, audien
     return lesson;
 }
 
+/** Turn the class link on or off (the slug is kept so a re-shared link still works) */
+async function setSharing(lesson, { isPublic, shareSlug }) {
+    lesson.isPublic = Boolean(isPublic);
+    if (shareSlug) lesson.shareSlug = shareSlug;
+    await save(lesson);
+    return lesson;
+}
+
 /** Resolves when the lesson's background job has finished (immediately if it isn't running) */
 function whenDone(id) {
     return running.get(id) || Promise.resolve();
 }
 
 module.exports = {
-    create, whenDone, get, listForUser, remove, readAudio, readImage, isLessonId, ensureQuiz, STORAGE, _jobs: jobs, _runJob: runJob,
+    create, whenDone, setSharing, get, listForUser, remove, readAudio, readImage, isLessonId, ensureQuiz, STORAGE, _jobs: jobs, _runJob: runJob,
 };

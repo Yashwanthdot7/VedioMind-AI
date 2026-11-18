@@ -5,6 +5,7 @@ import Sidebar from './components/shell/Sidebar';
 import MobileNav from './components/shell/MobileNav';
 import LinkBar from './components/shell/LinkBar';
 import HomePage from './components/home/HomePage';
+import SharedPage from './components/share/SharedPage';
 import VideoPlayer from './components/VideoPlayer';
 import Transcript from './components/Transcript';
 import AIInsights from './components/AIInsights';
@@ -46,10 +47,20 @@ const greeting = (video: VideoData): Message => ({
   timestamp: new Date(),
 });
 
+/** A class link looks like /?s=<slug> */
+function readShareSlug(): string | null {
+  try {
+    return new URLSearchParams(window.location.search).get('s');
+  } catch {
+    return null;
+  }
+}
+
 function App() {
   const { user, enabled: authEnabled } = useAuth();
 
-  const [view, setView] = useState<View>('home');
+  const [sharedSlug, setSharedSlug] = useState<string | null>(readShareSlug);
+  const [view, setView] = useState<View>(() => (readShareSlug() ? 'shared' : 'home'));
   const [status, setStatus] = useState<ProcessingStatus>(ProcessingStatus.IDLE);
   const [videoData, setVideoData] = useState<VideoData | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -255,6 +266,14 @@ function App() {
     if (!user && view === 'library') setView('home');
   }, [user, view]);
 
+  // Leaving a shared lesson: drop ?s= from the address so a refresh doesn't reopen it
+  useEffect(() => {
+    if (view !== 'shared' && sharedSlug) {
+      setSharedSlug(null);
+      window.history.replaceState(null, '', window.location.pathname);
+    }
+  }, [view, sharedSlug]);
+
   const goHome = () => { setView('home'); setError(null); window.scrollTo({ top: 0 }); };
   const navigateTo = (target: View) => {
     if (target === 'home') goHome();
@@ -303,7 +322,11 @@ function App() {
 
         <main id="main">
           <AnimatePresence mode="wait">
-            {view === 'analytics' ? (
+            {view === 'shared' && sharedSlug ? (
+              <motion.div key={`shared-${sharedSlug}`} {...fade} className={page}>
+                <SharedPage slug={sharedSlug} onMakeOwn={() => navigateTo('lessons')} />
+              </motion.div>
+            ) : view === 'analytics' ? (
               <motion.div key="analytics" {...fade} className={page}>
                 <AnalyticsPage />
               </motion.div>

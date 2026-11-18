@@ -140,6 +140,10 @@ export interface Lesson {
   imageNotice?: string | null;
   courseId?: string | null;
   moduleIndex?: number | null;
+  /** Sharing: isOwner is true only for the signed-in owner, who also sees shareSlug */
+  isOwner?: boolean;
+  isPublic?: boolean;
+  shareSlug?: string | null;
   /** How long material was condensed before writing the script */
   planning?: { method: 'textrank' | 'none'; inputChars: number; outputChars?: number; sentences?: number; kept?: number; ideas?: number } | null;
   imageProvider?: string | null;
@@ -238,6 +242,9 @@ export interface Course {
   modules: CourseModule[];
   error: string | null;
   createdAt: string;
+  isOwner?: boolean;
+  isPublic?: boolean;
+  shareSlug?: string | null;
 }
 
 export interface CourseSummary {
@@ -248,4 +255,15 @@ export interface CourseSummary {
   audience: LessonAudience;
   moduleCount: number;
   createdAt: string;
+}
+
+export interface ShareState {
+  isPublic: boolean;
+  shareSlug: string;
+}
+
+export interface SharedTarget {
+  kind: 'lesson' | 'course';
+  id: string;
+  title: string;
 }

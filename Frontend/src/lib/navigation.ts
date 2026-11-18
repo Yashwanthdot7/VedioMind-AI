@@ -1,5 +1,5 @@
 /** Tiny app-wide navigation event, so deep components can open a page without prop drilling */
-export type AppView = 'home' | 'dashboard' | 'library' | 'lessons' | 'analytics';
+export type AppView = 'home' | 'dashboard' | 'library' | 'lessons' | 'analytics' | 'shared';
 
 const EVENT = 'videomind:navigate';
 

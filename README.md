@@ -27,6 +27,8 @@ Turn any YouTube video into a transcript, summary, study kit and a tutor you can
 - **A course:** the same material split into 3 to 5 modules that build on each other. Module 1 plays while the rest are being made.
 - Quizzes and tests are made only when you ask for them.
 
+**Share with a class.** Teachers turn on a link (and a QR code for the projector) for any lesson or course. Students open it on their phones and watch or take the quiz without an account.
+
 **Track progress.** Every quiz is graded A+ to D. The progress page shows score over time, accuracy by difficulty, streaks and the questions worth revisiting.
 
 ## Engineering highlights
@@ -41,8 +43,8 @@ Turn any YouTube video into a transcript, summary, study kit and a tutor you can
 - **Background jobs.** Lessons and courses return at once and fill in scene by scene: script, then pictures and narration in parallel. Files are kept in Supabase Storage so they survive restarts on free hosts.
 - **MP4 export in the browser.** A canvas renderer plus MediaRecorder, so there is no render server.
 - **Multi-script UI.** The Anek type family covers Latin and seven Indian scripts.
-- **Security.** Supabase Row Level Security, server-computed quiz grades, per-user rate limits, and the secret key kept on the server.
-- **Tests.** 67 backend tests (YouTube, Gemini, voice and pictures faked) plus typecheck, lint and build, run on every push by [GitHub Actions](.github/workflows/ci.yml).
+- **Security.** Owner-only edits on shared items (a test caught and fixed a student-delete hole), Supabase Row Level Security, server-computed quiz grades, per-user rate limits, and the secret key kept on the server.
+- **Tests.** 70 backend tests (YouTube, Gemini, voice and pictures faked) plus typecheck, lint and build, run on every push by [GitHub Actions](.github/workflows/ci.yml).
 
 ## Architecture
 
@@ -160,7 +162,7 @@ The free plan gives 10,000 Neurons a day, about 170 pictures (about 25 lessons).
 
 1. Create a project at [supabase.com](https://supabase.com).
 2. **SQL Editor → New query** → paste [`supabase/schema.sql`](supabase/schema.sql) → **Run**.
-   - Already ran it before? Run the migrations you don't have yet, once each: [`002_quiz_attempts.sql`](supabase/migrations/002_quiz_attempts.sql) (quiz analytics), [`003_courses.sql`](supabase/migrations/003_courses.sql) (courses and the lesson files bucket).
+   - Already ran it before? Run the migrations you don't have yet, once each: [`002_quiz_attempts.sql`](supabase/migrations/002_quiz_attempts.sql) (quiz analytics), [`003_courses.sql`](supabase/migrations/003_courses.sql) (courses and the lesson files bucket), [`004_sharing.sql`](supabase/migrations/004_sharing.sql) (class links for courses).
 3. **Authentication → URL Configuration**: set *Site URL* to your frontend URL (e.g. `http://localhost:5173`) and add it to *Redirect URLs*.
 4. **Authentication → Providers → Google**: enable it and paste a Google OAuth client ID/secret ([guide](https://supabase.com/docs/guides/auth/social-login/auth-google)). Then set `VITE_ENABLE_GOOGLE_AUTH=true` in `Frontend/.env` to show the button. Email sign-in works without this step.
 5. Put the URL and keys in both `.env` files and restart.
@@ -217,11 +219,14 @@ All endpoints accept an optional `Authorization: Bearer <supabase access token>`
 | `POST` | `/api/lessons/:id/quiz` | owner | `{ kind: quick\|test, refresh? }`: make (or return the saved) 5-question quiz or 10-question test |
 | `GET` | `/api/lessons` | required | Your lessons |
 | `DELETE` | `/api/lessons/:id` | owner | Delete a lesson |
+| `POST` | `/api/lessons/:id/share` | owner | `{ public: true\|false }`: turn the class link on or off. Returns `shareSlug` |
 | `GET` | `/api/lessons/options` | | Voices and lengths |
 | `POST` | `/api/courses` | optional | Create a course: same body as a lesson plus `modules: 3-5`. Returns at once; modules are made one after another |
 | `GET` | `/api/courses/:id` | owner | Course outline with every module's status, progress and `lessonId` |
 | `GET` | `/api/courses` | required | Your courses |
 | `DELETE` | `/api/courses/:id` | owner | Delete a course and all its module lessons |
+| `POST` | `/api/courses/:id/share` | owner | Class link for a whole course (every module, including ones still being made) |
+| `GET` | `/api/shared/:slug` | | What a class link points to (`kind`, `id`), only while it is on |
 | `GET` | `/api/quiz-attempts` | required | Your quiz history, newest first |
 | `POST` | `/api/quiz-attempts` | required | Save a finished quiz `{ source, kind, title, language, answers[{chosen, answer, difficulty}], durationSec, … }`. Score and grade are computed on the server |
 | `DELETE` | `/api/quiz-attempts[/:id]` | required | Delete one attempt, or clear your history |
@@ -238,7 +243,7 @@ Errors are returned as `{ success: false, code, error }`, e.g. `NO_TRANSCRIPT`, 
 ## Tests
 
 ```bash
-cd backend && npm test                      # 67 tests, no network or API key needed
+cd backend && npm test                      # 70 tests, no network or API key needed
 cd Frontend && npm run typecheck && npm run lint && npm run build
 node backend/scripts/compareScenePlanning.js   # scene planning benchmark
 ```
