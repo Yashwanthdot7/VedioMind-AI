@@ -11,13 +11,15 @@ import AuthModal from './components/AuthModal';
 import Library from './components/Library';
 import StudyTools from './components/study/StudyTools';
 import LessonsPage from './components/lessons/LessonsPage';
+import AnalyticsPage from './components/analytics/AnalyticsPage';
+import { AppView, onNavigate } from './lib/navigation';
 import { useAuth } from './context/AuthContext';
 import { ProcessingStatus, VideoData, Message, ProcessingStep, PlayerHandle, LibraryItem } from './types';
 import { processVideo, sendChat, getLibraryEntry, clearChat } from './services/apiService';
 import { DEFAULT_LANGUAGE, LANGUAGES, languageLabel } from './constants/languages';
 import { errorMessage } from './lib/errors';
 
-type View = 'home' | 'dashboard' | 'library' | 'lessons';
+type View = AppView;
 
 const STEP_LABELS = ['Fetching video & captions', 'Generating AI insights', 'Preparing your dashboard'];
 const freshSteps = (): ProcessingStep[] => STEP_LABELS.map((label) => ({ label, completed: false }));
@@ -220,6 +222,19 @@ function App() {
     window.scrollTo({ top: 0 });
   };
 
+  const openAnalytics = () => {
+    setError(null);
+    setView('analytics');
+    window.scrollTo({ top: 0 });
+  };
+
+  // Deep components (quiz score screens, empty states) can ask to change page
+  useEffect(() => onNavigate((target) => {
+    if (target === 'dashboard' && !videoData) return;
+    setView(target);
+    window.scrollTo({ top: 0 });
+  }), [videoData]);
+
   const openLibrary = () => {
     if (!user) {
       setAuthOpen(true);
@@ -244,6 +259,7 @@ function App() {
         onLanguageChange={setLanguage}
         onOpenLibrary={openLibrary}
         onOpenLessons={() => openLessons(false)}
+        onOpenAnalytics={openAnalytics}
         onOpenAuth={() => setAuthOpen(true)}
         onGoHome={() => { setView('home'); setError(null); }}
       />
@@ -257,7 +273,17 @@ function App() {
       <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
 
       <AnimatePresence mode="wait">
-        {view === 'lessons' ? (
+        {view === 'analytics' ? (
+          <motion.div
+            key="analytics"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="pt-36 md:pt-28 pb-16 px-4"
+          >
+            <AnalyticsPage />
+          </motion.div>
+        ) : view === 'lessons' ? (
           <motion.div
             key={`lessons-${lessonFromVideo}`}
             initial={{ opacity: 0 }}

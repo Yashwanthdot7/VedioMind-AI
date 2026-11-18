@@ -62,8 +62,9 @@ const SCHEMAS = {
                         answerIndex: { type: S.INTEGER, description: 'Index (0-3) of the correct option' },
                         explanation: str('Why the answer is correct, 1-2 sentences'),
                         timestamp: TIMESTAMP,
+                        difficulty: { type: S.STRING, format: 'enum', enum: ['easy', 'medium', 'hard'] },
                     },
-                    required: ['question', 'options', 'answerIndex', 'explanation', 'timestamp'],
+                    required: ['question', 'options', 'answerIndex', 'explanation', 'timestamp', 'difficulty'],
                 },
             },
         },
@@ -128,7 +129,7 @@ const LEVEL_GUIDANCE = {
 
 const TASKS = {
     notes: 'Create well-organised study notes for this video: a title, a short overview, 4-8 sections in the order the video covers them (each with 2-6 bullet points), and 4-10 key terms with definitions.',
-    quiz: 'Create a multiple-choice quiz of 8 questions that checks understanding of the most important ideas in this video. Each question has exactly 4 options with one correct answer. Mix easy, medium and hard questions. Make wrong options plausible.',
+    quiz: 'Create a multiple-choice quiz of 8 questions that checks understanding of the most important ideas in this video. Each question has exactly 4 options with one correct answer. Use 3 easy, 3 medium and 2 hard questions and mark each one\'s difficulty. Make wrong options plausible.',
     flashcards: 'Create 12-16 flashcards covering the key facts, terms and ideas in this video. Front: a question or term. Back: a short answer (under 30 words).',
     mindmap: 'Create a mind map of this video: one central topic, 4-6 main branches in the order the video covers them, each with 2-4 sub-ideas, each sub-idea with 0-3 short details. Keep every label short.',
 };
@@ -179,6 +180,7 @@ const NORMALISERS = {
                 answerIndex,
                 explanation: clean(q.explanation, 800),
                 timestamp: cleanTs(q.timestamp),
+                difficulty: ['easy', 'medium', 'hard'].includes(q.difficulty) ? q.difficulty : null,
             };
         }).filter((q) => q.question && q.options.length >= 2 && Number.isInteger(q.answerIndex)
             && q.answerIndex >= 0 && q.answerIndex < q.options.length),

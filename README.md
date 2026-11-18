@@ -31,6 +31,7 @@
   - **Quiz on demand**: the video is made first; a Quick quiz (5) or Full test (10, mixed difficulty) is generated only when you ask, so lessons finish faster
   - **Download as MP4**, recorded in your browser (no server rendering and no cost)
   - If the free AI voice quota runs out, lessons still play using your **browser's built-in voice**
+- 📊 **Quiz analytics**: every quiz and test is saved with its score and an A+ to D grade. The **Analytics** page shows summary tiles (quizzes, average, best, day streak, time spent), score over time, accuracy by difficulty, grade spread, quizzes worth revisiting, and the full history, with date-range and quiz-type filters. History is saved to your account when signed in, otherwise in your browser (and can be imported after signing in).
 - 👤 **Accounts (Supabase)** — sign in with Google or email
 - 📚 **My Library** — every video you summarise is saved with its chat history; search, favourite, or remove videos
 - ⚡ **Shared cache** — a video is analysed once per language; the next request is instant and costs no AI calls
@@ -129,6 +130,7 @@ The free plan gives 10,000 Neurons a day, about 170 pictures (about 25 lessons).
 
 1. Create a project at [supabase.com](https://supabase.com).
 2. **SQL Editor → New query** → paste [`supabase/schema.sql`](supabase/schema.sql) → **Run**.
+   - Already ran it before quiz analytics existed? Just run [`supabase/migrations/002_quiz_attempts.sql`](supabase/migrations/002_quiz_attempts.sql) once.
 3. **Authentication → URL Configuration**: set *Site URL* to your frontend URL (e.g. `http://localhost:5173`) and add it to *Redirect URLs*.
 4. **Authentication → Providers → Google**: enable it and paste a Google OAuth client ID/secret ([guide](https://supabase.com/docs/guides/auth/social-login/auth-google)). Then set `VITE_ENABLE_GOOGLE_AUTH=true` in `Frontend/.env` to show the button. Email sign-in works without this step.
 5. Put the URL and keys in both `.env` files and restart.
@@ -189,6 +191,9 @@ All endpoints accept an optional `Authorization: Bearer <supabase access token>`
 | `GET` | `/api/lessons` | required | Your lessons |
 | `DELETE` | `/api/lessons/:id` | owner | Delete a lesson |
 | `GET` | `/api/lessons/options` | | Voices and lengths |
+| `GET` | `/api/quiz-attempts` | required | Your quiz history, newest first |
+| `POST` | `/api/quiz-attempts` | required | Save a finished quiz `{ source, kind, title, language, answers[{chosen, answer, difficulty}], durationSec, … }`. Score and grade are computed on the server |
+| `DELETE` | `/api/quiz-attempts[/:id]` | required | Delete one attempt, or clear your history |
 | `GET` | `/api/library` | required | Your saved videos |
 | `GET` | `/api/library/:analysisId` | required | Full analysis + saved chat |
 | `PATCH` | `/api/library/:analysisId` | required | `{ isFavorite }` |
@@ -224,6 +229,8 @@ cd Frontend && npm run typecheck && npm run lint
 - [x] Study tools: notes, quiz, flashcards, mind map (Kids / Student / Teacher levels)
 - [x] Text → explainer video for kids, students and teachers (multi-language narration, MP4 download)
 - [x] AI transcription for videos without captions
+- [x] Quiz analytics: score history, grades, charts
+- [ ] Frontend redesign
 - [ ] Deployment (Vercel + Render)
 
 ---
