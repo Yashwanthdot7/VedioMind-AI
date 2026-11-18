@@ -1,4 +1,4 @@
-const fs = require('fs');
+const path = require('path');
 const lessonJobs = require('../services/lessonJobs');
 const lessonService = require('../services/lessonService');
 const ttsService = require('../services/ttsService');
@@ -124,12 +124,10 @@ class LessonController {
             if (!Number.isInteger(index) || index < 0 || index >= lesson.scenes.length || !lesson.scenes[index].audio) {
                 throw new AppError('Audio not found', 404, 'NOT_FOUND');
             }
-            const file = lessonJobs.audioPath(lesson.id, index);
-            if (!fs.existsSync(file)) {
-                throw new AppError('This lesson\'s audio is stored on another computer.', 404, 'AUDIO_MISSING');
-            }
+            const wav = await lessonJobs.readAudio(lesson.id, index);
+            if (!wav) throw new AppError('This lesson\'s audio could not be found. Please create the lesson again.', 404, 'AUDIO_MISSING');
             res.set('Cache-Control', 'private, max-age=86400');
-            res.type('audio/wav').sendFile(file);
+            res.type('audio/wav').send(wav);
         } catch (error) {
             next(error);
         }
@@ -142,12 +140,10 @@ class LessonController {
             const index = Number(req.params.index);
             const scene = Number.isInteger(index) ? lesson.scenes[index] : null;
             if (!scene || !scene.image) throw new AppError('Picture not found', 404, 'NOT_FOUND');
-            const file = lessonJobs.imagePath(lesson.id, scene.image);
-            if (!fs.existsSync(file)) {
-                throw new AppError('This lesson\'s pictures are stored on another computer.', 404, 'IMAGE_MISSING');
-            }
+            const picture = await lessonJobs.readImage(lesson.id, scene.image);
+            if (!picture) throw new AppError('This lesson\'s pictures could not be found. Please create the lesson again.', 404, 'IMAGE_MISSING');
             res.set('Cache-Control', 'private, max-age=86400');
-            res.sendFile(file);
+            res.type(path.extname(scene.image)).send(picture);
         } catch (error) {
             next(error);
         }

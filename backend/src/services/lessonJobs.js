@@ -1,20 +1,21 @@
-const fs = require('fs/promises');
 const path = require('path');
 const crypto = require('crypto');
 const { supabase } = require('../config/supabase');
 const lessonService = require('./lessonService');
 const ttsService = require('./ttsService');
 const imageService = require('./imageService');
+const files = require('./lessonFiles');
 
 /**
  * Video lesson jobs. A lesson is created instantly and processed in the
  * background: script -> narration audio per scene -> done.
  *
- * Files live on the local disk (free): STORAGE/<id>/lesson.json + scene-N.wav
+ * Files: <id>/lesson.json + scene-N.wav + scene-N.jpg, on disk and (when Supabase is
+ * set up) in a Supabase Storage bucket so they survive restarts on free hosts.
  * Signed-in users also get a row in Supabase generated_videos (metadata only).
  */
 
-const STORAGE = path.resolve(process.env.LESSON_STORAGE_DIR || path.join(__dirname, '../../storage/lessons'));
+const { STORAGE } = files;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // Voice errors that mean "no free voice right now" -> fall back to the browser's voice
@@ -23,20 +24,36 @@ const VOICE_FALLBACK_CODES = new Set(['TTS_QUOTA', 'TTS_UNAVAILABLE', 'TTS_EMPTY
 const jobs = new Map(); // id -> lesson (in memory while the server runs)
 const running = new Map(); // id -> promise that settles when the job finishes
 
-const dirOf = (id) => path.join(STORAGE, id);
+const dirOf = files.dirOf;
 const isLessonId = (id) => UUID_RE.test(String(id || ''));
 
+const FINISHED = new Set(['done', 'failed']);
+
 async function writeLesson(lesson) {
-    await fs.mkdir(dirOf(lesson.id), { recursive: true });
-    await fs.writeFile(path.join(dirOf(lesson.id), 'lesson.json'), JSON.stringify(lesson, null, 2));
+    const json = JSON.stringify(lesson, null, 2);
+    // Progress ticks only need the local copy; finished lessons are also kept in the cloud
+    if (FINISHED.has(lesson.status)) await files.put(lesson.id, 'lesson.json', json);
+    else await files.putLocal(lesson.id, 'lesson.json', json);
 }
 
 async function readLesson(id) {
+    const buffer = await files.read(id, 'lesson.json');
+    if (!buffer) return null;
     try {
-        return JSON.parse(await fs.readFile(path.join(dirOf(id), 'lesson.json'), 'utf8'));
+        return JSON.parse(buffer.toString('utf8'));
     } catch {
         return null;
     }
+}
+
+/** A lesson still "in progress" that this server isn't working on was cut off by a restart */
+function markInterrupted(lesson) {
+    if (!lesson || FINISHED.has(lesson.status) || jobs.has(lesson.id)) return lesson;
+    return {
+        ...lesson,
+        status: 'failed',
+        error: 'The server restarted while this lesson was being made. Please create it again.',
+    };
 }
 
 const DB_AUDIENCE = { kids: 'kid', student: 'student', teacher: 'teacher' };
@@ -59,7 +76,7 @@ async function syncToDb(lesson) {
             title: lesson.title, voice: lesson.voice, voiceMode: lesson.voiceMode, visuals: lesson.visuals, scenes: lesson.scenes, sourceVideo: lesson.sourceVideo || null,
         },
         quiz: lesson.quiz?.length ? { kind: lesson.quizKind || 'quick', questions: lesson.quiz } : [],
-        video_path: dirOf(lesson.id),
+        video_path: `${files.BUCKET}/${lesson.id}`,
         duration_sec: Math.round(lesson.durationSec || 0) || null,
         error: lesson.error || null,
     }, { onConflict: 'id' });
@@ -103,11 +120,11 @@ function lessonFromRow(row) {
 async function get(id) {
     if (!isLessonId(id)) return null;
     if (jobs.has(id)) return jobs.get(id);
-    const fromDisk = await readLesson(id);
-    if (fromDisk) return fromDisk;
+    const saved = await readLesson(id);
+    if (saved) return markInterrupted(saved);
     if (supabase) {
         const { data } = await supabase.from('generated_videos').select('*').eq('id', id).maybeSingle();
-        if (data) return lessonFromRow(data);
+        if (data) return markInterrupted(lessonFromRow(data));
     }
     return null;
 }
@@ -136,21 +153,18 @@ async function listForUser(userId) {
 
 async function remove(lesson) {
     jobs.delete(lesson.id);
-    await fs.rm(dirOf(lesson.id), { recursive: true, force: true });
+    await files.removeAll(lesson.id);
     if (supabase && lesson.userId) {
         await supabase.from('generated_videos').delete().eq('id', lesson.id).eq('user_id', lesson.userId);
     }
 }
 
-function audioPath(id, index) {
-    return path.join(dirOf(id), `scene-${index}.wav`);
-}
-
 const IMAGE_EXT = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' };
 
-function imagePath(id, file) {
-    return path.join(dirOf(id), path.basename(file));
-}
+/** @returns {Promise<Buffer|null>} narration WAV for one scene */
+const readAudio = (id, index) => files.read(id, `scene-${index}.wav`);
+/** @returns {Promise<Buffer|null>} picture for one scene */
+const readImage = (id, file) => files.read(id, path.basename(file));
 
 /** Narration for every scene (sequential: the free voice tier is rate-limited per minute) */
 async function narrateScenes(lesson, onProgress) {
@@ -159,7 +173,7 @@ async function narrateScenes(lesson, onProgress) {
         const scene = lesson.scenes[i];
         try {
             const { wav, duration } = await ttsService.synthesize(scene.narration, { voice: lesson.voice, style });
-            await fs.writeFile(audioPath(lesson.id, i), wav);
+            await files.put(lesson.id, `scene-${i}.wav`, wav);
             scene.audio = `scene-${i}.wav`;
             scene.duration = Math.round(duration * 100) / 100;
         } catch (error) {
@@ -193,7 +207,7 @@ async function illustrateScenes(lesson, onProgress) {
                 seed: (parseInt(lesson.id.slice(0, 6), 16) + i) % 1000000,
             });
             const file = `scene-${i}.${IMAGE_EXT[mime] || 'jpg'}`;
-            await fs.writeFile(imagePath(lesson.id, file), buffer);
+            await files.put(lesson.id, file, buffer);
             scene.image = file;
             scene.imageStatus = 'done';
             lesson.imageProvider = lesson.imageProvider || provider;
@@ -325,5 +339,5 @@ function whenDone(id) {
 }
 
 module.exports = {
-    create, whenDone, get, listForUser, remove, audioPath, imagePath, isLessonId, ensureQuiz, STORAGE, _jobs: jobs, _runJob: runJob,
+    create, whenDone, get, listForUser, remove, readAudio, readImage, isLessonId, ensureQuiz, STORAGE, _jobs: jobs, _runJob: runJob,
 };
