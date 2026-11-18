@@ -6,6 +6,7 @@ import { languageLabel } from '../../constants/languages';
 import LessonPlayer from './LessonPlayer';
 import LessonProgress from './LessonProgress';
 import ShareButton from '../share/ShareButton';
+import TeacherPlanPanel from './TeacherPlanPanel';
 
 const AUDIENCE_LABEL = { kids: 'Kids', student: 'Students', teacher: 'Teachers' } as const;
 
@@ -129,6 +130,7 @@ export default function CoursePlayer({ course }: { course: Course }) {
             ) : lesson.status === 'done' ? (
               <>
                 <LessonPlayer key={lesson.id} lesson={lesson} />
+                {lesson.audience === 'teacher' && <TeacherPlanPanel key={`plan-${lesson.id}`} lesson={lesson} />}
                 {course.modules[current.index + 1] && (
                   <button
                     onClick={() => { setSelected(current.index + 1); window.scrollTo({ top: 0, behavior: 'smooth' }); }}

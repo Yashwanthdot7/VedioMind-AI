@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { LogIn } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { Wordmark } from './Wordmark';
+import { useLearner } from '../../context/LearnerContext';
+import { learnerLabel } from '../learner/LearnerChoice';
 
 /** Three converging strokes: our menu glyph */
 function MenuGlyph({ open }: { open: boolean }) {
@@ -46,6 +48,7 @@ export default function Header({ menuOpen, onToggleMenu, onGoHome, onOpenAuth, o
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
   const solid = !overArt || scrolled || menuOpen;
+  const { learner, openSettings } = useLearner();
 
   const { enabled: authEnabled, user, loading } = useAuth();
   const name = (user?.user_metadata?.full_name as string) || user?.email || '';
@@ -82,6 +85,9 @@ export default function Header({ menuOpen, onToggleMenu, onGoHome, onOpenAuth, o
         </div>
 
         <div className="ml-auto flex items-center gap-4">
+          <button onClick={openSettings} className="hidden text-sm font-medium uppercase tracking-[0.14em] text-neon-200 transition-opacity hover:opacity-70 lg:inline" title="Change how things are explained to you">
+            {learnerLabel(learner)}
+          </button>
           <button onClick={onCreate} className="hidden text-sm font-medium tracking-[0.14em] text-ink-100 transition-opacity hover:opacity-70 md:inline">
             MAKE A LESSON
           </button>

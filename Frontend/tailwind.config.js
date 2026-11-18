@@ -1,45 +1,45 @@
 /** @type {import('tailwindcss').Config} */
 
 /**
- * "Portal" design tokens: a learning world at night
- *   ink    violet-black neutrals (void background → starlight text)
- *   neon   electric violet: actions, focus, the active state
- *   plasma magenta glow: art, highlights, gradient edges (never body text on dark)
+ * "Portal" design tokens: jet black, royal amethyst, electric cyan
+ *   ink    jet-black neutrals (page background → bright text), faintly amethyst-tinted
+ *   neon   royal amethyst: actions, focus, the active state
+ *   plasma electric cyan: glow, highlights, gradient edges
  *   aqua   success and data (aqua-500 is the validated chart colour on ink-900)
  */
 const ink = {
-  50: '#F7F4FF',
-  100: '#F1ECFF', // starlight: primary text
-  200: '#DCD3F5',
-  300: '#C3B8E6',
-  400: '#A99CCB', // haze: secondary text
-  500: '#8D80B3', // muted text
-  600: '#66598F',
-  700: '#463A6E',
-  800: '#2D2150', // borders, raised controls
-  900: '#150D2A', // nebula: panels
-  950: '#0B0716', // void: page background
+  50: '#FAF9FC',
+  100: '#F2F0F6', // primary text
+  200: '#E0DCE8',
+  300: '#CBC5D7',
+  400: '#ADA6BC', // secondary text
+  500: '#8A8299', // muted text
+  600: '#5C5568',
+  700: '#3A3545',
+  800: '#211E29', // borders, raised controls
+  900: '#0E0D12', // panels
+  950: '#050506', // jet black: page background
 };
 
 const neon = {
-  50: '#F3F0FF',
-  100: '#E6E0FF',
-  200: '#CEC2FF',
-  300: '#B3A1FF', // accent text on dark
-  400: '#7650FF', // filled buttons (white text 5.2:1)
-  500: '#6438F0', // pressed / hover on filled
-  600: '#5128CC',
-  700: '#3F1FA3',
-  800: '#2E1878',
-  900: '#1F114F',
-  950: '#12092F',
+  50: '#F6F0FE',
+  100: '#EBDDFD',
+  200: '#D8BDFA',
+  300: '#C29BF5', // accent text on black
+  400: '#8A4FD6', // royal amethyst: filled buttons
+  500: '#7638C2', // pressed / hover on filled
+  600: '#622BA3',
+  700: '#4E2283',
+  800: '#3B1A63',
+  900: '#281245',
+  950: '#170A29',
 };
 
 const plasma = {
-  300: '#F29BFF',
-  400: '#E040FB',
-  500: '#C21FE0',
-  600: '#9612B0',
+  300: '#8FF7FF',
+  400: '#00E5FF', // electric cyan
+  500: '#00C2DB',
+  600: '#0097AD',
 };
 
 const aqua = {

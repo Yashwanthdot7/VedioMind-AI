@@ -4,13 +4,13 @@ export function PortalMark({ className = 'w-8 h-8' }: { className?: string }) {
     <svg viewBox="0 0 64 64" className={className} aria-hidden="true">
       <defs>
         <linearGradient id="pm-g" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#B3A1FF" />
-          <stop offset=".55" stopColor="#E040FB" />
+          <stop offset="0" stopColor="#C29BF5" />
+          <stop offset=".55" stopColor="#00E5FF" />
           <stop offset="1" stopColor="#3EBDD4" />
         </linearGradient>
       </defs>
       <circle cx="32" cy="32" r="24" fill="none" stroke="url(#pm-g)" strokeWidth="5" />
-      <path d="M22 22 L32 43 L42 22" fill="none" stroke="#F1ECFF" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M22 22 L32 43 L42 22" fill="none" stroke="#F2F0F6" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }

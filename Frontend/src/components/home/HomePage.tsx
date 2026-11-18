@@ -1,5 +1,5 @@
 import { FormEvent, KeyboardEvent, useEffect, useRef, useState } from 'react';
-import { Languages, PlayCircle, ChevronRight, ChevronLeft, Play, ListTree, Youtube } from 'lucide-react';
+import { Languages, PlayCircle, ChevronRight, ChevronLeft, Play, Youtube, PenLine, Wand2 } from 'lucide-react';
 import { LANGUAGES } from '../../constants/languages';
 import { useAuth } from '../../context/AuthContext';
 import { getLibrary } from '../../services/apiService';
@@ -8,6 +8,7 @@ import { useReveal } from '../../hooks/useReveal';
 import PortalArt from '../art/PortalArt';
 import WorldTile from '../art/WorldTile';
 import { SHOWCASE, WORLDS } from './topics';
+import { sampleFor } from '../../data/sampleLessons';
 
 /** "Learn anything," in six Indian scripts; the line settles on the last one */
 const SCRIPTS = [
@@ -47,11 +48,14 @@ interface HomePageProps {
   onMakeLesson: (topic: string) => void;
   onOpenLibraryItem: (item: LibraryItem) => void;
   onOpenLessons?: () => void;
+  /** Ready-made lessons play at once; other topics open the lesson form */
+  onPlayLesson?: (topic: string) => void;
 }
 
 // ---------------------------------------------------------------- showcase carousel
 
 function Showcase({ onLaunch, onSeeAll }: { onLaunch: (topic: string) => void; onSeeAll?: () => void }) {
+  // Lessons that are ready to watch come first
   const [index, setIndex] = useState(0);
   const n = SHOWCASE.length;
   const go = (d: number) => setIndex((i) => (i + d + n) % n);
@@ -98,7 +102,21 @@ function Showcase({ onLaunch, onSeeAll }: { onLaunch: (topic: string) => void; o
             </div>
             <h3 className="mt-3 max-w-3xl font-display text-6xl text-white sm:text-8xl">{current.topic}</h3>
             <p className="mt-4 max-w-md text-sm font-medium uppercase tracking-[0.08em] text-ink-200">{current.blurb}</p>
-            <button onClick={() => onLaunch(current.topic)} className="btn-launch mt-6" aria-label={`Launch lesson: ${current.topic}`}>Launch</button>
+            {sampleFor(current.topic) ? (
+              <div className="mt-6 flex flex-wrap items-center gap-4">
+                <button onClick={() => onLaunch(current.topic)} className="btn-launch" aria-label={`Play lesson: ${current.topic}`}>
+                  <Play className="h-3.5 w-3.5 fill-current" /> Play
+                </button>
+                <span className="text-sm text-ink-200">Ready to watch, about a minute</span>
+              </div>
+            ) : (
+              <div className="mt-6 flex flex-wrap items-center gap-4">
+                <button onClick={() => onLaunch(current.topic)} className="btn-launch" aria-label={`Make lesson: ${current.topic}`}>
+                  <Wand2 className="h-3.5 w-3.5" /> Make it
+                </button>
+                <span className="text-sm text-ink-200">Takes about a minute to make</span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -110,7 +128,7 @@ function Showcase({ onLaunch, onSeeAll }: { onLaunch: (topic: string) => void; o
               onClick={() => go(d)}
               aria-label={label}
               className="flex h-14 w-14 items-center justify-center rounded-full text-white transition hover:scale-105 active:scale-95 sm:h-16 sm:w-16"
-              style={{ background: 'linear-gradient(#0B0716cc, #0B0716cc) padding-box, linear-gradient(135deg, #F29BFF, #7650FF, #3EBDD4) border-box', border: '2px solid transparent' }}
+              style={{ background: 'linear-gradient(#050506cc, #050506cc) padding-box, linear-gradient(135deg, #8FF7FF, #8A4FD6, #3EBDD4) border-box', border: '2px solid transparent' }}
             >
               <Icon className="h-5 w-5" />
             </button>
@@ -145,26 +163,25 @@ function Showcase({ onLaunch, onSeeAll }: { onLaunch: (topic: string) => void; o
 // ---------------------------------------------------------------- mirrored wordmark moment
 
 function MirrorType() {
-  const { ref, shown } = useReveal<HTMLDivElement>(0.3);
-  const line = 'font-display block whitespace-nowrap text-center text-[19vw] leading-[0.8] transition-transform duration-[1100ms] ease-out';
+  const { ref, shown } = useReveal<HTMLDivElement>(0.4);
+  const line = 'font-display block whitespace-nowrap text-center text-[11vw] leading-[0.8] transition-transform duration-700 ease-out sm:text-[8vw]';
   return (
-    <div ref={ref} className="relative overflow-hidden py-16 [perspective:900px]" aria-hidden="true">
-      <span className={`${line} text-ink-50/70`} style={{ transform: shown ? 'rotateX(48deg) scaleY(0.62)' : 'rotateX(80deg) scaleY(0.2)' }}>VideoMind</span>
-      <span className={`${line} text-white`} style={{ transform: shown ? 'scaleY(1)' : 'scaleY(0.3)' }}>VideoMind</span>
-      <div className="relative z-10 mx-auto my-3 flex max-w-5xl items-center gap-2 px-6">
-        <span className="h-2 w-2 rotate-45 bg-white" />
+    <div ref={ref} className="relative overflow-hidden py-10" aria-hidden="true">
+      <span className={`${line} text-white`} style={{ transform: shown ? 'scaleY(1)' : 'scaleY(0.4)' }}>VideoMind</span>
+      <div className="relative z-10 mx-auto my-2 flex max-w-5xl items-center gap-2 px-6">
+        <span className="h-1.5 w-1.5 rotate-45 bg-white" />
         <span className="h-px flex-1 bg-gradient-to-r from-white via-plasma-400 to-white" />
-        <span className="h-2 w-2 rotate-45 bg-white" />
+        <span className="h-1.5 w-1.5 rotate-45 bg-white" />
       </div>
-      <span className={`${line} text-white/90`} style={{ transform: shown ? 'scaleY(-1)' : 'scaleY(-0.3)', WebkitMaskImage: 'linear-gradient(to top, transparent, #000 85%)', maskImage: 'linear-gradient(to top, transparent, #000 85%)' }}>VideoMind</span>
-      <span className={`${line} text-ink-50/40`} style={{ transform: shown ? 'rotateX(-48deg) scaleY(-0.62)' : 'rotateX(-80deg) scaleY(-0.2)' }}>VideoMind</span>
+      <span className={`${line} text-white/70`} style={{ transform: shown ? 'scaleY(-0.7)' : 'scaleY(-0.2)', WebkitMaskImage: 'linear-gradient(to top, transparent, #000 90%)', maskImage: 'linear-gradient(to top, transparent, #000 90%)' }}>VideoMind</span>
     </div>
   );
 }
 
 // ---------------------------------------------------------------- page
 
-export default function HomePage({ busy, language, onLanguageChange, onSummarize, onMakeLesson, onOpenLibraryItem, onOpenLessons }: HomePageProps) {
+export default function HomePage({ busy, language, onLanguageChange, onSummarize, onMakeLesson, onOpenLibraryItem, onOpenLessons, onPlayLesson }: HomePageProps) {
+  const play = onPlayLesson || onMakeLesson;
   const { user } = useAuth();
   const [mode, setMode] = useState<Mode>('video');
   const [value, setValue] = useState('');
@@ -193,89 +210,73 @@ export default function HomePage({ busy, language, onLanguageChange, onSummarize
   return (
     <div>
       {/* ------------------------------------------------ hero */}
-      <section className="relative isolate flex min-h-[100dvh] flex-col justify-end overflow-hidden pb-28 pt-28">
+      <section className="relative isolate flex min-h-[92dvh] flex-col justify-center overflow-hidden pb-16 pt-24 sm:justify-end sm:pt-28">
         <PortalArt />
         <div className="relative mx-auto w-full max-w-[1400px] px-5 sm:px-10">
-          <h1 className="font-display text-[3.4rem] text-white sm:text-8xl lg:text-[8.5rem]">
+          <h1 className="font-display text-[2.7rem] text-white sm:text-7xl lg:text-[7.5rem]">
             <span className="sr-only">Learn anything, in your language.</span>
             <span aria-hidden="true" className="block">Learn anything,</span>
             <CyclingLine />
             <span aria-hidden="true" className="block">in your language.</span>
           </h1>
-          <p className="mt-6 max-w-xl text-lg leading-relaxed text-ink-200">
-            Paste a YouTube link for the transcript, a summary and a tutor you can question. Or type a topic and get a narrated video lesson.
-          </p>
 
-          <form onSubmit={submit} className="glass mt-8 flex max-w-3xl flex-col gap-2 rounded-2xl p-2 sm:flex-row">
-            <label className="flex-1">
-              <span className="sr-only">{mode === 'video' ? 'YouTube link' : 'Lesson topic'}</span>
-              <input
-                ref={inputRef}
-                type="text"
-                inputMode={mode === 'video' ? 'url' : 'text'}
-                value={value}
-                onChange={(e) => setValue(e.target.value)}
-                disabled={busy}
-                placeholder={mode === 'video' ? 'https://www.youtube.com/watch?v=…' : 'A topic, or paste your notes'}
-                className="w-full rounded-xl bg-transparent px-4 py-3.5 text-base text-white placeholder-ink-400 focus:outline-none"
-              />
-            </label>
-            <label className="relative flex items-center" title="Output language">
-              <span className="sr-only">Output language</span>
-              <Languages className="pointer-events-none absolute left-3 h-4 w-4 text-ink-400" />
-              <select
-                value={language}
-                onChange={(e) => onLanguageChange(e.target.value)}
-                disabled={busy}
-                className="w-full appearance-none rounded-xl bg-white/5 py-3.5 pl-9 pr-4 text-ink-100 focus:outline-none sm:w-auto"
-              >
-                {LANGUAGES.map((l) => <option key={l.code} value={l.code} className="bg-ink-900">{l.native}</option>)}
-              </select>
-            </label>
-            <button type="submit" disabled={busy || !value.trim()} className="btn-neon uppercase tracking-[0.14em]">
-              {mode === 'video' ? (busy ? 'Working…' : 'Summarize') : 'Plan the lesson'}
-            </button>
+          <form onSubmit={submit} className="glass mt-6 max-w-3xl rounded-2xl p-2 sm:mt-8">
+            <div role="tablist" aria-label="What do you want to do?" className="flex gap-1 p-1">
+              {([['video', 'Summarize a video', Youtube], ['lesson', 'Make a lesson', PenLine]] as const).map(([m, label, Icon]) => (
+                <button
+                  key={m}
+                  type="button"
+                  role="tab"
+                  aria-selected={mode === m}
+                  onClick={() => pickMode(m)}
+                  className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition ${mode === m ? 'bg-neon-400 text-white' : 'text-ink-300 hover:text-white'}`}
+                >
+                  <Icon className="h-4 w-4" /> {label}
+                </button>
+              ))}
+            </div>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <label className="flex-1">
+                <span className="sr-only">{mode === 'video' ? 'YouTube link' : 'Lesson topic'}</span>
+                <input
+                  ref={inputRef}
+                  type="text"
+                  inputMode={mode === 'video' ? 'url' : 'text'}
+                  value={value}
+                  onChange={(e) => setValue(e.target.value)}
+                  disabled={busy}
+                  placeholder={mode === 'video' ? 'Paste a YouTube link' : 'A topic, or paste your notes'}
+                  className="w-full rounded-xl bg-white/5 px-4 py-3.5 text-base text-white placeholder-ink-400 focus:bg-white/10 focus:outline-none"
+                />
+              </label>
+              <label className="relative flex items-center" title="Output language">
+                <span className="sr-only">Output language</span>
+                <Languages className="pointer-events-none absolute left-3 h-4 w-4 text-ink-400" />
+                <select
+                  value={language}
+                  onChange={(e) => onLanguageChange(e.target.value)}
+                  disabled={busy}
+                  className="w-full appearance-none rounded-xl bg-white/5 py-3.5 pl-9 pr-4 text-ink-100 focus:outline-none sm:w-auto"
+                >
+                  {LANGUAGES.map((l) => <option key={l.code} value={l.code} className="bg-ink-900">{l.native}</option>)}
+                </select>
+              </label>
+              <button type="submit" disabled={busy || !value.trim()} className="btn-neon">
+                {mode === 'video' ? (busy ? 'Working…' : 'Summarize') : 'Plan the lesson'}
+              </button>
+            </div>
           </form>
 
-          {/* feature cards */}
-          <div className="mt-10 grid max-w-4xl grid-cols-1 gap-4 sm:grid-cols-2">
-            <button onClick={() => pickMode('video')} className="group chamfer flex items-stretch overflow-hidden bg-ink-900/80 text-left backdrop-blur transition hover:-translate-y-1">
-              <div className="w-28 shrink-0 overflow-hidden sm:w-36">
-                <WorldTile theme={{ from: '#E040FB', to: '#7650FF', icon: Youtube, seed: 2 }} className="h-full w-full transition-transform duration-500 group-hover:scale-110" iconSize={34} />
-              </div>
-              <div className="p-4">
-                <p className="font-display-wide text-sm text-white">Any video</p>
-                <p className="mt-1 text-sm text-ink-300">Transcript, summary, notes, quiz and a tutor that answers with timestamps.</p>
-              </div>
+          <div className="mt-5 flex max-w-3xl flex-wrap items-center gap-x-6 gap-y-3">
+            <button onClick={() => play('Photosynthesis')} className="flex items-center gap-2 text-sm font-semibold text-white hover:text-neon-200">
+              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-ink-950"><Play className="h-3.5 w-3.5 fill-current" /></span>
+              Watch a 1-minute sample lesson
             </button>
-            <button onClick={onOpenLessons || (() => pickMode('lesson'))} className="group chamfer flex items-stretch overflow-hidden bg-ink-900/80 text-left backdrop-blur transition hover:-translate-y-1">
-              <div className="w-28 shrink-0 overflow-hidden sm:w-36">
-                <WorldTile theme={{ from: '#3EBDD4', to: '#7650FF', icon: ListTree, seed: 9 }} className="h-full w-full transition-transform duration-500 group-hover:scale-110" iconSize={34} />
-              </div>
-              <div className="p-4">
-                <p className="font-display-wide text-sm text-white">Lessons and courses</p>
-                <p className="mt-1 text-sm text-ink-300">A topic, your notes or a PDF chapter, turned into narrated video lessons.</p>
-              </div>
-            </button>
-          </div>
-        </div>
-
-        {/* currently viewing */}
-        <div className="absolute inset-x-0 bottom-6 z-10 flex justify-center px-4">
-          <div role="tablist" aria-label="What do you want to do?" className="glass flex items-center gap-2 rounded-full p-1.5 pl-4">
-            <span className="hidden text-sm font-semibold tracking-[0.14em] text-ink-100 sm:inline">CURRENTLY VIEWING:</span>
-            {([['video', 'Video', 'Summarize a video'], ['lesson', 'Lesson', 'Make a video lesson']] as const).map(([m, label, full]) => (
-              <button
-                key={m}
-                role="tab"
-                aria-selected={mode === m}
-                aria-label={full}
-                onClick={() => pickMode(m)}
-                className={`rounded-full px-6 py-2 text-sm font-bold tracking-[0.14em] transition ${mode === m ? 'bg-neon-400 text-white shadow-[0_0_24px_-4px_#7650FF]' : 'bg-white/5 text-ink-300 hover:text-white'}`}
-              >
-                {label.toUpperCase()}
-              </button>
-            ))}
+            <p className="text-sm text-ink-300">
+              {mode === 'video'
+                ? 'Get the transcript, a summary, notes and a tutor that answers with timestamps.'
+                : 'A narrated lesson with drawn slides or AI pictures, in 15 languages.'}
+            </p>
           </div>
         </div>
       </section>
@@ -303,8 +304,8 @@ export default function HomePage({ busy, language, onLanguageChange, onSummarize
 
       {/* ------------------------------------------------ showcase */}
       <div className="pt-20">
-        <h2 className="mx-auto mb-6 max-w-[1400px] px-5 font-display text-5xl text-white sm:px-10 sm:text-6xl">Start with a lesson</h2>
-        <Showcase onLaunch={onMakeLesson} onSeeAll={onOpenLessons} />
+        <h2 className="mx-auto mb-6 max-w-[1400px] px-5 font-display text-5xl text-white sm:px-10 sm:text-6xl">Watch a lesson</h2>
+        <Showcase onLaunch={play} onSeeAll={onOpenLessons} />
       </div>
 
       {/* ------------------------------------------------ the mirrored wordmark */}
@@ -318,7 +319,7 @@ export default function HomePage({ busy, language, onLanguageChange, onSummarize
       >
         <div className="flex flex-wrap items-end justify-between gap-4">
           <h2 id="worlds-heading" className="font-display text-5xl text-white sm:text-6xl">Choose a world</h2>
-          <p className="max-w-md text-ink-300">Pick a topic and VideoMind plans, writes and narrates the lesson, with pictures for every scene.</p>
+          <p className="max-w-md text-ink-300">Pick a topic and VideoMind writes and narrates a lesson on it. Making one takes about a minute.</p>
         </div>
         <ul className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {WORLDS.map((w) => (
@@ -328,7 +329,8 @@ export default function HomePage({ busy, language, onLanguageChange, onSummarize
               </div>
               <div className="p-5">
                 <h3 className="font-display-wide text-lg text-white">{w.name}</h3>
-                <div className="mt-3 flex flex-wrap gap-2">
+                <p className="mt-2 text-xs text-ink-400">Make a lesson about…</p>
+                <div className="mt-2 flex flex-wrap gap-2">
                   {w.topics.map((t) => (
                     <button
                       key={t}

@@ -7,7 +7,7 @@ vi.mock('../../context/AuthContext', () => ({ useAuth: () => ({ user: null, enab
 vi.mock('../../services/apiService', () => ({ getLibrary: vi.fn().mockResolvedValue([]) }));
 
 const props = () => ({
-  busy: false, language: 'en', onLanguageChange: vi.fn(), onSummarize: vi.fn(), onMakeLesson: vi.fn(), onOpenLibraryItem: vi.fn(),
+  busy: false, language: 'en', onLanguageChange: vi.fn(), onSummarize: vi.fn(), onMakeLesson: vi.fn(), onOpenLibraryItem: vi.fn(), onPlayLesson: vi.fn(),
 });
 
 describe('HomePage', () => {
@@ -31,13 +31,16 @@ describe('HomePage', () => {
     const user = userEvent.setup();
     const p = props();
     render(<HomePage {...p} />);
-    await user.click(screen.getByRole('tab', { name: /video lesson/i }));
+    await user.click(screen.getByRole('tab', { name: /make a lesson/i }));
     await user.type(screen.getByLabelText('Lesson topic'), 'The water cycle');
     await user.click(screen.getByRole('button', { name: 'Plan the lesson' }));
     expect(p.onMakeLesson).toHaveBeenCalledWith('The water cycle');
 
-    await user.click(screen.getByRole('button', { name: 'Launch lesson: Photosynthesis' }));
-    expect(p.onMakeLesson).toHaveBeenLastCalledWith('Photosynthesis');
+    // Ready-made samples play at once
+    await user.click(screen.getByRole('button', { name: 'Play lesson: Photosynthesis' }));
+    expect(p.onPlayLesson).toHaveBeenLastCalledWith('Photosynthesis');
+    await user.click(screen.getByRole('button', { name: /Watch a 1-minute sample lesson/ }));
+    expect(p.onPlayLesson).toHaveBeenCalledTimes(2);
   });
 
   it('the showcase carousel moves with its arrows and thumbnails, and topics in a world start a lesson', async () => {
@@ -45,13 +48,13 @@ describe('HomePage', () => {
     const p = props();
     render(<HomePage {...p} />);
     await user.click(screen.getByRole('button', { name: 'Next lesson' }));
-    expect(screen.getByRole('button', { name: 'Launch lesson: The water cycle' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Play lesson: The water cycle' })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Previous lesson' }));
     await user.click(screen.getByRole('button', { name: 'Previous lesson' }));
-    expect(screen.getByRole('button', { name: 'Launch lesson: How volcanoes work' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Make lesson: How volcanoes work' })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Show How computers store numbers' }));
-    await user.click(screen.getByRole('button', { name: 'Launch lesson: How computers store numbers' }));
-    expect(p.onMakeLesson).toHaveBeenLastCalledWith('How computers store numbers');
+    await user.click(screen.getByRole('button', { name: 'Play lesson: How computers store numbers' }));
+    expect(p.onPlayLesson).toHaveBeenLastCalledWith('How computers store numbers');
 
     await user.click(screen.getByRole('button', { name: "Pythagoras' theorem" }));
     expect(p.onMakeLesson).toHaveBeenLastCalledWith("Pythagoras' theorem");
@@ -67,5 +70,26 @@ describe('HomePage', () => {
     } finally {
       window.matchMedia = original;
     }
+  });
+});
+
+describe('sample lessons', () => {
+  it('ship with full scripts and a 5-question quiz, and need nothing from the server', async () => {
+    const { SAMPLE_LESSONS, sampleFor } = await import('../../data/sampleLessons');
+    const all = Object.values(SAMPLE_LESSONS);
+    expect(all).toHaveLength(3);
+    for (const l of all) {
+      expect(l.sample).toBe(true);
+      expect(l.voiceMode).toBe('browser');
+      expect(l.visuals).toBe('slides');
+      expect(l.scenes.length).toBeGreaterThanOrEqual(5);
+      expect(l.scenes[0].layout).toBe('title');
+      expect(l.scenes[l.scenes.length - 1].layout).toBe('summary');
+      expect(l.scenes.every((s) => !s.image && s.narration.split(' ').length >= 15)).toBe(true);
+      expect(l.quiz).toHaveLength(5);
+      expect(l.quiz.every((q) => q.options[q.answerIndex] !== undefined)).toBe(true);
+    }
+    expect(sampleFor('Photosynthesis')?.id).toBe('sample-photosynthesis');
+    expect(sampleFor('How volcanoes work')).toBeNull();
   });
 });

@@ -4,6 +4,8 @@ import { useAuth } from '../../context/AuthContext';
 import { AppView } from '../../lib/navigation';
 import { NAV_ITEMS } from './navItems';
 import WorldTile from '../art/WorldTile';
+import { useLearner } from '../../context/LearnerContext';
+import { learnerLabel } from '../learner/LearnerChoice';
 
 interface MenuOverlayProps {
   open: boolean;
@@ -19,6 +21,7 @@ interface MenuOverlayProps {
 export default function MenuOverlay({ open, view, hasVideo, videoTitle, onClose, onNavigate, onOpenAuth }: MenuOverlayProps) {
   const { enabled: authEnabled, user, signOut } = useAuth();
   const first = useRef<HTMLButtonElement>(null);
+  const { learner, openSettings } = useLearner();
 
   useEffect(() => {
     if (!open) return;
@@ -71,6 +74,9 @@ export default function MenuOverlay({ open, view, hasVideo, videoTitle, onClose,
         </nav>
 
         <div className="flex flex-col justify-end gap-3 border-t border-white/10 px-6 pb-10 pt-6 text-sm tracking-[0.14em] sm:px-12 lg:border-l lg:border-t-0 lg:items-end lg:pb-16">
+          <button onClick={() => { onClose(); openSettings(); }} className="text-left text-neon-200 hover:text-white lg:text-right">
+            LEARNING PROFILE: {learnerLabel(learner).toUpperCase()}
+          </button>
           {authEnabled && (user ? (
             <button onClick={() => { onClose(); signOut(); }} className="flex items-center gap-2 text-ink-200 hover:text-white">
               <LogOut className="h-4 w-4" /> SIGN OUT
@@ -85,7 +91,7 @@ export default function MenuOverlay({ open, view, hasVideo, videoTitle, onClose,
         </div>
 
         <div className="relative hidden lg:block">
-          <WorldTile theme={{ from: '#7650FF', to: '#E040FB', icon: BookOpenCheck, seed: 11 }} className="absolute inset-0 h-full w-full" iconSize={84} />
+          <WorldTile theme={{ from: '#8A4FD6', to: '#00E5FF', icon: BookOpenCheck, seed: 11 }} className="absolute inset-0 h-full w-full" iconSize={84} />
           <div className="absolute inset-x-0 bottom-0 p-8 bg-gradient-to-t from-ink-950 to-transparent">
             <p className="font-display text-3xl text-ink-50">Videos in.<br />Understanding out.</p>
           </div>

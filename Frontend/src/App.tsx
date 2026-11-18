@@ -4,9 +4,11 @@ import { Languages, Cloud, CloudOff, Clapperboard } from 'lucide-react';
 import Header from './components/shell/Header';
 import MenuOverlay from './components/shell/MenuOverlay';
 import BootLoader from './components/shell/BootLoader';
+import LearnerSettings from './components/learner/LearnerSettings';
 import LinkBar from './components/shell/LinkBar';
 import HomePage from './components/home/HomePage';
 import SharedPage from './components/share/SharedPage';
+import { sampleFor } from './data/sampleLessons';
 import VideoPlayer from './components/VideoPlayer';
 import Transcript from './components/Transcript';
 import AIInsights from './components/AIInsights';
@@ -19,8 +21,8 @@ import LessonsPage from './components/lessons/LessonsPage';
 import AnalyticsPage from './components/analytics/AnalyticsPage';
 import { AppView, onNavigate } from './lib/navigation';
 import { useAuth } from './context/AuthContext';
-import { ProcessingStatus, VideoData, Message, ProcessingStep, PlayerHandle, LibraryItem } from './types';
-import { processVideo, sendChat, getLibraryEntry, clearChat } from './services/apiService';
+import { ProcessingStatus, VideoData, Message, ProcessingStep, PlayerHandle, LibraryItem, Lesson, LearnerLevel } from './types';
+import { processVideo, sendChat, getLibraryEntry, clearChat, getSummaryForLevel } from './services/apiService';
 import { DEFAULT_LANGUAGE, LANGUAGES, languageLabel } from './constants/languages';
 import { errorMessage } from './lib/errors';
 
@@ -65,6 +67,10 @@ function App() {
   const [view, setView] = useState<View>(() => (readShareSlug() ? 'shared' : 'home'));
   const [status, setStatus] = useState<ProcessingStatus>(ProcessingStatus.IDLE);
   const [videoData, setVideoData] = useState<VideoData | null>(null);
+  // Summaries already fetched for this video, per level, so switching back is instant
+  const summaryByLevel = useRef<Partial<Record<LearnerLevel, { summary: string; keyTakeaways: string[] }>>>({});
+  const [summaryBusy, setSummaryBusy] = useState(false);
+  const [summaryNotice, setSummaryNotice] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [isTyping, setIsTyping] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -73,6 +79,7 @@ function App() {
   const [authOpen, setAuthOpen] = useState(false);
   const [lessonFromVideo, setLessonFromVideo] = useState(false);
   const [lessonTopic, setLessonTopic] = useState('');
+  const [sampleLesson, setSampleLesson] = useState<Lesson | null>(null);
 
   const [processingSteps, setProcessingSteps] = useState<ProcessingStep[]>(freshSteps);
   const [progress, setProgress] = useState(0);
@@ -116,6 +123,8 @@ function App() {
   const showVideo = (video: VideoData, history: Message[] = []) => {
     playerRef.current = null;
     setCurrentTime(0);
+    summaryByLevel.current = {};
+    setSummaryNotice(null);
     setVideoData(video);
     setMessages([greeting(video), ...history]);
     setView('dashboard');
@@ -235,6 +244,7 @@ function App() {
   const openLessons = (fromVideo = false) => {
     setLessonFromVideo(fromVideo);
     setLessonTopic('');
+    setSampleLesson(null);
     setError(null);
     setView('lessons');
     window.scrollTo({ top: 0 });
@@ -285,7 +295,42 @@ function App() {
     else if (target === 'dashboard' && videoData) { setView('dashboard'); window.scrollTo({ top: 0 }); }
   };
   const makeLesson = (topic: string) => {
+    setSampleLesson(null);
     setLessonTopic(topic);
+    setLessonFromVideo(false);
+    setError(null);
+    setView('lessons');
+    window.scrollTo({ top: 0 });
+  };
+  /** Rewrite the summary for another level (cached per level for this video) */
+  const changeSummaryLevel = async (level: LearnerLevel) => {
+    if (!videoData || level === (videoData.level || 'intermediate')) return;
+    const current = videoData.level || 'intermediate';
+    summaryByLevel.current[current] ||= { summary: videoData.summary, keyTakeaways: videoData.keyTakeaways };
+    const cached = summaryByLevel.current[level];
+    if (cached) {
+      setVideoData((v) => (v ? { ...v, ...cached, level } : v));
+      return;
+    }
+    setSummaryBusy(true);
+    setSummaryNotice(null);
+    try {
+      const r = await getSummaryForLevel(videoData, level);
+      summaryByLevel.current[level] = { summary: r.summary, keyTakeaways: r.keyTakeaways };
+      setVideoData((v) => (v ? { ...v, summary: r.summary, keyTakeaways: r.keyTakeaways, level, levelNotice: undefined } : v));
+    } catch (err) {
+      setSummaryNotice(errorMessage(err, 'Could not rewrite the summary. Please try again.'));
+    } finally {
+      setSummaryBusy(false);
+    }
+  };
+
+  /** Ready-made lessons play straight away; other topics open the lesson form */
+  const playLesson = (topic: string) => {
+    const sample = sampleFor(topic);
+    if (!sample) { makeLesson(topic); return; }
+    setSampleLesson(sample);
+    setLessonTopic('');
     setLessonFromVideo(false);
     setError(null);
     setView('lessons');
@@ -319,8 +364,16 @@ function App() {
 
       <ProcessingOverlay isVisible={busy} steps={processingSteps} progress={progress} />
       <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
+      <LearnerSettings />
 
-      <div className={view === 'home' ? '' : 'pt-[76px]'}>
+      <div className={view === 'home' ? '' : 'relative pt-[76px]'}>
+        {view !== 'home' && (
+          // The portal's glow carries into every inner page, so it feels like the same place
+          <div className="pointer-events-none absolute inset-x-0 top-0 -z-0 h-[520px] overflow-hidden" aria-hidden="true">
+            <div className="absolute inset-0" style={{ background: 'radial-gradient(50% 70% at 78% 0%, rgba(0,229,255,0.22), transparent 70%), radial-gradient(40% 60% at 15% 10%, rgba(138,79,214,0.22), transparent 70%)' }} />
+            <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-b from-transparent to-ink-950" />
+          </div>
+        )}
         {view !== 'home' && (
           <LinkBar
             busy={busy}
@@ -330,7 +383,7 @@ function App() {
           />
         )}
 
-        <main id="main">
+        <main id="main" className="relative">
           <AnimatePresence mode="wait">
             {view === 'shared' && sharedSlug ? (
               <motion.div key={`shared-${sharedSlug}`} {...fade} className={page}>
@@ -341,12 +394,13 @@ function App() {
                 <AnalyticsPage />
               </motion.div>
             ) : view === 'lessons' ? (
-              <motion.div key={`lessons-${lessonFromVideo}-${lessonTopic}`} {...fade} className={page}>
+              <motion.div key={`lessons-${lessonFromVideo}-${lessonTopic}-${sampleLesson?.id || ''}`} {...fade} className={page}>
                 <LessonsPage
                   currentVideo={videoData}
                   preferVideo={lessonFromVideo}
                   defaultLanguage={lessonFromVideo ? videoData?.language || language : language}
                   initialText={lessonTopic}
+                  initialLesson={sampleLesson}
                 />
               </motion.div>
             ) : view === 'library' && user ? (
@@ -356,6 +410,8 @@ function App() {
             ) : view === 'dashboard' && videoData ? (
               <motion.div key={`dashboard-${videoData.videoId}-${videoData.language}`} {...fade} className={page}>
             <div className="max-w-7xl mx-auto">
+              <h1 className="mb-1 font-display text-4xl text-white md:text-6xl">{videoData.title}</h1>
+              <p className="mb-6 text-sm text-ink-400">Transcript, summary, tutor and study tools{videoData.language !== 'en' ? ', in your language' : ''}.</p>
               <div className="flex flex-wrap items-center gap-3 mb-4 text-sm">
                 {authEnabled && (
                   user && videoData.analysisId ? (
@@ -409,7 +465,16 @@ function App() {
 
                 {/* Insights stay in view while you scroll the transcript and chat */}
                 <div className="lg:col-span-2 lg:sticky lg:top-[148px] lg:self-start">
-                  <AIInsights summary={videoData.summary} keyTakeaways={videoData.keyTakeaways} onSeek={seekTo} scrollable />
+                  <AIInsights
+                    summary={videoData.summary}
+                    keyTakeaways={videoData.keyTakeaways}
+                    onSeek={seekTo}
+                    scrollable
+                    level={videoData.level || 'intermediate'}
+                    onLevelChange={changeSummaryLevel}
+                    levelBusy={summaryBusy}
+                    levelNotice={summaryNotice || videoData.levelNotice || null}
+                  />
                 </div>
               </div>
 
@@ -434,6 +499,7 @@ function App() {
                   onMakeLesson={makeLesson}
                   onOpenLibraryItem={openLibraryItem}
                   onOpenLessons={() => openLessons(false)}
+                  onPlayLesson={playLesson}
                 />
               </motion.div>
             )}

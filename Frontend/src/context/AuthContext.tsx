@@ -1,4 +1,5 @@
 import { createContext, ReactNode, useContext, useEffect, useMemo, useState } from 'react';
+import type { Learner } from '../types';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase, isAuthEnabled } from '../lib/supabase';
 
@@ -9,7 +10,7 @@ interface AuthContextValue {
   session: Session | null;
   signInWithGoogle: () => Promise<void>;
   signInWithPassword: (email: string, password: string) => Promise<void>;
-  signUpWithPassword: (email: string, password: string, fullName: string) => Promise<{ needsConfirmation: boolean }>;
+  signUpWithPassword: (email: string, password: string, fullName: string, learner?: Learner) => Promise<{ needsConfirmation: boolean }>;
   sendPasswordReset: (email: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
@@ -56,11 +57,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (error) throw error;
     },
 
-    async signUpWithPassword(email, password, fullName) {
+    async signUpWithPassword(email, password, fullName, learner) {
       const { data, error } = await requireClient().auth.signUp({
         email,
         password,
-        options: { data: { full_name: fullName }, emailRedirectTo: window.location.origin },
+        // role and level go into the profile at sign-up (database trigger, migration 005)
+        options: { data: { full_name: fullName, ...(learner && { role: learner.role, level: learner.level }) }, emailRedirectTo: window.location.origin },
       });
       if (error) throw error;
       return { needsConfirmation: !data.session };

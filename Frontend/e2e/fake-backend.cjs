@@ -49,10 +49,26 @@ const QUIZ = {
     explanation: 'Magma that erupts is called lava.', difficulty: ['easy', 'medium', 'hard'][i % 3], scene: 1,
   })),
 };
+const PLAN = {
+  objectives: ['Explain where magma comes from', 'Describe what happens in an eruption'],
+  durationMinutes: 40, materials: ['Whiteboard'],
+  steps: [
+    { minutes: 5, title: 'Hook', teacher: 'Ask who has seen a volcano.', students: 'Share what they know.', scene: 0 },
+    { minutes: 10, title: 'Watch and pause', teacher: 'Pause after the lava scene and ask how hot it is.', students: 'Guess, then check.', scene: 2 },
+  ],
+  misconceptions: [{ misconception: 'Lava comes from the Earth\'s core.', fix: 'Magma forms in the mantle and crust.' }],
+  activity: { title: 'Build a volcano diagram', instructions: 'Label the magma chamber, vent and crater.' },
+  questions: ['Why does magma rise?'], exitTicket: ['Name one thing that makes an eruption explosive.'],
+  differentiation: 'Give a labelled diagram to students who need support.',
+};
+const LEVEL_SUMMARY = { summary: 'Plants are like tiny kitchens that cook food from sunlight.', keyTakeaways: ['Leaves catch light', 'Plants make sugar'] };
 gemini.withModel = async (_options, fn) => fn({
   generateContent: async (prompt) => {
     const p = String(prompt);
-    const body = p.startsWith('You are planning') ? OUTLINE : p.startsWith('Write a ') ? QUIZ : SCRIPT;
+    const body = p.startsWith('You are planning') ? OUTLINE
+      : p.startsWith('Write a practical lesson plan') ? PLAN
+      : p.startsWith('Rewrite this video') ? LEVEL_SUMMARY
+      : p.startsWith('Write a ') ? QUIZ : SCRIPT;
     return { response: { text: () => JSON.stringify(body), usageMetadata: { promptTokenCount: 100 } } };
   },
 });

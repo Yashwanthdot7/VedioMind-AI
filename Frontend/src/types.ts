@@ -187,6 +187,8 @@ export interface Lesson {
   durationSec: number | null;
   error: string | null;
   createdAt: string;
+  /** A ready-made lesson that ships with the site (plays offline, no server features) */
+  sample?: boolean;
 }
 
 export interface LessonSummary {

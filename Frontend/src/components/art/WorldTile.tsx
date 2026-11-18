@@ -38,8 +38,8 @@ function WorldTile({ theme, className = '', iconSize = 56 }: { theme: WorldTheme
         <defs>
           <radialGradient id={`${id}-bg`} cx="50%" cy="45%" r="70%">
             <stop offset="0" stopColor={theme.to} stopOpacity="0.45" />
-            <stop offset="0.6" stopColor="#150D2A" />
-            <stop offset="1" stopColor="#0B0716" />
+            <stop offset="0.6" stopColor="#0E0D12" />
+            <stop offset="1" stopColor="#050506" />
           </radialGradient>
           <linearGradient id={`${id}-top`} x1="0" y1="0" x2="1" y2="1">
             <stop offset="0" stopColor={theme.from} />
@@ -47,7 +47,7 @@ function WorldTile({ theme, className = '', iconSize = 56 }: { theme: WorldTheme
           </linearGradient>
           <linearGradient id={`${id}-side`} x1="0" y1="0" x2="0" y2="1">
             <stop offset="0" stopColor="#2D2150" />
-            <stop offset="1" stopColor="#0B0716" />
+            <stop offset="1" stopColor="#050506" />
           </linearGradient>
         </defs>
         <rect width="400" height="300" fill={`url(#${id}-bg)`} />
@@ -66,14 +66,14 @@ function WorldTile({ theme, className = '', iconSize = 56 }: { theme: WorldTheme
         {/* crystals */}
         {crystals.map((c, i) => (
           <g key={i}>
-            <path d={`M${c.x} ${c.y} L${c.x + c.w / 2} ${c.y - c.h} L${c.x + c.w} ${c.y} Z`} fill={i % 2 ? theme.from : '#F1ECFF'} opacity={i % 2 ? 0.95 : 0.75} />
-            <path d={`M${c.x + c.w / 2} ${c.y - c.h} L${c.x + c.w} ${c.y} L${c.x + c.w / 2} ${c.y + 3} Z`} fill="#0B0716" opacity="0.35" />
+            <path d={`M${c.x} ${c.y} L${c.x + c.w / 2} ${c.y - c.h} L${c.x + c.w} ${c.y} Z`} fill={i % 2 ? theme.from : '#F2F0F6'} opacity={i % 2 ? 0.95 : 0.75} />
+            <path d={`M${c.x + c.w / 2} ${c.y - c.h} L${c.x + c.w} ${c.y} L${c.x + c.w / 2} ${c.y + 3} Z`} fill="#050506" opacity="0.35" />
           </g>
         ))}
         <ellipse cx="200" cy="96" rx="58" ry="58" fill={theme.to} opacity="0.25" />
       </svg>
       <div className="absolute left-1/2 top-[30%] -translate-x-1/2 -translate-y-1/2 rounded-full p-4" style={{ background: `radial-gradient(circle, ${theme.to}55, transparent 70%)` }}>
-        <Icon style={{ width: iconSize, height: iconSize, color: '#F1ECFF', filter: `drop-shadow(0 0 14px ${theme.to})` }} strokeWidth={1.6} />
+        <Icon style={{ width: iconSize, height: iconSize, color: '#F2F0F6', filter: `drop-shadow(0 0 14px ${theme.to})` }} strokeWidth={1.6} />
       </div>
     </div>
   );

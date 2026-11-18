@@ -9,11 +9,17 @@ Turn any YouTube video into a transcript, summary, study kit and a tutor you can
 ![Supabase](https://img.shields.io/badge/Database-Supabase-3ECF8E?style=flat-square&logo=supabase)
 ![License](https://img.shields.io/badge/License-MIT-lightgrey?style=flat-square)
 
-![Demo: summarize a video, ask the tutor, make a 4-module course and play it](docs/demo.gif)
+![Demo: summarize a video, re-explain the summary for a beginner, then play a sample lesson](docs/demo.gif)
 
 <sub>Demo recorded against the local test backend (a stand-in YouTube player and canned AI replies), so it runs offline. Real runs use YouTube and Gemini.</sub>
 
 ## What it does
+
+**Try it in seconds.** The home page has three sample lessons (photosynthesis, the water cycle, how computers store numbers) that play straight away, with no account and no waiting.
+
+**Learn at your level.** When you sign up you pick student or teacher. Students also pick a level (beginner, intermediate or advanced). Guests can set the same thing from the menu. The level shapes summaries, tutor answers, study tools, lessons and courses, and a video's summary can be re-explained for another level with one click.
+
+**Teach with it.** Teachers choose a *teaching guide* (a video that coaches them through the lesson) or a *class video* (a lesson to show students at the level they pick). Both come with a printable lesson plan: objectives, timed steps with where to pause the video, common misconceptions and how to fix them, an activity, questions and an exit ticket. It can be printed or downloaded as Markdown.
 
 **Understand a video.** Paste a YouTube link and get:
 - a searchable transcript that follows the video and jumps to any line
@@ -76,6 +82,10 @@ What should the script writer read when the material is too long for it? Four me
 | **TextRank** | **47%** | **0.409** | **0.173** |
 
 The 40% budget shows the same order. The set is small, and one document shows no gain; both are noted in [RESULTS.md](backend/eval/scene-planning/RESULTS.md) and the [benchmark README](backend/eval/scene-planning/README.md). To reproduce, run `node backend/scripts/compareScenePlanning.js`. Add `--live` to compare real Gemini lessons (needs a key). CI prints the table on every run.
+
+## Design
+
+Jet black background, royal amethyst for actions and the active state, electric cyan for glow and highlights. Condensed display type (Anek, which also covers 8 Indian scripts), a framed header and a full-screen menu. All art is drawn in code (SVG and CSS); no images are copied from anywhere. Text contrast is at least 4.5:1, and the progress charts use one validated colour.
 
 ## Tech stack
 
@@ -165,7 +175,7 @@ The free plan gives 10,000 Neurons a day, about 170 pictures (about 25 lessons).
 
 1. Create a project at [supabase.com](https://supabase.com).
 2. **SQL Editor → New query** → paste [`supabase/schema.sql`](supabase/schema.sql) → **Run**.
-   - Already ran it before? Run the migrations you don't have yet, once each: [`002_quiz_attempts.sql`](supabase/migrations/002_quiz_attempts.sql) (quiz analytics), [`003_courses.sql`](supabase/migrations/003_courses.sql) (courses and the lesson files bucket), [`004_sharing.sql`](supabase/migrations/004_sharing.sql) (class links for courses).
+   - Already ran it before? Run the migrations you don't have yet, once each: [`002_quiz_attempts.sql`](supabase/migrations/002_quiz_attempts.sql) (quiz analytics), [`003_courses.sql`](supabase/migrations/003_courses.sql) (courses and the lesson files bucket), [`004_sharing.sql`](supabase/migrations/004_sharing.sql) (class links for courses), [`005_learner_profiles.sql`](supabase/migrations/005_learner_profiles.sql) (student/teacher and level on each profile).
 3. **Authentication → URL Configuration**: set *Site URL* to your frontend URL (e.g. `http://localhost:5173`) and add it to *Redirect URLs*.
 4. **Authentication → Providers → Google**: enable it and paste a Google OAuth client ID/secret ([guide](https://supabase.com/docs/guides/auth/social-login/auth-google)). Then set `VITE_ENABLE_GOOGLE_AUTH=true` in `Frontend/.env` to show the button. Email sign-in works without this step.
 5. Put the URL and keys in both `.env` files and restart.
@@ -205,22 +215,26 @@ VedioMind-AI/
 <details>
 <summary>All endpoints</summary>
 
-All endpoints accept an optional `Authorization: Bearer <supabase access token>` header.
+All endpoints accept an optional `Authorization: Bearer <supabase access token>` header. Guests can send `X-Learner: student:beginner` (or `teacher`) so answers match their level; a signed-in user's saved profile always wins.
 
 | Method | Endpoint | Auth | Description |
 |---|---|---|---|
 | `GET` | `/api/health` | | Status, plus whether AI and database are configured |
 | `GET` | `/api/languages` | | Supported output languages |
 | `POST` | `/api/video/process` | optional | `{ url, language }` → transcript, summary, takeaways (cached; saved to library when signed in) |
+| `POST` | `/api/video/summary` | optional | `{ videoId, analysisId?, language, level: beginner\|intermediate\|advanced }` → the summary and takeaways re-explained for that level (cached per level) |
+| `GET` | `/api/profile` | required | Your learning profile: `role`, `level`, `onboarded` |
+| `PUT` | `/api/profile` | required | `{ role: student\|teacher, level }` |
 | `POST` | `/api/video/info` | | `{ url }` → video metadata |
 | `POST` | `/api/chat/conversation` | optional | `{ messages, analysisId?, videoId, language }` → answer (saved when signed in) |
 | `POST` | `/api/chat/ask` | optional | Single question (legacy) |
 | `POST` | `/api/study/:type` | optional | `type` = `notes` \| `quiz` \| `flashcards` \| `mindmap`. Body: `{ videoId, analysisId?, language, level?: kids\|student\|teacher, refresh? }`. Cached per video, language and level |
-| `POST` | `/api/lessons` | optional | Create a video lesson: `{ text }` or `{ videoId, analysisId? }`, plus `audience`, `language`, `length: short\|standard`, `voice?`. Returns at once (status `queued`) |
+| `POST` | `/api/lessons` | optional | Create a video lesson: `{ text }` or `{ videoId, analysisId? }`, plus `audience`, `level?`, `teacherMode?: guide\|class`, `language`, `length: short\|standard`, `voice?`. Returns at once (status `queued`) |
 | `GET` | `/api/lessons/:id` | owner | Lesson status/progress, or the full lesson when `done` |
 | `GET` | `/api/lessons/:id/audio/:n` | owner | Narration WAV for scene `n` |
 | `GET` | `/api/lessons/:id/image/:n` | owner | AI picture for scene `n` |
 | `POST` | `/api/lessons/:id/quiz` | owner | `{ kind: quick\|test, refresh? }`: make (or return the saved) 5-question quiz or 10-question test |
+| `POST` | `/api/lessons/:id/plan` | owner | `{ refresh? }`: make (or return the saved) printable lesson plan for a teacher lesson |
 | `GET` | `/api/lessons` | required | Your lessons |
 | `DELETE` | `/api/lessons/:id` | owner | Delete a lesson |
 | `POST` | `/api/lessons/:id/share` | owner | `{ public: true\|false }`: turn the class link on or off. Returns `shareSlug` |
@@ -248,9 +262,9 @@ Errors are returned as `{ success: false, code, error }`, e.g. `NO_TRANSCRIPT`, 
 
 | Suite | What it covers | Run |
 |---|---|---|
-| Backend (node:test, 72) | API, lessons, courses, sharing and permissions, TextRank, quiz grading. YouTube, Gemini, voice, pictures and Supabase are faked | `cd backend && npm test` |
-| Frontend (Vitest + Testing Library, 24) | Spaced-repetition schedule, mistake collection, PDF text cleanup, analytics, quiz flow, home page, share dialog | `cd Frontend && npm test` |
-| End-to-end (Playwright, 7) | Summarize and chat, lesson and quiz, 3-module course, PDF/Word upload, teacher shares and student opens a link, mistake review, phone layout. Real frontend and API, outside services faked | `cd Frontend && npx playwright install chromium && npm run e2e` |
+| Backend (node:test, 79) | API, lessons, courses, sharing and permissions, TextRank, quiz grading. YouTube, Gemini, voice, pictures and Supabase are faked | `cd backend && npm test` |
+| Frontend (Vitest + Testing Library, 26) | Spaced-repetition schedule, mistake collection, PDF text cleanup, analytics, quiz flow, home page, share dialog | `cd Frontend && npm test` |
+| End-to-end (Playwright, 11) | Summarize and chat, lesson and quiz, 3-module course, PDF/Word upload, teacher shares and student opens a link, mistake review, sample lessons, learning profile, teacher lesson plan, summary by level, phone layout. Real frontend and API, outside services faked | `cd Frontend && npx playwright install chromium && npm run e2e` |
 | Benchmark | Scene planning comparison | `node backend/scripts/compareScenePlanning.js` |
 
 All of them run on every push and pull request in [GitHub Actions](.github/workflows/ci.yml), with no API keys.

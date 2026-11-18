@@ -3,7 +3,10 @@ import { motion } from 'framer-motion';
 import {
   Clapperboard, Sparkles, Youtube, PenLine, Loader2, AlertCircle, Trash2, ArrowLeft, Wand2, Image as ImageIcon, LayoutTemplate, ListTree, Film, FileUp,
 } from 'lucide-react';
-import { Course, CourseSummary, Lesson, LessonAudience, LessonSummary, VideoData } from '../../types';
+import { Course, CourseSummary, LearnerLevel, Lesson, LessonAudience, LessonSummary, TeacherMode, VideoData } from '../../types';
+import { useLearner } from '../../context/LearnerContext';
+import { LEVEL_INFO } from '../learner/LearnerChoice';
+import TeacherPlanPanel from './TeacherPlanPanel';
 import {
   createCourse, createLesson, deleteCourse, deleteLesson, getCourse, getLesson, getLessonOptions, listCourses, listLessons, LessonOptions,
 } from '../../services/apiService';
@@ -24,12 +27,19 @@ interface LessonsPageProps {
   defaultLanguage: string;
   /** Topic typed on the home page */
   initialText?: string;
+  /** A ready-made sample lesson to open straight away */
+  initialLesson?: Lesson | null;
 }
 
 const AUDIENCES: { value: LessonAudience; label: string; hint: string }[] = [
-  { value: 'kids', label: '🧒 Kids', hint: 'Simple words, fun examples' },
-  { value: 'student', label: '🎓 Student', hint: 'Clear, exam-focused' },
-  { value: 'teacher', label: '🧑‍🏫 Teacher', hint: 'Ready to show in class' },
+  { value: 'kids', label: 'Kids', hint: 'Simple words, fun examples' },
+  { value: 'student', label: 'Student', hint: 'At the level you pick' },
+  { value: 'teacher', label: 'Teacher', hint: 'A guide, or a video for class' },
+];
+
+const TEACHER_MODES: { value: TeacherMode; label: string; hint: string }[] = [
+  { value: 'guide', label: 'Teaching guide for me', hint: 'Coaches you through teaching it: hook, explanations, mistakes to fix, an activity' },
+  { value: 'class', label: 'Video for my class', hint: 'A lesson to show students, with teacher notes beside it' },
 ];
 
 const EXAMPLES = [
@@ -90,13 +100,16 @@ function rememberCourse(course: Course) {
   }
 }
 
-export default function LessonsPage({ currentVideo, preferVideo, defaultLanguage, initialText = '' }: LessonsPageProps) {
+export default function LessonsPage({ currentVideo, preferVideo, defaultLanguage, initialText = '', initialLesson = null }: LessonsPageProps) {
   const { user } = useAuth();
   const [options, setOptions] = useState<LessonOptions | null>(null);
   const [source, setSource] = useState<'text' | 'file' | 'video'>(currentVideo && preferVideo ? 'video' : 'text');
   const [upload, setUpload] = useState<UploadedFile | null>(null);
   const [text, setText] = useState(initialText);
-  const [audience, setAudience] = useState<LessonAudience>('student');
+  const { learner } = useLearner();
+  const [audience, setAudience] = useState<LessonAudience>(learner.role === 'teacher' ? 'teacher' : 'student');
+  const [level, setLevel] = useState<LearnerLevel>(learner.level);
+  const [teacherMode, setTeacherMode] = useState<TeacherMode>('guide');
   const [language, setLanguage] = useState(defaultLanguage);
   const [length, setLength] = useState<'short' | 'standard'>('short');
   const [voice, setVoice] = useState<string>('');
@@ -106,7 +119,7 @@ export default function LessonsPage({ currentVideo, preferVideo, defaultLanguage
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [active, setActive] = useState<Lesson | null>(null);
+  const [active, setActive] = useState<Lesson | null>(initialLesson);
   const [lessons, setLessons] = useState<LessonSummary[]>([]);
   const [activeCourse, setActiveCourse] = useState<Course | null>(null);
   const [courses, setCourses] = useState<CourseSummary[]>([]);
@@ -228,6 +241,9 @@ export default function LessonsPage({ currentVideo, preferVideo, defaultLanguage
         video: source === 'video' && currentVideo ? currentVideo : undefined,
         audience,
         language,
+        // Kids lessons are always simple; teaching guides are for the teacher
+        level: audience === 'kids' || (audience === 'teacher' && teacherMode === 'guide') ? undefined : level,
+        teacherMode: audience === 'teacher' ? teacherMode : undefined,
         voice: voice || undefined,
         visuals: options && !options.pictures ? 'slides' as const : visuals,
       };
@@ -278,9 +294,20 @@ export default function LessonsPage({ currentVideo, preferVideo, defaultLanguage
                 )}
               </div>
               <p className="text-sm text-ink-500 mt-1">
-                {AUDIENCES.find((a) => a.value === active.audience)?.label} · {languageLabel(active.language)}
+                {active.audience === 'teacher'
+                  ? (active.teacherMode === 'class' ? 'Class video' : 'Teaching guide')
+                  : AUDIENCES.find((a) => a.value === active.audience)?.label}
+                {active.audience !== 'kids' && active.level && !(active.audience === 'teacher' && active.teacherMode !== 'class') ? `, ${active.level}` : ''} · {languageLabel(active.language)}
                 {active.sourceVideo && <> · from “{active.sourceVideo.title}”</>}
               </p>
+              {active.sample && (
+                <div className="mt-3 flex flex-wrap items-center gap-3 rounded-xl border border-neon-400/30 bg-neon-400/10 px-4 py-3 text-sm text-ink-200">
+                  <span className="mr-auto">
+                    A sample lesson, ready to watch. It uses your browser&apos;s voice and drawn slides; lessons you make can have AI narration and pictures.
+                  </span>
+                  <button onClick={() => setActive(null)} className="btn-neon px-4 py-2 text-sm">Make your own</button>
+                </div>
+              )}
               {active.planning?.method === 'textrank' && (
                 <p className="text-xs text-ink-500 mt-1" title="TextRank picked the key sentences so the lesson covers the whole material">
                   Long material: {active.planning.kept} key sentences of {active.planning.sentences} were used
@@ -289,6 +316,7 @@ export default function LessonsPage({ currentVideo, preferVideo, defaultLanguage
               )}
             </div>
             <LessonPlayer key={active.id} lesson={active} />
+            {active.audience === 'teacher' && !active.sample && <TeacherPlanPanel key={`plan-${active.id}`} lesson={active} />}
           </motion.div>
         ) : active.status === 'failed' ? (
           <div className="max-w-lg mx-auto py-16 text-center space-y-4">
@@ -418,6 +446,28 @@ export default function LessonsPage({ currentVideo, preferVideo, defaultLanguage
                 </button>
               ))}
             </div>
+            {audience === 'teacher' && (
+              <div className="mt-3 grid gap-2" role="radiogroup" aria-label="What kind of teacher lesson">
+                {TEACHER_MODES.map((m) => (
+                  <button
+                    key={m.value} role="radio" aria-checked={teacherMode === m.value} onClick={() => setTeacherMode(m.value)}
+                    className={`p-2.5 rounded-xl border text-left ${teacherMode === m.value ? 'border-neon-500/60 bg-neon-500/10' : 'border-ink-800 bg-ink-950/40 hover:border-ink-700'}`}
+                  >
+                    <p className="text-sm text-ink-200 font-medium">{m.label}</p>
+                    <p className="text-[11px] text-ink-500 mt-0.5 leading-tight">{m.hint}</p>
+                  </button>
+                ))}
+                <p className="text-[11px] text-ink-500">Both come with a printable lesson plan.</p>
+              </div>
+            )}
+            {(audience === 'student' || (audience === 'teacher' && teacherMode === 'class')) && (
+              <label className="mt-3 block">
+                <span className="block text-xs font-semibold text-ink-400 mb-2">{audience === 'teacher' ? 'Your students\' level' : 'Level'}</span>
+                <select value={level} onChange={(e) => setLevel(e.target.value as LearnerLevel)} className="w-full px-3 py-2.5 bg-ink-950/60 border border-ink-700/50 rounded-xl text-sm text-ink-200 focus:outline-none focus:ring-2 focus:ring-neon-500">
+                  {LEVEL_INFO.map((l) => <option key={l.value} value={l.value} className="bg-ink-900">{l.label}: {l.hint}</option>)}
+                </select>
+              </label>
+            )}
           </div>
           <div className="grid grid-cols-2 gap-3">
             <label className="block">
