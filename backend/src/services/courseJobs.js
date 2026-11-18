@@ -32,6 +32,8 @@ async function syncToDb(course) {
         status: course.status,
         modules: course.modules,
         error: course.error,
+        is_public: Boolean(course.isPublic),
+        share_slug: course.shareSlug || null,
     }, { onConflict: 'id' });
     if (error && !tableMissingWarned) {
         tableMissingWarned = true;
@@ -49,7 +51,8 @@ async function save(course) {
 function fromRow(row) {
     return {
         id: row.id, userId: row.user_id, title: row.title, language: row.language, audience: row.audience,
-        status: row.status, modules: row.modules || [], error: row.error, createdAt: row.created_at, updatedAt: row.updated_at,
+        status: row.status, modules: row.modules || [], error: row.error, isPublic: Boolean(row.is_public), shareSlug: row.share_slug || null,
+        createdAt: row.created_at, updatedAt: row.updated_at,
     };
 }
 
@@ -150,6 +153,7 @@ async function run(course, material, options) {
                 courseId: course.id,
                 moduleIndex: index,
                 length: 'short',
+                isPublic: course.isPublic,
             });
             course.modules[index].lessonId = lesson.id;
             await save(course);
@@ -184,6 +188,8 @@ async function create({ userId, material, source, sourceVideo, inputText, audien
         language,
         audience,
         moduleCount: courseService.clampModules(moduleCount),
+        isPublic: false,
+        shareSlug: null,
         modules: [],
         error: null,
         createdAt: new Date().toISOString(),
@@ -198,7 +204,24 @@ async function create({ userId, material, source, sourceVideo, inputText, audien
     return course;
 }
 
+/**
+ * Turn the class link on or off. Module lessons follow the course, so students can
+ * play every module; modules made later inherit the setting.
+ */
+async function setSharing(course, { isPublic, shareSlug }) {
+    const stored = (await load(course.id)) || course;
+    stored.isPublic = Boolean(isPublic);
+    if (shareSlug) stored.shareSlug = shareSlug;
+    await save(stored);
+    for (const m of stored.modules) {
+        if (!m.lessonId) continue;
+        const lesson = await lessonJobs.get(m.lessonId);
+        if (lesson) await lessonJobs.setSharing(lesson, { isPublic: stored.isPublic });
+    }
+    return get(stored.id);
+}
+
 /** Resolves when the course's background job has finished */
 const whenDone = (id) => running.get(id) || Promise.resolve();
 
-module.exports = { create, whenDone, get, listForUser, remove, isCourseId, _courses: courses };
+module.exports = { create, whenDone, setSharing, get, listForUser, remove, isCourseId, _courses: courses };

@@ -253,3 +253,17 @@ create policy "own courses" on public.courses
 insert into storage.buckets (id, name, public)
 values ('lessons', 'lessons', false)
 on conflict (id) do nothing;
+
+
+-- ===== from migrations/004_sharing.sql =====
+-- =====================================================================
+-- VideoMind AI — Class links for courses (run once in Supabase → SQL Editor)
+-- Lessons already have is_public / share_slug (schema.sql); this adds them to courses.
+-- =====================================================================
+
+alter table public.courses add column if not exists is_public  boolean not null default false;
+alter table public.courses add column if not exists share_slug text unique;
+
+drop policy if exists "public courses readable" on public.courses;
+create policy "public courses readable" on public.courses
+  for select using (is_public = true);

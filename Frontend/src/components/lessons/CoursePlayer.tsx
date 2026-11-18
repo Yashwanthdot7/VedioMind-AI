@@ -5,6 +5,7 @@ import { getLesson } from '../../services/apiService';
 import { languageLabel } from '../../constants/languages';
 import LessonPlayer from './LessonPlayer';
 import LessonProgress from './LessonProgress';
+import ShareButton from '../share/ShareButton';
 
 const AUDIENCE_LABEL = { kids: 'Kids', student: 'Students', teacher: 'Teachers' } as const;
 
@@ -48,7 +49,12 @@ export default function CoursePlayer({ course }: { course: Course }) {
     <div>
       <div className="mb-6">
         <p className="text-sm text-ink-500 flex items-center gap-1.5"><ListTree className="w-4 h-4" /> Course</p>
-        <h1 className="font-semiwide text-2xl md:text-3xl font-extrabold tracking-tight text-ink-50 mt-1">{course.title}</h1>
+        <div className="flex flex-wrap items-start gap-3 mt-1">
+          <h1 className="font-semiwide text-2xl md:text-3xl font-extrabold tracking-tight text-ink-50 mr-auto">{course.title}</h1>
+          {course.isOwner && course.status !== 'queued' && course.status !== 'outlining' && (
+            <ShareButton kind="course" id={course.id} title={course.title} isPublic={Boolean(course.isPublic)} shareSlug={course.shareSlug || null} />
+          )}
+        </div>
         <p className="text-sm text-ink-500 mt-1">
           {AUDIENCE_LABEL[course.audience]}, {languageLabel(course.language)}.{' '}
           {planning ? 'Planning the modules…' : course.status === 'building'

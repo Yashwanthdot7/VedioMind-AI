@@ -6,19 +6,26 @@ const imageService = require('../services/imageService');
 const { isSupabaseEnabled } = require('../config/supabase');
 const AppError = require('../lib/AppError');
 const { readLessonInput, AUDIENCES } = require('./lessonInput');
+const shareService = require('../services/shareService');
 
 
 /** What the client may see (never the owner's id) */
-function publicLesson(lesson) {
-    const { userId, inputText, ...rest } = lesson;
-    return { ...rest, inputPreview: inputText ? inputText.slice(0, 200) : null };
+function publicLesson(lesson, req) {
+    const { userId, inputText, shareSlug, ...rest } = lesson;
+    const isOwner = Boolean(userId && req.user?.id === userId);
+    return {
+        ...rest,
+        isOwner,
+        shareSlug: isOwner ? shareSlug || null : null,
+        inputPreview: inputText ? inputText.slice(0, 200) : null,
+    };
 }
 
-/** Owner-only, except lessons made by guests (no account) which work by link */
+/** Owner-only, except lessons made by guests (no account) and lessons shared with a class link */
 async function loadAccessible(req) {
     const lesson = await lessonJobs.get(req.params.id);
     if (!lesson) throw new AppError('Lesson not found', 404, 'NOT_FOUND');
-    if (lesson.userId && lesson.userId !== req.user?.id) {
+    if (lesson.userId && lesson.userId !== req.user?.id && !lesson.isPublic) {
         throw new AppError('Lesson not found', 404, 'NOT_FOUND');
     }
     return lesson;
@@ -47,7 +54,7 @@ class LessonController {
         try {
             const input = await readLessonInput(req.body || {});
             const lesson = await lessonJobs.create({ userId: req.user?.id, ...input });
-            res.status(202).json({ success: true, data: publicLesson(lesson) });
+            res.status(202).json({ success: true, data: publicLesson(lesson, req) });
         } catch (error) {
             next(error);
         }
@@ -68,7 +75,7 @@ class LessonController {
     async get(req, res, next) {
         try {
             const lesson = await loadAccessible(req);
-            res.json({ success: true, data: publicLesson(lesson) });
+            res.json({ success: true, data: publicLesson(lesson, req) });
         } catch (error) {
             next(error);
         }
@@ -123,11 +130,28 @@ class LessonController {
         }
     }
 
+    /** POST /api/lessons/:id/share  { public: boolean } — owner turns the class link on or off */
+    async share(req, res, next) {
+        try {
+            const lesson = await loadAccessible(req);
+            if (!req.user || lesson.userId !== req.user.id) {
+                throw new AppError('Sign in and open your own lesson to share it.', 403, 'FORBIDDEN');
+            }
+            if (lesson.courseId) throw new AppError('Share the whole course instead of one module.', 400, 'SHARE_COURSE');
+            const { isPublic, shareSlug } = await shareService.setShared('lesson', lesson, req.body?.public !== false);
+            res.json({ success: true, data: { isPublic, shareSlug } });
+        } catch (error) {
+            next(error);
+        }
+    }
+
     /** DELETE /api/lessons/:id */
     async remove(req, res, next) {
         try {
             const lesson = await loadAccessible(req);
             if (!lesson.userId) throw new AppError('Only lessons saved to an account can be deleted', 403, 'FORBIDDEN');
+            // Shared lessons are visible to students, but only the owner can delete
+            if (lesson.userId !== req.user?.id) throw new AppError('Only the owner can delete this lesson.', 403, 'FORBIDDEN');
             await lessonJobs.remove(lesson);
             res.json({ success: true });
         } catch (error) {

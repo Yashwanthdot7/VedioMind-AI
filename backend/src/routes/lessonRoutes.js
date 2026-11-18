@@ -11,6 +11,7 @@ router.get('/:id', lessonController.get);
 router.get('/:id/audio/:index', lessonController.audio);
 router.get('/:id/image/:index', lessonController.image);
 router.post('/:id/quiz', studyLimiter, lessonController.quiz);
+router.post('/:id/share', lessonController.share);
 router.delete('/:id', lessonController.remove);
 
 module.exports = router;
