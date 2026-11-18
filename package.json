@@ -8,7 +8,8 @@
     "dev": "concurrently -k -n backend,frontend -c green,cyan \"npm run dev --prefix backend\" \"npm run dev --prefix Frontend\"",
     "start": "concurrently -k -n backend,frontend -c green,cyan \"npm start --prefix backend\" \"npm run preview --prefix Frontend\"",
     "build": "npm run build --prefix Frontend",
-    "test": "npm test --prefix backend && npm run typecheck --prefix Frontend"
+    "test": "npm test --prefix backend && npm run typecheck --prefix Frontend && npm test --prefix Frontend",
+    "e2e": "npm run e2e --prefix Frontend"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"
