@@ -61,26 +61,26 @@ export default function Library({ onOpen }: LibraryProps) {
     <div className="max-w-7xl mx-auto">
       <div className="flex flex-wrap items-center gap-4 mb-8">
         <div className="flex items-center gap-3 mr-auto">
-          <LibraryIcon className="w-7 h-7 text-indigo-400" />
-          <h1 className="text-3xl font-bold text-slate-100">My Library</h1>
-          {!loading && <span className="text-sm text-slate-500">{items.length} videos</span>}
+          <LibraryIcon className="w-7 h-7 text-turmeric-400" />
+          <h1 className="font-semiwide text-3xl font-extrabold tracking-tight text-ink-50">Your library</h1>
+          {!loading && <span className="text-sm text-ink-500">{items.length} videos</span>}
         </div>
         <button
           onClick={() => setFavoritesOnly((f) => !f)}
           className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm border transition-colors ${
-            favoritesOnly ? 'bg-amber-500/15 border-amber-500/40 text-amber-300' : 'bg-slate-900/50 border-slate-700/50 text-slate-400 hover:text-slate-200'
+            favoritesOnly ? 'bg-amber-500/15 border-amber-500/40 text-amber-300' : 'bg-ink-900/50 border-ink-700/50 text-ink-400 hover:text-ink-200'
           }`}
         >
           <Star className={`w-4 h-4 ${favoritesOnly ? 'fill-amber-400 text-amber-400' : ''}`} /> Favourites
         </button>
         <div className="relative flex items-center w-full sm:w-72">
-          <Search className="absolute left-3 w-4 h-4 text-slate-500 pointer-events-none" />
+          <Search className="absolute left-3 w-4 h-4 text-ink-500 pointer-events-none" />
           <input
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search your videos…"
-            className="w-full pl-9 pr-3 py-2 bg-slate-900/50 border border-slate-700/50 rounded-lg text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full pl-9 pr-3 py-2 bg-ink-900/50 border border-ink-700/50 rounded-lg text-sm text-ink-200 placeholder-ink-500 focus:outline-none focus:ring-2 focus:ring-turmeric-500"
           />
         </div>
       </div>
@@ -90,9 +90,9 @@ export default function Library({ onOpen }: LibraryProps) {
       )}
 
       {loading ? (
-        <div className="flex justify-center py-24"><Loader2 className="w-8 h-8 text-indigo-400 animate-spin" /></div>
+        <div className="flex justify-center py-24"><Loader2 className="w-8 h-8 text-turmeric-400 animate-spin" /></div>
       ) : visible.length === 0 ? (
-        <div className="text-center py-24 text-slate-500">
+        <div className="text-center py-24 text-ink-500">
           {items.length === 0
             ? 'Your library is empty. Summarize a video and it will be saved here automatically.'
             : 'No videos match your filters.'}
@@ -105,10 +105,10 @@ export default function Library({ onOpen }: LibraryProps) {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: Math.min(i * 0.03, 0.3) }}
-              className="group bg-slate-900/50 border border-slate-800/50 hover:border-indigo-500/40 rounded-2xl overflow-hidden transition-colors"
+              className="group bg-ink-900/50 border border-ink-800/50 hover:border-turmeric-500/40 rounded-2xl overflow-hidden transition-colors"
             >
               <button onClick={() => onOpen(item)} className="block w-full text-left">
-                <div className="relative aspect-video bg-slate-950">
+                <div className="relative aspect-video bg-ink-950">
                   <img
                     src={item.thumbnail || `https://i.ytimg.com/vi/${item.videoId}/hqdefault.jpg`}
                     alt=""
@@ -123,8 +123,8 @@ export default function Library({ onOpen }: LibraryProps) {
                   ) : null}
                 </div>
                 <div className="p-4 pb-2">
-                  <h3 className="font-medium text-slate-200 line-clamp-2 leading-snug">{item.title}</h3>
-                  <p className="text-xs text-slate-500 mt-1 truncate">
+                  <h3 className="font-medium text-ink-200 line-clamp-2 leading-snug">{item.title}</h3>
+                  <p className="text-xs text-ink-500 mt-1 truncate">
                     {item.author ? `${item.author} · ` : ''}{languageLabel(item.language)} · {new Date(item.addedAt).toLocaleDateString()}
                   </p>
                 </div>
@@ -132,14 +132,14 @@ export default function Library({ onOpen }: LibraryProps) {
               <div className="flex justify-end gap-1 px-3 pb-3">
                 <button
                   onClick={() => toggleFavorite(item)}
-                  className="p-2 rounded-lg hover:bg-slate-800 transition-colors"
+                  className="p-2 rounded-lg hover:bg-ink-800 transition-colors"
                   aria-label={item.isFavorite ? 'Remove from favourites' : 'Add to favourites'}
                 >
-                  <Star className={`w-4 h-4 ${item.isFavorite ? 'fill-amber-400 text-amber-400' : 'text-slate-500'}`} />
+                  <Star className={`w-4 h-4 ${item.isFavorite ? 'fill-amber-400 text-amber-400' : 'text-ink-500'}`} />
                 </button>
                 <button
                   onClick={() => remove(item)}
-                  className="p-2 rounded-lg hover:bg-red-500/10 text-slate-500 hover:text-red-400 transition-colors"
+                  className="p-2 rounded-lg hover:bg-red-500/10 text-ink-500 hover:text-red-400 transition-colors"
                   aria-label="Remove from library"
                 >
                   <Trash2 className="w-4 h-4" />

@@ -50,13 +50,13 @@ export default function LessonProgress({ lesson }: { lesson: Lesson }) {
 
   return (
     <div className="max-w-5xl mx-auto">
-      <div className="p-6 rounded-2xl bg-slate-900/50 border border-slate-800/60">
+      <div className="p-6 rounded-2xl bg-ink-900/50 border border-ink-800/60">
         <div className="text-center mb-6">
-          <Loader2 className="w-9 h-9 mx-auto text-indigo-400 animate-spin mb-3" />
-          <h2 className="text-xl font-bold text-slate-100">Generating your video lesson</h2>
-          <p className="text-sm text-slate-400 mt-1">
+          <Loader2 className="w-9 h-9 mx-auto text-turmeric-400 animate-spin mb-3" />
+          <h2 className="text-xl font-bold text-ink-100">Generating your video lesson</h2>
+          <p className="text-sm text-ink-400 mt-1">
             {scripting ? 'Writing the script…' : 'Content appears below as each part is ready'}
-            {lesson.title && !scripting && lesson.title !== 'New lesson' ? <> · <span className="text-slate-300">{lesson.title}</span></> : null}
+            {lesson.title && !scripting && lesson.title !== 'New lesson' ? <> · <span className="text-ink-300">{lesson.title}</span></> : null}
           </p>
         </div>
 
@@ -65,7 +65,7 @@ export default function LessonProgress({ lesson }: { lesson: Lesson }) {
             <div
               key={step.label}
               className={`flex items-center gap-2 text-sm ${
-                step.state === 'done' ? 'text-emerald-300' : step.state === 'active' ? 'text-indigo-200' : 'text-slate-500'
+                step.state === 'done' ? 'text-lagoon-300' : step.state === 'active' ? 'text-turmeric-200' : 'text-ink-500'
               }`}
             >
               <step.icon className="w-4 h-4" />
@@ -77,10 +77,10 @@ export default function LessonProgress({ lesson }: { lesson: Lesson }) {
             </div>
           ))}
         </div>
-        <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
-          <div className="h-full bg-gradient-to-r from-indigo-500 to-purple-600 transition-all duration-700" style={{ width: `${Math.max(4, lesson.progress)}%` }} />
+        <div className="h-2 bg-ink-800 rounded-full overflow-hidden">
+          <div className="h-full transition-all duration-700 bg-turmeric-400 text-ink-950" style={{ width: `${Math.max(4, lesson.progress)}%` }} />
         </div>
-        <p className="text-center text-xs text-slate-500 mt-2">
+        <p className="text-center text-xs text-ink-500 mt-2">
           {lesson.progress}% · usually 1–3 minutes{wantsPictures ? ' (free pictures can take a little longer)' : ''}
         </p>
       </div>
@@ -88,11 +88,11 @@ export default function LessonProgress({ lesson }: { lesson: Lesson }) {
       {/* scenes appear as soon as the script is written */}
       <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {scripting && Array.from({ length: 6 }, (_, i) => (
-          <div key={`sk-${i}`} className="rounded-xl overflow-hidden border border-slate-800/60 bg-slate-900/40 animate-pulse">
-            <div className="aspect-video bg-slate-800/60" />
+          <div key={`sk-${i}`} className="rounded-xl overflow-hidden border border-ink-800/60 bg-ink-900/40 animate-pulse">
+            <div className="aspect-video bg-ink-800/60" />
             <div className="p-3 space-y-2">
-              <div className="h-3 w-2/3 bg-slate-800 rounded" />
-              <div className="h-3 w-full bg-slate-800/70 rounded" />
+              <div className="h-3 w-2/3 bg-ink-800 rounded" />
+              <div className="h-3 w-full bg-ink-800/70 rounded" />
             </div>
           </div>
         ))}
@@ -106,29 +106,29 @@ export default function LessonProgress({ lesson }: { lesson: Lesson }) {
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.05 }}
-                className="rounded-xl overflow-hidden border border-slate-800/60 bg-slate-900/50"
+                className="rounded-xl overflow-hidden border border-ink-800/60 bg-ink-900/50"
               >
-                <div className="relative aspect-video bg-slate-950 flex items-center justify-center">
+                <div className="relative aspect-video bg-ink-950 flex items-center justify-center">
                   {thumb ? (
                     <motion.img initial={{ opacity: 0, scale: 1.05 }} animate={{ opacity: 1, scale: 1 }} src={thumb} alt="" className="absolute inset-0 w-full h-full object-cover" />
                   ) : pictureState === 'pending' ? (
-                    <div className="absolute inset-0 bg-gradient-to-br from-slate-800/60 to-slate-900 animate-pulse flex items-center justify-center">
-                      <ImageIcon className="w-7 h-7 text-slate-600" />
+                    <div className="absolute inset-0 animate-pulse flex items-center justify-center bg-ink-900">
+                      <ImageIcon className="w-7 h-7 text-ink-600" />
                     </div>
                   ) : (
                     <span className="text-5xl">{scene.icon}</span>
                   )}
                   <span className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-black/60 text-[11px] text-white">Scene {i + 1}</span>
                   <span
-                    className={`absolute top-2 right-2 p-1 rounded-md bg-black/60 ${scene.audio || lesson.voiceMode === 'browser' ? 'text-emerald-300' : 'text-slate-400'}`}
+                    className={`absolute top-2 right-2 p-1 rounded-md bg-black/60 ${scene.audio || lesson.voiceMode === 'browser' ? 'text-lagoon-300' : 'text-ink-400'}`}
                     title={scene.audio ? 'Narration recorded' : 'Recording narration…'}
                   >
                     {scene.audio || lesson.voiceMode === 'browser' ? <Mic className="w-3.5 h-3.5" /> : <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                   </span>
                 </div>
                 <div className="p-3">
-                  <p className="text-sm font-semibold text-slate-200 line-clamp-1">{scene.heading}</p>
-                  <p className="text-xs text-slate-500 mt-1 line-clamp-2 leading-relaxed">{scene.narration}</p>
+                  <p className="text-sm font-semibold text-ink-200 line-clamp-1">{scene.heading}</p>
+                  <p className="text-xs text-ink-500 mt-1 line-clamp-2 leading-relaxed">{scene.narration}</p>
                 </div>
               </motion.div>
             );

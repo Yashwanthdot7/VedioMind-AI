@@ -10,13 +10,13 @@ import { DifficultyStat } from '../../lib/analytics';
  */
 
 const VIZ = {
-  surface: '#0f172a',
-  series: '#3987e5', // validated: dark band, chroma, >= 3:1 on the surface
-  grid: 'rgba(148,163,184,0.14)',
-  axis: 'rgba(148,163,184,0.35)',
-  textPrimary: '#e2e8f0',
-  textSecondary: '#94a3b8',
-  textMuted: '#64748b',
+  surface: '#1F1C3B', // ink-900, the panel colour
+  series: '#30A893', // lagoon-500, validated: dark band, chroma, >= 3:1 on the surface
+  grid: 'rgba(169,163,194,0.14)',
+  axis: 'rgba(169,163,194,0.35)',
+  textPrimary: '#EEEAF6',
+  textSecondary: '#A9A3C2',
+  textMuted: '#8C86AE',
 };
 
 function useWidth<T extends HTMLElement>() {
@@ -40,12 +40,12 @@ function Tooltip({ tip, width }: { tip: TooltipState | null; width: number }) {
   return (
     <div
       role="tooltip"
-      className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-full px-3 py-2 rounded-lg bg-slate-950/95 border border-slate-700 shadow-xl text-xs whitespace-nowrap"
+      className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-full px-3 py-2 rounded-lg bg-ink-950/95 border border-ink-700 shadow-xl text-xs whitespace-nowrap"
       style={{ left, top: tip.y - 10 }}
     >
       {tip.lines.map((l, i) => (
-        <div key={i} className={i ? 'mt-0.5 text-slate-400' : 'text-slate-200'}>
-          <span className="font-semibold text-slate-100">{l.strong}</span>{l.text ? ` ${l.text}` : ''}
+        <div key={i} className={i ? 'mt-0.5 text-ink-400' : 'text-ink-200'}>
+          <span className="font-semibold text-ink-100">{l.strong}</span>{l.text ? ` ${l.text}` : ''}
         </div>
       ))}
     </div>

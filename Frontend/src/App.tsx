@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Languages, ArrowLeft, Cloud, CloudOff, Clapperboard } from 'lucide-react';
-import Header from './components/Header';
+import { Languages, Cloud, CloudOff, Clapperboard } from 'lucide-react';
+import Sidebar from './components/shell/Sidebar';
+import MobileNav from './components/shell/MobileNav';
+import LinkBar from './components/shell/LinkBar';
+import HomePage from './components/home/HomePage';
 import VideoPlayer from './components/VideoPlayer';
 import Transcript from './components/Transcript';
 import AIInsights from './components/AIInsights';
@@ -56,6 +59,7 @@ function App() {
   const [language, setLanguage] = useState<string>(loadLanguage);
   const [authOpen, setAuthOpen] = useState(false);
   const [lessonFromVideo, setLessonFromVideo] = useState(false);
+  const [lessonTopic, setLessonTopic] = useState('');
 
   const [processingSteps, setProcessingSteps] = useState<ProcessingStep[]>(freshSteps);
   const [progress, setProgress] = useState(0);
@@ -217,6 +221,7 @@ function App() {
 
   const openLessons = (fromVideo = false) => {
     setLessonFromVideo(fromVideo);
+    setLessonTopic('');
     setError(null);
     setView('lessons');
     window.scrollTo({ top: 0 });
@@ -250,96 +255,95 @@ function App() {
     if (!user && view === 'library') setView('home');
   }, [user, view]);
 
+  const goHome = () => { setView('home'); setError(null); window.scrollTo({ top: 0 }); };
+  const navigateTo = (target: View) => {
+    if (target === 'home') goHome();
+    else if (target === 'library') openLibrary();
+    else if (target === 'lessons') openLessons(false);
+    else if (target === 'analytics') openAnalytics();
+    else if (target === 'dashboard' && videoData) { setView('dashboard'); window.scrollTo({ top: 0 }); }
+  };
+  const makeLesson = (topic: string) => {
+    setLessonTopic(topic);
+    setLessonFromVideo(false);
+    setError(null);
+    setView('lessons');
+    window.scrollTo({ top: 0 });
+  };
+  const busy = status === ProcessingStatus.LOADING;
+  const page = 'px-4 lg:px-10 pt-6 lg:pt-8 pb-28 lg:pb-16';
+  const fade = { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 }, transition: { duration: 0.2 } };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
-      <Header
-        onSummarize={(url) => handleSummarize(url)}
-        status={status}
-        language={language}
-        onLanguageChange={setLanguage}
-        onOpenLibrary={openLibrary}
-        onOpenLessons={() => openLessons(false)}
-        onOpenAnalytics={openAnalytics}
+    <div className="min-h-screen bg-ink-950">
+      <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:px-4 focus:py-2 focus:rounded-lg focus:bg-turmeric-400 focus:text-ink-950">Skip to content</a>
+      <Sidebar
+        view={view}
+        hasVideo={!!videoData}
+        videoTitle={videoData?.title}
+        onNavigate={navigateTo}
         onOpenAuth={() => setAuthOpen(true)}
-        onGoHome={() => { setView('home'); setError(null); }}
       />
+      <MobileNav view={view} onNavigate={navigateTo} onOpenAuth={() => setAuthOpen(true)} />
 
-      <ProcessingOverlay
-        isVisible={status === ProcessingStatus.LOADING}
-        steps={processingSteps}
-        progress={progress}
-      />
-
+      <ProcessingOverlay isVisible={busy} steps={processingSteps} progress={progress} />
       <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
 
-      <AnimatePresence mode="wait">
-        {view === 'analytics' ? (
-          <motion.div
-            key="analytics"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="pt-36 md:pt-28 pb-16 px-4"
-          >
-            <AnalyticsPage />
-          </motion.div>
-        ) : view === 'lessons' ? (
-          <motion.div
-            key={`lessons-${lessonFromVideo}`}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="pt-36 md:pt-28 pb-16 px-4"
-          >
-            <LessonsPage currentVideo={videoData} preferVideo={lessonFromVideo} defaultLanguage={videoData?.language || language} />
-          </motion.div>
-        ) : view === 'library' && user ? (
-          <motion.div
-            key="library"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="pt-36 md:pt-28 pb-16 px-4"
-          >
-            <Library onOpen={openLibraryItem} />
-          </motion.div>
-        ) : view === 'dashboard' && videoData ? (
-          <motion.div
-            key={`dashboard-${videoData.videoId}-${videoData.language}`}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.4 }}
-            className="pt-36 md:pt-28 pb-16 px-4"
-          >
+      <div className="lg:pl-64">
+        {view !== 'home' && (
+          <LinkBar
+            busy={busy}
+            language={language}
+            onLanguageChange={setLanguage}
+            onSummarize={(url) => handleSummarize(url)}
+            onGoHome={goHome}
+            onOpenAuth={() => setAuthOpen(true)}
+          />
+        )}
+
+        <main id="main">
+          <AnimatePresence mode="wait">
+            {view === 'analytics' ? (
+              <motion.div key="analytics" {...fade} className={page}>
+                <AnalyticsPage />
+              </motion.div>
+            ) : view === 'lessons' ? (
+              <motion.div key={`lessons-${lessonFromVideo}-${lessonTopic}`} {...fade} className={page}>
+                <LessonsPage
+                  currentVideo={videoData}
+                  preferVideo={lessonFromVideo}
+                  defaultLanguage={lessonFromVideo ? videoData?.language || language : language}
+                  initialText={lessonTopic}
+                />
+              </motion.div>
+            ) : view === 'library' && user ? (
+              <motion.div key="library" {...fade} className={page}>
+                <Library onOpen={openLibraryItem} />
+              </motion.div>
+            ) : view === 'dashboard' && videoData ? (
+              <motion.div key={`dashboard-${videoData.videoId}-${videoData.language}`} {...fade} className={page}>
             <div className="max-w-7xl mx-auto">
               <div className="flex flex-wrap items-center gap-3 mb-4 text-sm">
-                <button
-                  onClick={() => setView(user ? 'library' : 'home')}
-                  className="flex items-center gap-1.5 text-slate-400 hover:text-slate-200"
-                >
-                  <ArrowLeft className="w-4 h-4" /> {user ? 'Library' : 'Home'}
-                </button>
                 {authEnabled && (
                   user && videoData.analysisId ? (
-                    <span className="flex items-center gap-1.5 text-emerald-400/80"><Cloud className="w-4 h-4" /> Saved to your library</span>
+                    <span className="flex items-center gap-1.5 text-lagoon-400/80"><Cloud className="w-4 h-4" /> Saved to your library</span>
                   ) : !user ? (
                     <button onClick={() => setAuthOpen(true)} className="flex items-center gap-1.5 text-amber-300/80 hover:text-amber-200">
                       <CloudOff className="w-4 h-4" /> Sign in to save this video and chat
                     </button>
                   ) : null
                 )}
-                {notice && <span className="text-slate-500">{notice}</span>}
+                {notice && <span className="text-ink-500">{notice}</span>}
                 <button
                   onClick={() => openLessons(true)}
-                  className={`${language !== videoData.language ? '' : 'ml-auto '}flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-indigo-600/80 to-purple-600/80 hover:from-indigo-500 hover:to-purple-500 text-white`}
+                  className={`${language !== videoData.language ? '' : 'ml-auto '}flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-turmeric-400 text-ink-950 font-medium hover:bg-turmeric-300`}
                 >
                   <Clapperboard className="w-4 h-4" /> Make a video lesson
                 </button>
                 {language !== videoData.language && (
                   <button
                     onClick={() => handleSummarize(`https://youtu.be/${videoData.videoId}`, language)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 hover:bg-indigo-500/25"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-turmeric-500/15 border border-turmeric-500/30 text-turmeric-300 hover:bg-turmeric-500/25"
                   >
                     <Languages className="w-4 h-4" /> Show this video in {languageLabel(language)}
                   </button>
@@ -359,7 +363,7 @@ function App() {
                     onReady={(player) => { playerRef.current = player; }}
                   />
                   <Transcript segments={videoData.transcript} currentTime={currentTime} onSeek={seekTo} />
-                  {/* Chat below Smart Transcript */}
+                  {/* Chat below Transcript */}
                   <Chat
                     messages={messages}
                     onSendMessage={handleSendMessage}
@@ -371,7 +375,7 @@ function App() {
                 </div>
 
                 {/* Insights stay in view while you scroll the transcript and chat */}
-                <div className="lg:col-span-2 lg:sticky lg:top-28 lg:self-start">
+                <div className="lg:col-span-2 lg:sticky lg:top-20 lg:self-start">
                   <AIInsights summary={videoData.summary} keyTakeaways={videoData.keyTakeaways} onSeek={seekTo} scrollable />
                 </div>
               </div>
@@ -381,71 +385,27 @@ function App() {
                 <StudyTools key={`${videoData.videoId}:${videoData.language}`} video={videoData} onSeek={seekTo} />
               </div>
             </div>
-          </motion.div>
-        ) : (
-          <motion.div
-            key="home"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="pt-40 md:pt-32 pb-16 px-4"
-          >
-            <div className="max-w-2xl mx-auto text-center">
-              <motion.div
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ delay: 0.2, type: 'spring' }}
-                className="mb-8"
-              >
-                <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-2xl shadow-indigo-500/30 mb-6">
-                  <svg className="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-                  Transform Videos into Insights
-                </h1>
-                <p className="text-lg text-slate-400 max-w-lg mx-auto">
-                  Paste any YouTube URL above to get AI-powered summaries, transcripts and interactive Q&amp;A — in {languageLabel(language)} or 14 other languages.
-                </p>
               </motion.div>
-
-              {error && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="mb-8 p-4 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400"
-                >
-                  {error}
-                </motion.div>
-              )}
-
-              <motion.div
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.4 }}
-                className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12"
-              >
-                {[
-                  { icon: '📝', title: 'Smart Transcripts', desc: 'Searchable, time-stamped — click any line to jump there' },
-                  { icon: '🧠', title: 'AI Insights & Study Tools', desc: 'Summaries, notes, quizzes, flashcards & mind maps in your language' },
-                  { icon: '💬', title: 'Interactive Chat', desc: 'Ask questions, get answers with timestamps' },
-                ].map((feature) => (
-                  <div
-                    key={feature.title}
-                    className="p-6 bg-slate-900/50 border border-slate-800/50 rounded-2xl backdrop-blur-sm hover:border-indigo-500/30 transition-all"
-                  >
-                    <div className="text-4xl mb-3">{feature.icon}</div>
-                    <h3 className="text-lg font-semibold text-slate-200 mb-2">{feature.title}</h3>
-                    <p className="text-sm text-slate-400">{feature.desc}</p>
+            ) : (
+              <motion.div key="home" {...fade}>
+                {error && (
+                  <div role="alert" className="max-w-5xl mx-auto px-5 lg:px-10 pt-6">
+                    <p className="p-4 bg-red-500/10 border border-red-500/30 rounded-xl text-red-300">{error}</p>
                   </div>
-                ))}
+                )}
+                <HomePage
+                  busy={busy}
+                  language={language}
+                  onLanguageChange={setLanguage}
+                  onSummarize={(url) => handleSummarize(url)}
+                  onMakeLesson={makeLesson}
+                  onOpenLibraryItem={openLibraryItem}
+                />
               </motion.div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            )}
+          </AnimatePresence>
+        </main>
+      </div>
     </div>
   );
 }

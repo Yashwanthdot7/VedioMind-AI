@@ -37,7 +37,7 @@ function layout(map: StudyMindMap) {
   let row = 0;
   const yOf = (r: number) => PAD + r * ROW_H + NODE_H / 2;
 
-  const root: LaidOutNode = { id: 'root', label: map.root, depth: 0, x: COL_X[0], y: 0, color: '#e2e8f0' };
+  const root: LaidOutNode = { id: 'root', label: map.root, depth: 0, x: COL_X[0], y: 0, color: '#EEEAF6' };
 
   const branchNodes = map.branches.map((branch, bi) => {
     const color = BRANCH_COLORS[bi % BRANCH_COLORS.length];
@@ -121,9 +121,9 @@ function MindMapSvg({ map, onSeek, id }: { map: StudyMindMap; onSeek?: (s: numbe
         const seconds = n.timestamp ? parseTimestamp(n.timestamp) : null;
         const clickable = seconds !== null && Boolean(onSeek);
         const isRoot = n.depth === 0;
-        const fill = isRoot ? '#4f46e5' : n.depth === 1 ? `${n.color}33` : n.depth === 2 ? `${n.color}1a` : '#0f172a';
-        const stroke = isRoot ? '#818cf8' : n.color;
-        const textColor = isRoot ? '#ffffff' : n.depth === 3 ? '#94a3b8' : '#e2e8f0';
+        const fill = isRoot ? '#F2B33D' : n.depth === 1 ? `${n.color}33` : n.depth === 2 ? `${n.color}1a` : '#1F1C3B';
+        const stroke = isRoot ? '#F7C862' : n.color;
+        const textColor = isRoot ? '#15132B' : n.depth === 3 ? '#A9A3C2' : '#EEEAF6';
         const maxChars = n.depth === 3 ? 24 : 22;
         return (
           <g
@@ -176,7 +176,7 @@ export default function MindMapView({ map, videoTitle, onSeek }: MindMapViewProp
     const bg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
     const [x, y, w, h] = (clone.getAttribute('viewBox') || '0 0 0 0').split(' ');
     bg.setAttribute('x', x); bg.setAttribute('y', y); bg.setAttribute('width', w); bg.setAttribute('height', h);
-    bg.setAttribute('fill', '#0b1120');
+    bg.setAttribute('fill', '#15132B');
     clone.insertBefore(bg, clone.firstChild);
     downloadText(`${slugify(videoTitle)}-mindmap.svg`, new XMLSerializer().serializeToString(clone), 'image/svg+xml');
   };
@@ -186,18 +186,18 @@ export default function MindMapView({ map, videoTitle, onSeek }: MindMapViewProp
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between gap-2">
-        <span className="text-xs text-slate-500">Click a main branch to jump to that part of the video</span>
+        <span className="text-xs text-ink-500">Click a main branch to jump to that part of the video</span>
         <div className="flex gap-1">
-          <button onClick={downloadSvg} className="p-2 rounded-lg hover:bg-slate-800 text-slate-400" title="Download mind map (.svg)" aria-label="Download mind map">
+          <button onClick={downloadSvg} className="p-2 rounded-lg hover:bg-ink-800 text-ink-400" title="Download mind map (.svg)" aria-label="Download mind map">
             <Download className="w-4 h-4" />
           </button>
-          <button onClick={() => setExpanded(true)} className="p-2 rounded-lg hover:bg-slate-800 text-slate-400" title="Full screen" aria-label="Open mind map full screen">
+          <button onClick={() => setExpanded(true)} className="p-2 rounded-lg hover:bg-ink-800 text-ink-400" title="Full screen" aria-label="Open mind map full screen">
             <Maximize2 className="w-4 h-4" />
           </button>
         </div>
       </div>
 
-      <div className="overflow-auto custom-scrollbar rounded-xl bg-slate-950/50 border border-slate-800/60 p-4 max-h-[36rem]">
+      <div className="overflow-auto custom-scrollbar rounded-xl bg-ink-950/50 border border-ink-800/60 p-4 max-h-[36rem]">
         {/* w-max + mx-auto: centred when it fits, scrollable from the left edge when it doesn't */}
         <div className="w-max mx-auto">
           <MindMapSvg map={map} onSeek={handleSeek} id="mindmap-svg" />
@@ -205,10 +205,10 @@ export default function MindMapView({ map, videoTitle, onSeek }: MindMapViewProp
       </div>
 
       {expanded && createPortal(
-        <div className="fixed inset-0 z-[200] bg-slate-950 flex flex-col" role="dialog" aria-modal="true" aria-label="Mind map">
-          <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800">
-            <h3 className="text-lg font-semibold text-slate-100 truncate">Mind map · {videoTitle}</h3>
-            <button onClick={() => setExpanded(false)} className="p-2 rounded-full hover:bg-slate-800 text-slate-300" aria-label="Close">
+        <div className="fixed inset-0 z-[200] bg-ink-950 flex flex-col" role="dialog" aria-modal="true" aria-label="Mind map">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-ink-800">
+            <h3 className="text-lg font-semibold text-ink-100 truncate">Mind map · {videoTitle}</h3>
+            <button onClick={() => setExpanded(false)} className="p-2 rounded-full hover:bg-ink-800 text-ink-300" aria-label="Close">
               <X className="w-5 h-5" />
             </button>
           </div>
