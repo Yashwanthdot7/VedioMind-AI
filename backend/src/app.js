@@ -10,6 +10,8 @@ const studyRoutes = require('./routes/studyRoutes');
 const lessonRoutes = require('./routes/lessonRoutes');
 const courseRoutes = require('./routes/courseRoutes');
 const shareRoutes = require('./routes/shareRoutes');
+const profileRoutes = require('./routes/profileRoutes');
+const { attachLearner } = require('./middleware/learner');
 const attemptRoutes = require('./routes/attemptRoutes');
 const errorHandler = require('./middleware/errorHandler');
 const { optionalAuth } = require('./middleware/auth');
@@ -54,7 +56,7 @@ app.get('/api/languages', (_req, res) => {
     res.json({ success: true, data: LANGUAGES });
 });
 
-app.use('/api', optionalAuth, generalLimiter);
+app.use('/api', optionalAuth, generalLimiter, attachLearner);
 app.use('/api/video', videoRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/library', libraryRoutes);
@@ -62,6 +64,7 @@ app.use('/api/study', studyRoutes);
 app.use('/api/lessons', lessonRoutes);
 app.use('/api/courses', courseRoutes);
 app.use('/api/shared', shareRoutes);
+app.use('/api/profile', profileRoutes);
 app.use('/api/quiz-attempts', attemptRoutes);
 
 app.use('/api', (_req, _res, next) => next(new AppError('Endpoint not found', 404, 'NOT_FOUND')));

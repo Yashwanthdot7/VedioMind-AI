@@ -1,6 +1,9 @@
 const youtubeService = require('../services/youtubeService');
 const geminiService = require('../services/geminiService');
 const store = require('../services/analysisStore');
+const summaryService = require('../services/summaryService');
+const { resolveContext } = require('../services/contextResolver');
+const { LEVELS } = require('../config/learner');
 const AppError = require('../lib/AppError');
 const { LIMITS } = require('../types/constants');
 const { extractVideoId, parseLanguage } = require('../utils/validators');
@@ -83,12 +86,40 @@ class VideoController {
 
             await store.addToLibrary(userId, analysis.analysisId);
 
+            // Students who aren't intermediate get the summary at their level
+            let data = { ...analysis, level: 'intermediate' };
+            const { role, level } = req.learner || {};
+            if (role === 'student' && level && level !== 'intermediate') {
+                try {
+                    data = { ...data, ...(await summaryService.forLevel({ context: analysis, level, language })) };
+                } catch (error) {
+                    console.warn(`Summary for ${level} failed, showing the standard one:`, error.message);
+                    data.levelNotice = 'The summary couldn\'t be adapted to your level right now, so this is the standard one.';
+                }
+            }
+
             res.json({
                 success: true,
                 cached: fromCache,
                 saved: Boolean(userId && analysis.analysisId),
-                data: analysis,
+                data,
             });
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    /**
+     * POST /api/video/summary  { videoId, analysisId?, language, level, videoContext? }
+     * The summary and key takeaways rewritten for a beginner, intermediate or advanced learner.
+     */
+    async summaryForLevel(req, res, next) {
+        try {
+            const level = req.body?.level;
+            if (!LEVELS.includes(level)) throw new AppError('Choose beginner, intermediate or advanced.', 400, 'INVALID_LEVEL');
+            const language = parseLanguage(req.body?.language);
+            const context = await resolveContext({ ...req.body, language });
+            res.json({ success: true, data: await summaryService.forLevel({ context, level, language }) });
         } catch (error) {
             next(error);
         }

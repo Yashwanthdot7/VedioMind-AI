@@ -134,7 +134,7 @@ async function run(course, material, options) {
         course.status = 'outlining';
         await save(course);
         const plan = await courseService.outline({
-            material, audience: course.audience, language: course.language, moduleCount: course.moduleCount,
+            material, audience: course.audience, language: course.language, moduleCount: course.moduleCount, level: course.level, teacherMode: course.teacherMode,
         });
         course.title = plan.title;
         course.modules = plan.modules.map((m, index) => ({ index, ...m, lessonId: null }));
@@ -179,7 +179,7 @@ async function run(course, material, options) {
  * @param {object} input  userId, material, source, sourceVideo, inputText, audience, language, voice, visuals, moduleCount
  * @returns the course (status "queued"), made in the background
  */
-async function create({ userId, material, source, sourceVideo, inputText, audience, language, voice, visuals, moduleCount }) {
+async function create({ userId, material, source, sourceVideo, inputText, audience, language, voice, visuals, moduleCount, level = 'intermediate', teacherMode = null }) {
     const course = {
         id: crypto.randomUUID(),
         userId: userId || null,
@@ -188,6 +188,8 @@ async function create({ userId, material, source, sourceVideo, inputText, audien
         language,
         audience,
         moduleCount: courseService.clampModules(moduleCount),
+        level,
+        teacherMode,
         isPublic: false,
         shareSlug: null,
         modules: [],
@@ -197,7 +199,7 @@ async function create({ userId, material, source, sourceVideo, inputText, audien
     await save(course);
     const done = new Promise((resolve) => {
         setImmediate(() => {
-            run(course, material, { source, sourceVideo, inputText, audience, language, voice, visuals }).then(resolve, resolve);
+            run(course, material, { source, sourceVideo, inputText, audience, language, voice, visuals, level, teacherMode }).then(resolve, resolve);
         });
     }).finally(() => running.delete(course.id));
     running.set(course.id, done);

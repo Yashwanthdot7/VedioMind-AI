@@ -36,8 +36,25 @@ describe('HomePage', () => {
     await user.click(screen.getByRole('button', { name: 'Plan the lesson' }));
     expect(p.onMakeLesson).toHaveBeenCalledWith('The water cycle');
 
-    await user.click(screen.getByRole('button', { name: /Photosynthesis/ }));
+    await user.click(screen.getByRole('button', { name: 'Launch lesson: Photosynthesis' }));
     expect(p.onMakeLesson).toHaveBeenLastCalledWith('Photosynthesis');
+  });
+
+  it('the showcase carousel moves with its arrows and thumbnails, and topics in a world start a lesson', async () => {
+    const user = userEvent.setup();
+    const p = props();
+    render(<HomePage {...p} />);
+    await user.click(screen.getByRole('button', { name: 'Next lesson' }));
+    expect(screen.getByRole('button', { name: 'Launch lesson: The water cycle' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Previous lesson' }));
+    await user.click(screen.getByRole('button', { name: 'Previous lesson' }));
+    expect(screen.getByRole('button', { name: 'Launch lesson: How volcanoes work' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Show How computers store numbers' }));
+    await user.click(screen.getByRole('button', { name: 'Launch lesson: How computers store numbers' }));
+    expect(p.onMakeLesson).toHaveBeenLastCalledWith('How computers store numbers');
+
+    await user.click(screen.getByRole('button', { name: "Pythagoras' theorem" }));
+    expect(p.onMakeLesson).toHaveBeenLastCalledWith("Pythagoras' theorem");
   });
 
   it('shows the settled headline straight away when reduced motion is on', () => {

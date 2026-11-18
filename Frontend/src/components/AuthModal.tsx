@@ -130,7 +130,7 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
 
             <form onSubmit={handleSubmit} className="space-y-3">
               {mode === 'signup' && (
-                <label className="flex items-center gap-3 px-4 py-3 bg-ink-950/60 border border-ink-800 rounded-xl focus-within:ring-2 focus-within:ring-turmeric-500">
+                <label className="flex items-center gap-3 px-4 py-3 bg-ink-950/60 border border-ink-800 rounded-xl focus-within:ring-2 focus-within:ring-neon-500">
                   <UserIcon className="w-4 h-4 text-ink-500" />
                   <input
                     value={fullName}
@@ -141,7 +141,7 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
                   />
                 </label>
               )}
-              <label className="flex items-center gap-3 px-4 py-3 bg-ink-950/60 border border-ink-800 rounded-xl focus-within:ring-2 focus-within:ring-turmeric-500">
+              <label className="flex items-center gap-3 px-4 py-3 bg-ink-950/60 border border-ink-800 rounded-xl focus-within:ring-2 focus-within:ring-neon-500">
                 <Mail className="w-4 h-4 text-ink-500" />
                 <input
                   type="email"
@@ -154,7 +154,7 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
                 />
               </label>
               {mode !== 'reset' && (
-                <label className="flex items-center gap-3 px-4 py-3 bg-ink-950/60 border border-ink-800 rounded-xl focus-within:ring-2 focus-within:ring-turmeric-500">
+                <label className="flex items-center gap-3 px-4 py-3 bg-ink-950/60 border border-ink-800 rounded-xl focus-within:ring-2 focus-within:ring-neon-500">
                   <Lock className="w-4 h-4 text-ink-500" />
                   <input
                     type="password"
@@ -170,12 +170,12 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
               )}
 
               {error && <p className="text-sm text-red-400">{error}</p>}
-              {notice && <p className="text-sm text-lagoon-400">{notice}</p>}
+              {notice && <p className="text-sm text-aqua-400">{notice}</p>}
 
               <button
                 type="submit"
                 disabled={busy}
-                className="w-full flex items-center justify-center gap-2 py-3 bg-turmeric-400 hover:bg-turmeric-300 disabled:bg-ink-700 text-ink-950 font-medium rounded-xl transition-colors"
+                className="w-full flex items-center justify-center gap-2 py-3 bg-neon-400 hover:bg-neon-500 disabled:bg-ink-700 text-white font-medium rounded-xl transition-colors"
               >
                 {busy && <Loader2 className="w-4 h-4 animate-spin" />}
                 {mode === 'signin' ? 'Sign in' : mode === 'signup' ? 'Create account' : 'Send reset link'}
@@ -187,7 +187,7 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
                 <>
                   <p>
                     New here?{' '}
-                    <button onClick={() => switchMode('signup')} className="text-turmeric-400 hover:underline">Create an account</button>
+                    <button onClick={() => switchMode('signup')} className="text-neon-400 hover:underline">Create an account</button>
                   </p>
                   <button onClick={() => switchMode('reset')} className="text-ink-500 hover:text-ink-300">Forgot password?</button>
                 </>
@@ -195,7 +195,7 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
               {mode !== 'signin' && (
                 <p>
                   Already have an account?{' '}
-                  <button onClick={() => switchMode('signin')} className="text-turmeric-400 hover:underline">Sign in</button>
+                  <button onClick={() => switchMode('signin')} className="text-neon-400 hover:underline">Sign in</button>
                 </p>
               )}
             </div>

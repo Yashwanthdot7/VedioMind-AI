@@ -70,7 +70,7 @@ export default function ShareButton({ kind, id, title, isPublic, shareSlug, onCh
       <button
         onClick={() => setOpen(true)}
         className={`flex items-center gap-2 px-3.5 py-2 rounded-lg border text-sm transition-colors ${
-          state.isPublic ? 'border-lagoon-500/50 text-lagoon-300 hover:border-lagoon-400' : 'border-ink-700 text-ink-200 hover:border-turmeric-400/60'
+          state.isPublic ? 'border-aqua-500/50 text-aqua-300 hover:border-aqua-400' : 'border-ink-700 text-ink-200 hover:border-neon-400/60'
         }`}
       >
         <Share2 className="w-4 h-4" /> {state.isPublic ? 'Shared with class' : 'Share with class'}
@@ -100,7 +100,7 @@ export default function ShareButton({ kind, id, title, isPublic, shareSlug, onCh
               checked={state.isPublic}
               disabled={busy}
               onChange={(e) => toggle(e.target.checked)}
-              className="mt-1 w-4 h-4 accent-turmeric-400"
+              className="mt-1 w-4 h-4 accent-neon-400"
             />
             <span>
               <span className="block text-sm font-medium text-ink-100">Anyone with the link can watch</span>
@@ -109,7 +109,7 @@ export default function ShareButton({ kind, id, title, isPublic, shareSlug, onCh
                 {kind === 'course' ? ' Every module is included.' : ''}
               </span>
             </span>
-            {busy && <Loader2 className="w-4 h-4 animate-spin text-turmeric-400 ml-auto mt-1" />}
+            {busy && <Loader2 className="w-4 h-4 animate-spin text-neon-400 ml-auto mt-1" />}
           </label>
 
           {link ? (
@@ -117,7 +117,7 @@ export default function ShareButton({ kind, id, title, isPublic, shareSlug, onCh
               <div className="flex gap-2">
                 <input readOnly value={link} onFocus={(e) => e.target.select()} aria-label="Class link"
                   className="flex-1 min-w-0 px-3 py-2.5 rounded-lg bg-ink-950 border border-ink-700 text-sm text-ink-200" />
-                <button onClick={copy} className="flex items-center gap-1.5 px-4 py-2.5 rounded-lg bg-turmeric-400 hover:bg-turmeric-300 text-ink-950 text-sm font-semibold">
+                <button onClick={copy} className="flex items-center gap-1.5 px-4 py-2.5 rounded-lg bg-neon-400 hover:bg-neon-500 text-white text-sm font-semibold">
                   {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />} {copied ? 'Copied' : 'Copy link'}
                 </button>
               </div>
@@ -126,7 +126,7 @@ export default function ShareButton({ kind, id, title, isPublic, shareSlug, onCh
                   <img src={qr} alt="QR code for the class link" className="w-40 h-40 rounded-xl bg-white p-2" />
                   <div className="text-sm text-ink-400 space-y-3">
                     <p>Show this on the projector. Students scan it with their phone camera to open the {kind}.</p>
-                    <a href={qr} download={`${title.slice(0, 40) || 'videomind'}-qr.png`} className="inline-flex items-center gap-1.5 text-turmeric-300 hover:text-turmeric-200">
+                    <a href={qr} download={`${title.slice(0, 40) || 'videomind'}-qr.png`} className="inline-flex items-center gap-1.5 text-neon-300 hover:text-neon-200">
                       <Download className="w-4 h-4" /> Download QR code
                     </a>
                   </div>

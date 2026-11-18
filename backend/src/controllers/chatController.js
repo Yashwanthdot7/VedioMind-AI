@@ -15,7 +15,7 @@ class ChatController {
             const language = parseLanguage(req.body?.language);
             const context = await resolveContext({ ...req.body, language });
 
-            const answer = await geminiService.chat({ messages, context, language });
+            const answer = await geminiService.chat({ messages, context, language, learner: req.learner });
 
             let sessionId = null;
             if (req.user && isSupabaseEnabled && context.analysisId) {

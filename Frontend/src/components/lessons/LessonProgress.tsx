@@ -52,7 +52,7 @@ export default function LessonProgress({ lesson }: { lesson: Lesson }) {
     <div className="max-w-5xl mx-auto">
       <div className="p-6 rounded-2xl bg-ink-900/50 border border-ink-800/60">
         <div className="text-center mb-6">
-          <Loader2 className="w-9 h-9 mx-auto text-turmeric-400 animate-spin mb-3" />
+          <Loader2 className="w-9 h-9 mx-auto text-neon-400 animate-spin mb-3" />
           <h2 className="text-xl font-bold text-ink-100">Generating your video lesson</h2>
           <p className="text-sm text-ink-400 mt-1">
             {scripting ? 'Writing the script…' : 'Content appears below as each part is ready'}
@@ -65,7 +65,7 @@ export default function LessonProgress({ lesson }: { lesson: Lesson }) {
             <div
               key={step.label}
               className={`flex items-center gap-2 text-sm ${
-                step.state === 'done' ? 'text-lagoon-300' : step.state === 'active' ? 'text-turmeric-200' : 'text-ink-500'
+                step.state === 'done' ? 'text-aqua-300' : step.state === 'active' ? 'text-neon-200' : 'text-ink-500'
               }`}
             >
               <step.icon className="w-4 h-4" />
@@ -78,7 +78,7 @@ export default function LessonProgress({ lesson }: { lesson: Lesson }) {
           ))}
         </div>
         <div className="h-2 bg-ink-800 rounded-full overflow-hidden">
-          <div className="h-full transition-all duration-700 bg-turmeric-400 text-ink-950" style={{ width: `${Math.max(4, lesson.progress)}%` }} />
+          <div className="h-full transition-all duration-700 bg-neon-400 text-white" style={{ width: `${Math.max(4, lesson.progress)}%` }} />
         </div>
         <p className="text-center text-xs text-ink-500 mt-2">
           {lesson.progress}% · usually 1–3 minutes{wantsPictures ? ' (free pictures can take a little longer)' : ''}
@@ -120,7 +120,7 @@ export default function LessonProgress({ lesson }: { lesson: Lesson }) {
                   )}
                   <span className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-black/60 text-[11px] text-white">Scene {i + 1}</span>
                   <span
-                    className={`absolute top-2 right-2 p-1 rounded-md bg-black/60 ${scene.audio || lesson.voiceMode === 'browser' ? 'text-lagoon-300' : 'text-ink-400'}`}
+                    className={`absolute top-2 right-2 p-1 rounded-md bg-black/60 ${scene.audio || lesson.voiceMode === 'browser' ? 'text-aqua-300' : 'text-ink-400'}`}
                     title={scene.audio ? 'Narration recorded' : 'Recording narration…'}
                   >
                     {scene.audio || lesson.voiceMode === 'browser' ? <Mic className="w-3.5 h-3.5" /> : <Loader2 className="w-3.5 h-3.5 animate-spin" />}

@@ -188,7 +188,8 @@ VedioMind-AI/
 │   └── test/                  node:test suites (external services faked)
 ├── Frontend/src/
 │   ├── components/
-│   │   ├── shell/         sidebar, mobile tab bar, link bar
+│   │   ├── shell/         framed header, full-screen menu, loader, link bar
+│   │   ├── art/           portal and world art drawn in CSS and SVG
 │   │   ├── home/          home page
 │   │   ├── lessons/       lesson form, player, progress, MP4 export, course player
 │   │   ├── study/         notes, quiz, flashcards, mind map

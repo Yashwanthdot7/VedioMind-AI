@@ -18,10 +18,10 @@ function pickModule(course: Course, current: number | null): number {
 }
 
 function ModuleState({ m }: { m: CourseModule }) {
-  if (m.status === 'done') return <CheckCircle2 className="w-5 h-5 text-lagoon-400" aria-label="Ready" />;
+  if (m.status === 'done') return <CheckCircle2 className="w-5 h-5 text-aqua-400" aria-label="Ready" />;
   if (m.status === 'failed') return <AlertCircle className="w-5 h-5 text-red-400" aria-label="Failed" />;
   if (m.status === 'waiting') return <Circle className="w-5 h-5 text-ink-600" aria-label="Waiting" />;
-  return <Loader2 className="w-5 h-5 text-turmeric-400 animate-spin" aria-label="Being made" />;
+  return <Loader2 className="w-5 h-5 text-neon-400 animate-spin" aria-label="Being made" />;
 }
 
 /** A course: the module list on one side, the selected module's lesson on the other */
@@ -50,7 +50,7 @@ export default function CoursePlayer({ course }: { course: Course }) {
       <div className="mb-6">
         <p className="text-sm text-ink-500 flex items-center gap-1.5"><ListTree className="w-4 h-4" /> Course</p>
         <div className="flex flex-wrap items-start gap-3 mt-1">
-          <h1 className="font-semiwide text-2xl md:text-3xl font-extrabold tracking-tight text-ink-50 mr-auto">{course.title}</h1>
+          <h1 className="font-display text-4xl md:text-6xl text-white mr-auto">{course.title}</h1>
           {course.isOwner && course.status !== 'queued' && course.status !== 'outlining' && (
             <ShareButton kind="course" id={course.id} title={course.title} isPublic={Boolean(course.isPublic)} shareSlug={course.shareSlug || null} />
           )}
@@ -63,7 +63,7 @@ export default function CoursePlayer({ course }: { course: Course }) {
         </p>
         {course.status !== 'done' && course.status !== 'failed' && (
           <div className="mt-3 h-1.5 max-w-md rounded-full bg-ink-800 overflow-hidden" role="progressbar" aria-valuenow={course.progress} aria-valuemin={0} aria-valuemax={100} aria-label="Course progress">
-            <div className="h-full bg-turmeric-400 transition-[width] duration-700" style={{ width: `${course.progress}%` }} />
+            <div className="h-full bg-neon-400 transition-[width] duration-700" style={{ width: `${course.progress}%` }} />
           </div>
         )}
         {course.error && course.status !== 'building' && <p className="mt-2 text-sm text-amber-300/90">{course.error}</p>}
@@ -71,7 +71,7 @@ export default function CoursePlayer({ course }: { course: Course }) {
 
       {planning ? (
         <div className="py-16 text-center text-ink-400">
-          <Loader2 className="w-8 h-8 mx-auto mb-3 text-turmeric-400 animate-spin" />
+          <Loader2 className="w-8 h-8 mx-auto mb-3 text-neon-400 animate-spin" />
           Reading the material and splitting it into modules…
         </div>
       ) : course.status === 'failed' && !course.modules.length ? (
@@ -93,17 +93,17 @@ export default function CoursePlayer({ course }: { course: Course }) {
                     }}
                     aria-current={active ? 'step' : undefined}
                     className={`w-full flex items-start gap-3 p-3 rounded-xl border text-left transition-colors ${
-                      active ? 'border-turmeric-400/60 bg-ink-900' : 'border-ink-800 hover:border-ink-600'
+                      active ? 'border-neon-400/60 bg-ink-900' : 'border-ink-800 hover:border-ink-600'
                     }`}
                   >
-                    <span className={`shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-sm font-semibold ${active ? 'bg-turmeric-400 text-ink-950' : 'bg-ink-800 text-ink-300'}`}>
+                    <span className={`shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-sm font-semibold ${active ? 'bg-neon-400 text-white' : 'bg-ink-800 text-ink-300'}`}>
                       {m.index + 1}
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className="block text-sm font-medium text-ink-100">{m.title}</span>
                       <span className="block text-xs text-ink-500 mt-0.5 line-clamp-2">{m.goal}</span>
                       {m.status !== 'done' && m.status !== 'waiting' && m.status !== 'failed' && (
-                        <span className="block text-xs text-turmeric-300 mt-1">Being made, {m.progress}%</span>
+                        <span className="block text-xs text-neon-300 mt-1">Being made, {m.progress}%</span>
                       )}
                     </span>
                     <ModuleState m={m} />
@@ -125,14 +125,14 @@ export default function CoursePlayer({ course }: { course: Course }) {
                 This module could not be made{lesson?.error ? `: ${lesson.error}` : '.'}
               </div>
             ) : !lesson || lesson.id !== current.lessonId ? (
-              <div className="py-16 text-center"><Loader2 className="w-7 h-7 mx-auto text-turmeric-400 animate-spin" /></div>
+              <div className="py-16 text-center"><Loader2 className="w-7 h-7 mx-auto text-neon-400 animate-spin" /></div>
             ) : lesson.status === 'done' ? (
               <>
                 <LessonPlayer key={lesson.id} lesson={lesson} />
                 {course.modules[current.index + 1] && (
                   <button
                     onClick={() => { setSelected(current.index + 1); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                    className="mt-6 flex items-center gap-2 px-5 py-2.5 rounded-xl bg-turmeric-400 hover:bg-turmeric-300 text-ink-950 font-semibold"
+                    className="mt-6 flex items-center gap-2 px-5 py-2.5 rounded-xl bg-neon-400 hover:bg-neon-500 text-white font-semibold"
                   >
                     Next: {course.modules[current.index + 1].title} <ChevronRight className="w-4 h-4" />
                   </button>

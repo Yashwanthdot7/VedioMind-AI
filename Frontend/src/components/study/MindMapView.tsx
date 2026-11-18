@@ -37,7 +37,7 @@ function layout(map: StudyMindMap) {
   let row = 0;
   const yOf = (r: number) => PAD + r * ROW_H + NODE_H / 2;
 
-  const root: LaidOutNode = { id: 'root', label: map.root, depth: 0, x: COL_X[0], y: 0, color: '#EEEAF6' };
+  const root: LaidOutNode = { id: 'root', label: map.root, depth: 0, x: COL_X[0], y: 0, color: '#F1ECFF' };
 
   const branchNodes = map.branches.map((branch, bi) => {
     const color = BRANCH_COLORS[bi % BRANCH_COLORS.length];
@@ -121,9 +121,9 @@ function MindMapSvg({ map, onSeek, id }: { map: StudyMindMap; onSeek?: (s: numbe
         const seconds = n.timestamp ? parseTimestamp(n.timestamp) : null;
         const clickable = seconds !== null && Boolean(onSeek);
         const isRoot = n.depth === 0;
-        const fill = isRoot ? '#F2B33D' : n.depth === 1 ? `${n.color}33` : n.depth === 2 ? `${n.color}1a` : '#1F1C3B';
-        const stroke = isRoot ? '#F7C862' : n.color;
-        const textColor = isRoot ? '#15132B' : n.depth === 3 ? '#A9A3C2' : '#EEEAF6';
+        const fill = isRoot ? '#7650FF' : n.depth === 1 ? `${n.color}33` : n.depth === 2 ? `${n.color}1a` : '#150D2A';
+        const stroke = isRoot ? '#B3A1FF' : n.color;
+        const textColor = isRoot ? '#FFFFFF' : n.depth === 3 ? '#A99CCB' : '#F1ECFF';
         const maxChars = n.depth === 3 ? 24 : 22;
         return (
           <g
@@ -176,7 +176,7 @@ export default function MindMapView({ map, videoTitle, onSeek }: MindMapViewProp
     const bg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
     const [x, y, w, h] = (clone.getAttribute('viewBox') || '0 0 0 0').split(' ');
     bg.setAttribute('x', x); bg.setAttribute('y', y); bg.setAttribute('width', w); bg.setAttribute('height', h);
-    bg.setAttribute('fill', '#15132B');
+    bg.setAttribute('fill', '#0B0716');
     clone.insertBefore(bg, clone.firstChild);
     downloadText(`${slugify(videoTitle)}-mindmap.svg`, new XMLSerializer().serializeToString(clone), 'image/svg+xml');
   };

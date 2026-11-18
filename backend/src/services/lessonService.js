@@ -4,6 +4,7 @@ const geminiService = require('./geminiService');
 const { wrapGeminiError } = require('./geminiService');
 const { languageName } = require('../config/languages');
 const textrank = require('./textrank');
+const { LEVELS, LEVEL_GUIDANCE } = require('../config/learner');
 
 /**
  * Writes the script for a narrated video lesson: a list of scenes, each with
@@ -60,6 +61,33 @@ const AUDIENCE = {
     },
 };
 
+const TEACHER_MODES = ['guide', 'class'];
+
+const TEACHING_GUIDE = `This video is a TEACHING GUIDE for the teacher, not a video for the class. Speak to the teacher in the second person ("Start by asking your class..."). Coach them through how to teach this topic, in this order across the scenes:
+1. a hook to open the class (a question, demo or everyday example),
+2. each key idea, explained the way it should be explained to students, with the simplest analogy that works,
+3. the most common student misconception and how to correct it,
+4. one short class activity (5-10 minutes, no special equipment),
+5. three questions to check understanding.
+Be practical, specific and encouraging.`;
+
+/**
+ * Who the script is written for, and the narrator's voice style.
+ *  kids                      simple and playful
+ *  student + level           at the learner's level (beginner / intermediate / advanced)
+ *  teacher + guide           coaches the teacher how to teach it
+ *  teacher + class           a video to show the class (at the chosen level), with separate teacher notes
+ */
+function audienceFor({ audience, level = 'intermediate', teacherMode = null }) {
+    const lvl = LEVELS.includes(level) ? level : 'intermediate';
+    if (audience === 'kids') return { guide: AUDIENCE.kids.guide, voiceStyle: AUDIENCE.kids.voiceStyle };
+    if (audience === 'teacher' && teacherMode !== 'class') {
+        return { guide: `${AUDIENCE.teacher.guide}\n\n${TEACHING_GUIDE}`, voiceStyle: AUDIENCE.teacher.voiceStyle };
+    }
+    const forClass = audience === 'teacher' ? ' A teacher will show this video to their class.' : '';
+    return { guide: `${AUDIENCE.student.guide}${forClass}\n${LEVEL_GUIDANCE[lvl]}`, voiceStyle: AUDIENCE.student.voiceStyle };
+}
+
 const LENGTHS = {
     short: { scenes: '5-6', sceneCount: 6, words: '25-35', label: 'about 1 minute', budget: 6000 },
     standard: { scenes: '8-10', sceneCount: 9, words: '30-45', label: 'about 2-3 minutes', budget: 10000 },
@@ -79,14 +107,14 @@ function planMaterial(material, length) {
     return textrank.planLesson(material, { maxChars: len.budget, sceneCount: len.sceneCount });
 }
 
-function buildPrompt({ material, audience, language, length, plan = [], context = '' }) {
+function buildPrompt({ material, audience, language, length, plan = [], context = '', level, teacherMode }) {
     const len = LENGTHS[length];
     const planText = plan.length
         ? `\nThe material was condensed to its key sentences. Suggested key ideas, in order (one or two scenes each; merge or skip if they repeat):\n${plan.map((p, i) => `${i + 1}. ${p}`).join('\n')}\n`
         : '';
     return `You are an expert educator and video script writer. Create a narrated explainer video lesson (${len.label}) from the material below.
 
-${AUDIENCE[audience].guide}
+${audienceFor({ audience, level, teacherMode }).guide}
 
 Structure:
 - ${len.scenes} scenes. Scene 1 uses the "title" layout and introduces the topic with a hook. The last scene uses the "summary" layout.
@@ -184,8 +212,8 @@ async function writeQuiz(lesson, kind = 'quick') {
     const scenes = lesson.scenes.map((s, i) => `Scene ${i + 1} — ${s.heading}: ${s.narration}`).join('\n');
     const prompt = `Write a ${spec.count}-question multiple-choice ${kind === 'test' ? 'test' : 'quiz'} for this video lesson.
 
-${AUDIENCE[lesson.audience].guide}
-
+${audienceFor({ audience: lesson.audience === 'teacher' ? 'student' : lesson.audience, level: lesson.level }).guide}
+${lesson.audience === 'teacher' ? 'The questions are for the teacher\'s students.\n' : ''}
 Rules:
 - Difficulty mix: ${spec.mix}. Mark each question's difficulty.
 - Exactly 4 options per question, one correct answer, plausible wrong options.
@@ -226,7 +254,7 @@ Transcript:
 ${transcript}`;
 }
 
-async function writeScript({ material, audience, language, length, context = '' }) {
+async function writeScript({ material, audience, language, length, context = '', level, teacherMode }) {
     const planning = planMaterial(material, length);
     const options = {
         generationConfig: {
@@ -239,7 +267,7 @@ async function writeScript({ material, audience, language, length, context = '' 
     let raw;
     try {
         raw = await geminiService.withModel(options, async (model) => {
-            const result = await model.generateContent(buildPrompt({ material: planning.material, audience, language, length, plan: planning.plan, context }));
+            const result = await model.generateContent(buildPrompt({ material: planning.material, audience, language, length, plan: planning.plan, context, level, teacherMode }));
             return result.response.text();
         });
     } catch (error) {
@@ -261,6 +289,98 @@ async function writeScript({ material, audience, language, length, context = '' 
     return lesson;
 }
 
+// ------------------------------------------------------------------ teacher's lesson plan
+
+const PLAN_SCHEMA = {
+    type: S.OBJECT,
+    properties: {
+        objectives: strList('2-4 learning objectives, each starting with a verb ("Explain...", "Identify...")'),
+        durationMinutes: { type: S.INTEGER, description: 'Total class time in minutes, 30-60' },
+        materials: strList('Things to prepare; empty if none'),
+        steps: {
+            type: S.ARRAY,
+            items: {
+                type: S.OBJECT,
+                properties: {
+                    minutes: { type: S.INTEGER },
+                    title: str('Short step name'),
+                    teacher: str('What the teacher does or says'),
+                    students: str('What the students do'),
+                    scene: { type: S.INTEGER, description: 'Video scene number to show or pause at, or 0' },
+                },
+                required: ['minutes', 'title', 'teacher', 'students', 'scene'],
+            },
+        },
+        misconceptions: {
+            type: S.ARRAY,
+            items: { type: S.OBJECT, properties: { misconception: str(), fix: str('How to correct it') }, required: ['misconception', 'fix'] },
+        },
+        activity: { type: S.OBJECT, properties: { title: str(), instructions: str() }, required: ['title', 'instructions'] },
+        questions: strList('4-6 discussion or check-for-understanding questions'),
+        exitTicket: strList('2-3 quick questions students answer before leaving'),
+        differentiation: str('One line each on helping students who struggle and stretching those who finish early'),
+    },
+    required: ['objectives', 'durationMinutes', 'materials', 'steps', 'misconceptions', 'activity', 'questions', 'exitTicket', 'differentiation'],
+};
+
+function normalisePlan(raw) {
+    const steps = (Array.isArray(raw?.steps) ? raw.steps : []).map((s) => ({
+        minutes: Math.max(1, Math.min(60, Number.parseInt(s?.minutes, 10) || 5)),
+        title: clean(s?.title, 80),
+        teacher: clean(s?.teacher, 600),
+        students: clean(s?.students, 400),
+        scene: Math.max(0, Number.parseInt(s?.scene, 10) || 0),
+    })).filter((s) => s.title).slice(0, 10);
+    return {
+        objectives: list(raw?.objectives, 5, 200),
+        durationMinutes: Math.max(10, Math.min(120, Number.parseInt(raw?.durationMinutes, 10) || steps.reduce((n, s) => n + s.minutes, 0) || 40)),
+        materials: list(raw?.materials, 8, 160),
+        steps,
+        misconceptions: (Array.isArray(raw?.misconceptions) ? raw.misconceptions : [])
+            .map((m) => ({ misconception: clean(m?.misconception, 300), fix: clean(m?.fix, 400) }))
+            .filter((m) => m.misconception).slice(0, 4),
+        activity: { title: clean(raw?.activity?.title, 100), instructions: clean(raw?.activity?.instructions, 1200) },
+        questions: list(raw?.questions, 8, 240),
+        exitTicket: list(raw?.exitTicket, 4, 240),
+        differentiation: clean(raw?.differentiation, 600),
+    };
+}
+
+/**
+ * A printable lesson plan for a finished lesson. In "guide" mode it is the teacher's own plan;
+ * in "class" mode it is the notes to teach alongside the video (when to pause, what to ask).
+ */
+async function writeTeacherPlan(lesson) {
+    const scenes = lesson.scenes.map((s, i) => `Scene ${i + 1}: ${s.heading}. ${s.narration}`).join('\n');
+    const mode = lesson.teacherMode === 'class'
+        ? 'The teacher will SHOW this video to the class. Plan the lesson around it: what to do before playing it, where to pause (use the scene numbers) and what to ask, and what to do after.'
+        : 'The video is the teacher\'s own guide. Turn it into a plan the teacher can follow in class without the video. Use scene numbers only as references, or 0.';
+    const prompt = `Write a practical lesson plan for a teacher.
+
+${mode}
+Students' level: ${lesson.level || 'intermediate'}.
+Write everything in ${languageName(lesson.language)}. Stay accurate to the lesson; do not invent facts.
+
+Lesson: ${lesson.title}
+${scenes}`;
+    let raw;
+    try {
+        raw = await geminiService.withModel({
+            generationConfig: { responseMimeType: 'application/json', responseSchema: PLAN_SCHEMA, temperature: 0.5 },
+        }, async (model) => (await model.generateContent(prompt)).response.text());
+    } catch (error) {
+        throw wrapGeminiError(error, 'Failed to write the lesson plan. Please try again.');
+    }
+    let plan;
+    try {
+        plan = normalisePlan(JSON.parse(raw));
+    } catch {
+        throw new AppError('The AI returned an unexpected lesson plan. Please try again.', 502, 'AI_BAD_OUTPUT');
+    }
+    if (!plan.steps.length) throw new AppError('The AI could not write a lesson plan. Please try again.', 502, 'AI_BAD_OUTPUT');
+    return plan;
+}
+
 module.exports = {
-    LAYOUTS, AUDIENCE, LENGTHS, LESSON_SCHEMA, QUIZ_KINDS, buildPrompt, planMaterial, normalise, normaliseQuiz, materialFromVideo, writeScript, writeQuiz,
+    LAYOUTS, AUDIENCE, TEACHER_MODES, audienceFor, writeTeacherPlan, normalisePlan, PLAN_SCHEMA, LENGTHS, LESSON_SCHEMA, QUIZ_KINDS, buildPrompt, planMaterial, normalise, normaliseQuiz, materialFromVideo, writeScript, writeQuiz,
 };

@@ -25,7 +25,7 @@ export default function VideoPlayer({ videoId, title, metadata, onReady }: Video
     <div className="bg-ink-900/50 border border-ink-800/50 rounded-2xl overflow-hidden backdrop-blur-sm">
       <div className="p-4 border-b border-ink-800/50">
         <div className="flex items-start gap-2">
-          <PlayCircle className="w-5 h-5 text-turmeric-400 mt-1 shrink-0" />
+          <PlayCircle className="w-5 h-5 text-neon-400 mt-1 shrink-0" />
           <div className="min-w-0">
             <h2 className="text-lg font-semibold text-ink-200 leading-snug">{title}</h2>
             {(metadata?.author || metadata?.duration) && (

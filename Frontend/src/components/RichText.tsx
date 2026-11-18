@@ -19,10 +19,10 @@ function renderInline(text: string, onSeek?: (s: number) => void, keyPrefix = ''
   return text.split(INLINE).filter(Boolean).map((part, i) => {
     const key = `${keyPrefix}-${i}`;
     if (part.startsWith('**') && part.endsWith('**')) {
-      return <strong key={key} className="font-semibold text-turmeric-300">{part.slice(2, -2)}</strong>;
+      return <strong key={key} className="font-semibold text-neon-300">{part.slice(2, -2)}</strong>;
     }
     if (part.startsWith('`') && part.endsWith('`')) {
-      return <code key={key} className="px-1 py-0.5 rounded bg-ink-800 text-turmeric-300 text-[0.9em]">{part.slice(1, -1)}</code>;
+      return <code key={key} className="px-1 py-0.5 rounded bg-ink-800 text-neon-300 text-[0.9em]">{part.slice(1, -1)}</code>;
     }
     const ts = part.match(/^\[(\d{1,2}(?::\d{2}){1,2})\]$/);
     if (ts) {
@@ -32,14 +32,14 @@ function renderInline(text: string, onSeek?: (s: number) => void, keyPrefix = ''
           <button
             key={key}
             onClick={() => onSeek(seconds)}
-            className="inline-flex items-center px-1.5 py-0.5 mx-0.5 rounded-md bg-turmeric-500/15 border border-turmeric-500/30 text-turmeric-300 font-mono text-[0.85em] hover:bg-turmeric-500/30 transition-colors"
+            className="inline-flex items-center px-1.5 py-0.5 mx-0.5 rounded-md bg-neon-500/15 border border-neon-500/30 text-neon-300 font-mono text-[0.85em] hover:bg-neon-500/30 transition-colors"
             title={`Jump to ${ts[1]}`}
           >
             {ts[1]}
           </button>
         );
       }
-      return <span key={key} className="font-mono text-turmeric-300">{ts[1]}</span>;
+      return <span key={key} className="font-mono text-neon-300">{ts[1]}</span>;
     }
     if (part.startsWith('*') && part.endsWith('*') && part.length > 2) {
       return <em key={key} className="italic">{part.slice(1, -1)}</em>;
@@ -66,7 +66,7 @@ export default function RichText({ text, onSeek, className = '' }: RichTextProps
       const k = `l${blocks.length}`;
       const items = list.items.map((item, i) => (
         <li key={i} className="flex items-start gap-2 leading-relaxed">
-          <span className="text-turmeric-400 select-none mt-0.5">{list!.ordered ? `${i + 1}.` : '•'}</span>
+          <span className="text-neon-400 select-none mt-0.5">{list!.ordered ? `${i + 1}.` : '•'}</span>
           <span className="flex-1">{renderInline(item, onSeek, `${k}-${i}`)}</span>
         </li>
       ));

@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Languages, Cloud, CloudOff, Clapperboard } from 'lucide-react';
-import Sidebar from './components/shell/Sidebar';
-import MobileNav from './components/shell/MobileNav';
+import Header from './components/shell/Header';
+import MenuOverlay from './components/shell/MenuOverlay';
+import BootLoader from './components/shell/BootLoader';
 import LinkBar from './components/shell/LinkBar';
 import HomePage from './components/home/HomePage';
 import SharedPage from './components/share/SharedPage';
@@ -57,7 +58,8 @@ function readShareSlug(): string | null {
 }
 
 function App() {
-  const { user, enabled: authEnabled } = useAuth();
+  const { user, enabled: authEnabled, loading: authLoading } = useAuth();
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const [sharedSlug, setSharedSlug] = useState<string | null>(readShareSlug);
   const [view, setView] = useState<View>(() => (readShareSlug() ? 'shared' : 'home'));
@@ -290,33 +292,41 @@ function App() {
     window.scrollTo({ top: 0 });
   };
   const busy = status === ProcessingStatus.LOADING;
-  const page = 'px-4 lg:px-10 pt-6 lg:pt-8 pb-28 lg:pb-16';
+  const page = 'mx-auto max-w-[1400px] px-4 sm:px-8 lg:px-10 pt-8 pb-20';
   const fade = { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 }, transition: { duration: 0.2 } };
 
   return (
     <div className="min-h-screen bg-ink-950">
-      <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:px-4 focus:py-2 focus:rounded-lg focus:bg-turmeric-400 focus:text-ink-950">Skip to content</a>
-      <Sidebar
+      <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:px-4 focus:py-2 focus:rounded-lg focus:bg-neon-400 focus:text-white">Skip to content</a>
+      <BootLoader loading={authLoading} />
+      <Header
+        menuOpen={menuOpen}
+        onToggleMenu={() => setMenuOpen((o) => !o)}
+        onGoHome={() => { setMenuOpen(false); goHome(); }}
+        onOpenAuth={() => setAuthOpen(true)}
+        onCreate={() => { setMenuOpen(false); makeLesson(''); }}
+        overArt={view === 'home'}
+      />
+      <MenuOverlay
+        open={menuOpen}
         view={view}
         hasVideo={!!videoData}
         videoTitle={videoData?.title}
+        onClose={() => setMenuOpen(false)}
         onNavigate={navigateTo}
         onOpenAuth={() => setAuthOpen(true)}
       />
-      <MobileNav view={view} onNavigate={navigateTo} onOpenAuth={() => setAuthOpen(true)} />
 
       <ProcessingOverlay isVisible={busy} steps={processingSteps} progress={progress} />
       <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
 
-      <div className="lg:pl-64">
+      <div className={view === 'home' ? '' : 'pt-[76px]'}>
         {view !== 'home' && (
           <LinkBar
             busy={busy}
             language={language}
             onLanguageChange={setLanguage}
             onSummarize={(url) => handleSummarize(url)}
-            onGoHome={goHome}
-            onOpenAuth={() => setAuthOpen(true)}
           />
         )}
 
@@ -349,7 +359,7 @@ function App() {
               <div className="flex flex-wrap items-center gap-3 mb-4 text-sm">
                 {authEnabled && (
                   user && videoData.analysisId ? (
-                    <span className="flex items-center gap-1.5 text-lagoon-400/80"><Cloud className="w-4 h-4" /> Saved to your library</span>
+                    <span className="flex items-center gap-1.5 text-aqua-400/80"><Cloud className="w-4 h-4" /> Saved to your library</span>
                   ) : !user ? (
                     <button onClick={() => setAuthOpen(true)} className="flex items-center gap-1.5 text-amber-300/80 hover:text-amber-200">
                       <CloudOff className="w-4 h-4" /> Sign in to save this video and chat
@@ -359,14 +369,14 @@ function App() {
                 {notice && <span className="text-ink-500">{notice}</span>}
                 <button
                   onClick={() => openLessons(true)}
-                  className={`${language !== videoData.language ? '' : 'ml-auto '}flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-turmeric-400 text-ink-950 font-medium hover:bg-turmeric-300`}
+                  className={`${language !== videoData.language ? '' : 'ml-auto '}flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-neon-400 text-white font-medium hover:bg-neon-500`}
                 >
                   <Clapperboard className="w-4 h-4" /> Make a video lesson
                 </button>
                 {language !== videoData.language && (
                   <button
                     onClick={() => handleSummarize(`https://youtu.be/${videoData.videoId}`, language)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-turmeric-500/15 border border-turmeric-500/30 text-turmeric-300 hover:bg-turmeric-500/25"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-neon-500/15 border border-neon-500/30 text-neon-300 hover:bg-neon-500/25"
                   >
                     <Languages className="w-4 h-4" /> Show this video in {languageLabel(language)}
                   </button>
@@ -398,7 +408,7 @@ function App() {
                 </div>
 
                 {/* Insights stay in view while you scroll the transcript and chat */}
-                <div className="lg:col-span-2 lg:sticky lg:top-20 lg:self-start">
+                <div className="lg:col-span-2 lg:sticky lg:top-[148px] lg:self-start">
                   <AIInsights summary={videoData.summary} keyTakeaways={videoData.keyTakeaways} onSeek={seekTo} scrollable />
                 </div>
               </div>
@@ -412,8 +422,8 @@ function App() {
             ) : (
               <motion.div key="home" {...fade}>
                 {error && (
-                  <div role="alert" className="max-w-5xl mx-auto px-5 lg:px-10 pt-6">
-                    <p className="p-4 bg-red-500/10 border border-red-500/30 rounded-xl text-red-300">{error}</p>
+                  <div role="alert" className="fixed inset-x-0 top-24 z-[55] flex justify-center px-4">
+                    <p className="glass max-w-xl rounded-xl border-red-500/40 p-4 text-red-200">{error}</p>
                   </div>
                 )}
                 <HomePage
@@ -423,6 +433,7 @@ function App() {
                   onSummarize={(url) => handleSummarize(url)}
                   onMakeLesson={makeLesson}
                   onOpenLibraryItem={openLibraryItem}
+                  onOpenLessons={() => openLessons(false)}
                 />
               </motion.div>
             )}

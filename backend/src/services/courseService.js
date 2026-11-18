@@ -49,10 +49,10 @@ function clampModules(n) {
     return Math.min(MAX_MODULES, Math.max(MIN_MODULES, v));
 }
 
-function buildOutlinePrompt({ material, audience, language, moduleCount }) {
+function buildOutlinePrompt({ material, audience, language, moduleCount, level, teacherMode }) {
     return `You are planning a short video course. Split the material below into exactly ${moduleCount} modules that build on each other, from the basics to the more advanced ideas.
 
-${lessonService.AUDIENCE[audience].guide}
+${lessonService.audienceFor({ audience, level, teacherMode }).guide}
 
 - Each module becomes a separate 1-2 minute narrated lesson, so give each one a clear, separate focus. Do not repeat a topic in two modules.
 - Module 1 introduces the topic. The last module brings the ideas together or applies them.
@@ -78,7 +78,7 @@ function normaliseOutline(raw, moduleCount) {
     return { title: clean(raw?.title, 100) || 'New course', modules };
 }
 
-async function outline({ material, audience, language, moduleCount }) {
+async function outline({ material, audience, language, moduleCount, level, teacherMode }) {
     const count = clampModules(moduleCount);
     const condensed = textrank.planLesson(material, { maxChars: OUTLINE_BUDGET, sceneCount: count + 2 }).material;
     let raw;
@@ -86,7 +86,7 @@ async function outline({ material, audience, language, moduleCount }) {
         raw = await geminiService.withModel({
             generationConfig: { responseMimeType: 'application/json', responseSchema: OUTLINE_SCHEMA, temperature: 0.5 },
         }, async (model) => {
-            const result = await model.generateContent(buildOutlinePrompt({ material: condensed, audience, language, moduleCount: count }));
+            const result = await model.generateContent(buildOutlinePrompt({ material: condensed, audience, language, moduleCount: count, level, teacherMode }));
             return result.response.text();
         });
     } catch (error) {

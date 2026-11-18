@@ -40,9 +40,9 @@ export default function SharedPage({ slug, onMakeOwn }: { slug: string; onMakeOw
   return (
     <div className="max-w-6xl mx-auto">
       {!error && <div className="flex flex-wrap items-center gap-3 mb-6 p-3 rounded-xl border border-ink-800 text-sm text-ink-300">
-        <Users className="w-4 h-4 text-lagoon-400 shrink-0" />
+        <Users className="w-4 h-4 text-aqua-400 shrink-0" />
         <span className="mr-auto">Shared with you by your teacher. You can watch and take the quiz without an account.</span>
-        <button onClick={onMakeOwn} className="text-turmeric-300 hover:text-turmeric-200">Make your own lesson</button>
+        <button onClick={onMakeOwn} className="text-neon-300 hover:text-neon-200">Make your own lesson</button>
       </div>}
 
       {error ? (
@@ -50,21 +50,21 @@ export default function SharedPage({ slug, onMakeOwn }: { slug: string; onMakeOw
           <LinkIcon className="w-9 h-9 mx-auto text-ink-600" />
           <p className="text-ink-200">{error}</p>
           <p className="text-sm text-ink-500">Ask your teacher for a new link.</p>
-          <button onClick={onMakeOwn} className="text-sm text-turmeric-300 hover:text-turmeric-200">Make your own lesson instead</button>
+          <button onClick={onMakeOwn} className="text-sm text-neon-300 hover:text-neon-200">Make your own lesson instead</button>
         </div>
       ) : course ? (
         <CoursePlayer course={course} />
       ) : lesson ? (
         lesson.status === 'done' ? (
           <>
-            <h1 className="font-semiwide text-2xl md:text-3xl font-extrabold tracking-tight text-ink-50 mb-4">{lesson.title}</h1>
+            <h1 className="font-display text-4xl md:text-6xl text-white mb-4">{lesson.title}</h1>
             <LessonPlayer lesson={lesson} />
           </>
         ) : (
           <p className="py-20 text-center text-ink-400">This lesson is still being made. Try again in a minute.</p>
         )
       ) : (
-        <div className="py-24 text-center"><Loader2 className="w-8 h-8 mx-auto text-turmeric-400 animate-spin" /></div>
+        <div className="py-24 text-center"><Loader2 className="w-8 h-8 mx-auto text-neon-400 animate-spin" /></div>
       )}
     </div>
   );

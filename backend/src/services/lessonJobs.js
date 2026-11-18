@@ -73,6 +73,7 @@ async function syncToDb(lesson) {
         progress: lesson.progress,
         script: {
             courseId: lesson.courseId || null, moduleIndex: lesson.moduleIndex ?? null,
+            level: lesson.level || 'intermediate', teacherMode: lesson.teacherMode || null, teacherPlan: lesson.teacherPlan || null,
             title: lesson.title, voice: lesson.voice, voiceMode: lesson.voiceMode, visuals: lesson.visuals, scenes: lesson.scenes, sourceVideo: lesson.sourceVideo || null,
         },
         quiz: lesson.quiz?.length ? { kind: lesson.quizKind || 'quick', questions: lesson.quiz } : [],
@@ -109,6 +110,9 @@ function lessonFromRow(row) {
         sourceVideo: script.sourceVideo || null,
         isPublic: Boolean(row.is_public),
         shareSlug: row.share_slug || null,
+        level: script.level || 'intermediate',
+        teacherMode: script.teacherMode || null,
+        teacherPlan: script.teacherPlan || null,
         courseId: script.courseId || null,
         moduleIndex: script.moduleIndex ?? null,
         scenes: script.scenes || [],
@@ -172,7 +176,7 @@ const readImage = (id, file) => files.read(id, path.basename(file));
 
 /** Narration for every scene (sequential: the free voice tier is rate-limited per minute) */
 async function narrateScenes(lesson, onProgress) {
-    const style = lessonService.AUDIENCE[lesson.audience].voiceStyle;
+    const style = lessonService.audienceFor(lesson).voiceStyle;
     for (let i = 0; i < lesson.scenes.length; i += 1) {
         const scene = lesson.scenes[i];
         try {
@@ -237,7 +241,7 @@ async function runJob(lesson, material, context = '') {
         await save(lesson);
 
         const script = await lessonService.writeScript({
-            material, context, audience: lesson.audience, language: lesson.language, length: lesson.length,
+            material, context, audience: lesson.audience, language: lesson.language, length: lesson.length, level: lesson.level, teacherMode: lesson.teacherMode,
         });
         if (!lesson.courseId) lesson.title = script.title || lesson.title; // modules keep the course outline title
         lesson.quiz = []; // made on demand, only if the viewer asks for it
@@ -280,6 +284,20 @@ async function runJob(lesson, material, context = '') {
     }
 }
 
+/** Generate (or return the saved) teacher's lesson plan for a finished lesson */
+const planInFlight = new Map();
+async function ensurePlan(lesson, { refresh = false } = {}) {
+    if (!refresh && lesson.teacherPlan) return lesson.teacherPlan;
+    if (!planInFlight.has(lesson.id)) {
+        planInFlight.set(lesson.id, (async () => {
+            lesson.teacherPlan = await lessonService.writeTeacherPlan(lesson);
+            await save(lesson);
+            return lesson.teacherPlan;
+        })().finally(() => planInFlight.delete(lesson.id)));
+    }
+    return planInFlight.get(lesson.id);
+}
+
 /** Generate (or return the saved) quiz/test for a finished lesson */
 const quizInFlight = new Map();
 async function ensureQuiz(lesson, kind, { refresh = false } = {}) {
@@ -301,7 +319,7 @@ async function ensureQuiz(lesson, kind, { refresh = false } = {}) {
  * Create a lesson job and start processing in the background.
  * @returns the lesson (status "queued")
  */
-async function create({ userId, material, inputText, source, sourceVideo, audience, language, length, voice, visuals, courseId = null, moduleIndex = null, title = null, context = '', isPublic = false }) {
+async function create({ userId, material, inputText, source, sourceVideo, audience, language, length, voice, visuals, courseId = null, moduleIndex = null, title = null, context = '', isPublic = false, level = 'intermediate', teacherMode = null }) {
     const lesson = {
         id: crypto.randomUUID(),
         userId: userId || null,
@@ -321,6 +339,9 @@ async function create({ userId, material, inputText, source, sourceVideo, audien
         voiceNotice: null,
         isPublic: Boolean(isPublic),
         shareSlug: null,
+        level,
+        teacherMode,
+        teacherPlan: null,
         visuals: visuals === 'slides' ? 'slides' : 'pictures',
         imageProvider: null,
         imageNotice: null,
@@ -353,5 +374,5 @@ function whenDone(id) {
 }
 
 module.exports = {
-    create, whenDone, setSharing, get, listForUser, remove, readAudio, readImage, isLessonId, ensureQuiz, STORAGE, _jobs: jobs, _runJob: runJob,
+    create, whenDone, setSharing, get, listForUser, remove, readAudio, readImage, isLessonId, ensureQuiz, ensurePlan, STORAGE, _jobs: jobs, _runJob: runJob,
 };
