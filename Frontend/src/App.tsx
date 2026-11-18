@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Languages, Cloud, CloudOff, Clapperboard } from 'lucide-react';
 import Header from './components/shell/Header';
-import MenuOverlay from './components/shell/MenuOverlay';
 import BootLoader from './components/shell/BootLoader';
 import LearnerSettings from './components/learner/LearnerSettings';
 import LinkBar from './components/shell/LinkBar';
@@ -61,7 +60,6 @@ function readShareSlug(): string | null {
 
 function App() {
   const { user, enabled: authEnabled, loading: authLoading } = useAuth();
-  const [menuOpen, setMenuOpen] = useState(false);
 
   const [sharedSlug, setSharedSlug] = useState<string | null>(readShareSlug);
   const [view, setView] = useState<View>(() => (readShareSlug() ? 'shared' : 'home'));
@@ -337,7 +335,7 @@ function App() {
     window.scrollTo({ top: 0 });
   };
   const busy = status === ProcessingStatus.LOADING;
-  const page = 'mx-auto max-w-[1400px] px-4 sm:px-8 lg:px-10 pt-8 pb-20';
+  const page = 'mx-auto max-w-6xl px-4 sm:px-6 pt-8 pb-20';
   const fade = { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 }, transition: { duration: 0.2 } };
 
   return (
@@ -345,20 +343,10 @@ function App() {
       <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:px-4 focus:py-2 focus:rounded-lg focus:bg-neon-400 focus:text-white">Skip to content</a>
       <BootLoader loading={authLoading} />
       <Header
-        menuOpen={menuOpen}
-        onToggleMenu={() => setMenuOpen((o) => !o)}
-        onGoHome={() => { setMenuOpen(false); goHome(); }}
-        onOpenAuth={() => setAuthOpen(true)}
-        onCreate={() => { setMenuOpen(false); makeLesson(''); }}
-        overArt={view === 'home'}
-      />
-      <MenuOverlay
-        open={menuOpen}
         view={view}
         hasVideo={!!videoData}
-        videoTitle={videoData?.title}
-        onClose={() => setMenuOpen(false)}
         onNavigate={navigateTo}
+        onGoHome={goHome}
         onOpenAuth={() => setAuthOpen(true)}
       />
 
@@ -366,14 +354,7 @@ function App() {
       <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
       <LearnerSettings />
 
-      <div className={view === 'home' ? '' : 'relative pt-[76px]'}>
-        {view !== 'home' && (
-          // The portal's glow carries into every inner page, so it feels like the same place
-          <div className="pointer-events-none absolute inset-x-0 top-0 -z-0 h-[520px] overflow-hidden" aria-hidden="true">
-            <div className="absolute inset-0" style={{ background: 'radial-gradient(50% 70% at 78% 0%, rgba(0,229,255,0.22), transparent 70%), radial-gradient(40% 60% at 15% 10%, rgba(138,79,214,0.22), transparent 70%)' }} />
-            <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-b from-transparent to-ink-950" />
-          </div>
-        )}
+      <div>
         {view !== 'home' && (
           <LinkBar
             busy={busy}
@@ -410,7 +391,7 @@ function App() {
             ) : view === 'dashboard' && videoData ? (
               <motion.div key={`dashboard-${videoData.videoId}-${videoData.language}`} {...fade} className={page}>
             <div className="max-w-7xl mx-auto">
-              <h1 className="mb-1 font-display text-4xl text-white md:text-6xl">{videoData.title}</h1>
+              <h1 className="mb-1 text-2xl font-bold tracking-tight text-white md:text-3xl">{videoData.title}</h1>
               <p className="mb-6 text-sm text-ink-400">Transcript, summary, tutor and study tools{videoData.language !== 'en' ? ', in your language' : ''}.</p>
               <div className="flex flex-wrap items-center gap-3 mb-4 text-sm">
                 {authEnabled && (
@@ -500,6 +481,7 @@ function App() {
                   onOpenLibraryItem={openLibraryItem}
                   onOpenLessons={() => openLessons(false)}
                   onPlayLesson={playLesson}
+                  onOpenProgress={() => navigateTo('analytics')}
                 />
               </motion.div>
             )}

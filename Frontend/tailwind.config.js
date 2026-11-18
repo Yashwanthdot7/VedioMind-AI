@@ -1,10 +1,10 @@
 /** @type {import('tailwindcss').Config} */
 
 /**
- * "Portal" design tokens: jet black, royal amethyst, electric cyan
+ * Design tokens: jet black, royal amethyst, electric cyan
  *   ink    jet-black neutrals (page background → bright text), faintly amethyst-tinted
  *   neon   royal amethyst: actions, focus, the active state
- *   plasma electric cyan: glow, highlights, gradient edges
+ *   plasma electric cyan: highlights, icons, progress
  *   aqua   success and data (aqua-500 is the validated chart colour on ink-900)
  */
 const ink = {
@@ -71,33 +71,6 @@ module.exports = {
       },
       borderRadius: {
         panel: '1.25rem',
-      },
-      keyframes: {
-        'script-in': {
-          '0%': { opacity: '0', transform: 'translateY(0.35em)', filter: 'blur(6px)' },
-          '100%': { opacity: '1', transform: 'translateY(0)', filter: 'blur(0)' },
-        },
-        'portal-spin': { to: { transform: 'rotate(360deg)' } },
-        'portal-breathe': {
-          '0%, 100%': { opacity: '0.85', transform: 'scale(1)' },
-          '50%': { opacity: '1', transform: 'scale(1.03)' },
-        },
-        drift: {
-          '0%, 100%': { transform: 'translate3d(0, 0, 0) rotate(var(--r, 0deg))' },
-          '50%': { transform: 'translate3d(0, -14px, 0) rotate(calc(var(--r, 0deg) + 6deg))' },
-        },
-        'menu-in': {
-          '0%': { opacity: '0', transform: 'translateX(-24px)' },
-          '100%': { opacity: '1', transform: 'translateX(0)' },
-        },
-      },
-      animation: {
-        'script-in': 'script-in 520ms cubic-bezier(0.2, 0.8, 0.2, 1) both',
-        'portal-spin': 'portal-spin 40s linear infinite',
-        'portal-spin-rev': 'portal-spin 60s linear infinite reverse',
-        'portal-breathe': 'portal-breathe 6s ease-in-out infinite',
-        drift: 'drift 9s ease-in-out infinite',
-        'menu-in': 'menu-in 420ms cubic-bezier(0.2, 0.8, 0.2, 1) both',
       },
     },
   },

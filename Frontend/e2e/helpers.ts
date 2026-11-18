@@ -18,8 +18,13 @@ export async function offlineYouTube(page: Page) {
 
 export const API = 'http://localhost:3101/api';
 
-/** Open the full-screen menu and pick a page */
+/** Go to a page from the top bar, or from the menu on phones */
 export async function goTo(page: Page, label: string) {
+  const nav = page.getByRole('navigation', { name: 'Main' });
+  if (await nav.isVisible()) {
+    await nav.getByRole('button', { name: label, exact: true }).click();
+    return;
+  }
   await page.getByRole('button', { name: 'Menu', exact: true }).click();
   const menu = page.getByRole('dialog', { name: 'Menu' });
   await menu.getByRole('button', { name: label, exact: true }).click();

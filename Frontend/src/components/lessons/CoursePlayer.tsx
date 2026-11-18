@@ -51,7 +51,7 @@ export default function CoursePlayer({ course }: { course: Course }) {
       <div className="mb-6">
         <p className="text-sm text-ink-500 flex items-center gap-1.5"><ListTree className="w-4 h-4" /> Course</p>
         <div className="flex flex-wrap items-start gap-3 mt-1">
-          <h1 className="font-display text-4xl md:text-6xl text-white mr-auto">{course.title}</h1>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white mr-auto">{course.title}</h1>
           {course.isOwner && course.status !== 'queued' && course.status !== 'outlining' && (
             <ShareButton kind="course" id={course.id} title={course.title} isPublic={Boolean(course.isPublic)} shareSlug={course.shareSlug || null} />
           )}

@@ -11,8 +11,7 @@ test('the home sample lesson opens straight away, with no waiting', async ({ pag
 
 test('a guest sets a learning profile; the lesson form follows it', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('button', { name: 'Menu', exact: true }).click();
-  await page.getByRole('button', { name: /Learning profile/i }).click();
+  await page.getByRole('button', { name: 'Student, intermediate' }).first().click();
   const dialog = page.getByRole('dialog', { name: 'Learning profile' });
   await dialog.getByRole('radio', { name: /I'm a teacher/ }).click();
   await dialog.getByRole('button', { name: 'Save' }).click();

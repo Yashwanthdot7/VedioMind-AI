@@ -44,7 +44,7 @@ export default function LearnerSettings() {
       <div className="space-y-5 p-6">
         <div className="flex items-start gap-3">
           <div className="flex-1">
-            <h2 id="learner-title" className="font-display text-4xl text-white">{needsSetup ? 'How do you learn?' : 'Learning profile'}</h2>
+            <h2 id="learner-title" className="text-2xl font-bold text-white">{needsSetup ? 'How do you learn?' : 'Learning profile'}</h2>
             <p className="mt-2 text-sm text-ink-400">
               Summaries, tutor answers, study tools and lessons adapt to this. You can still change the level for any one video or lesson.
               {!user && ' Saved in this browser; sign in to keep it on every device.'}

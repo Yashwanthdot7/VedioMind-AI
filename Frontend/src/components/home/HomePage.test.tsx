@@ -5,6 +5,9 @@ import HomePage from './HomePage';
 
 vi.mock('../../context/AuthContext', () => ({ useAuth: () => ({ user: null, enabled: false, loading: false }) }));
 vi.mock('../../services/apiService', () => ({ getLibrary: vi.fn().mockResolvedValue([]) }));
+vi.mock('../../context/LearnerContext', () => ({ useLearner: () => ({ learner: { role: 'student', level: 'beginner' }, openSettings: vi.fn() }) }));
+const attempts = vi.hoisted(() => ({ list: [] as unknown[] }));
+vi.mock('../../lib/attempts', () => ({ listAttempts: () => Promise.resolve({ attempts: attempts.list, where: 'browser' }) }));
 
 const props = () => ({
   busy: false, language: 'en', onLanguageChange: vi.fn(), onSummarize: vi.fn(), onMakeLesson: vi.fn(), onOpenLibraryItem: vi.fn(), onPlayLesson: vi.fn(),
@@ -13,7 +16,7 @@ const props = () => ({
 describe('HomePage', () => {
   it('has one accessible headline for screen readers', () => {
     render(<HomePage {...props()} />);
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Learn anything, in your language.');
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Understand any video. Learn any topic.');
   });
 
   it('summarizes a pasted link', async () => {
@@ -43,33 +46,34 @@ describe('HomePage', () => {
     expect(p.onPlayLesson).toHaveBeenCalledTimes(2);
   });
 
-  it('the showcase carousel moves with its arrows and thumbnails, and topics in a world start a lesson', async () => {
+  it('subject topics open the lesson form', async () => {
     const user = userEvent.setup();
     const p = props();
     render(<HomePage {...p} />);
-    await user.click(screen.getByRole('button', { name: 'Next lesson' }));
-    expect(screen.getByRole('button', { name: 'Play lesson: The water cycle' })).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Previous lesson' }));
-    await user.click(screen.getByRole('button', { name: 'Previous lesson' }));
-    expect(screen.getByRole('button', { name: 'Make lesson: How volcanoes work' })).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Show How computers store numbers' }));
-    await user.click(screen.getByRole('button', { name: 'Play lesson: How computers store numbers' }));
-    expect(p.onPlayLesson).toHaveBeenLastCalledWith('How computers store numbers');
-
     await user.click(screen.getByRole('button', { name: "Pythagoras' theorem" }));
     expect(p.onMakeLesson).toHaveBeenLastCalledWith("Pythagoras' theorem");
   });
 
-  it('shows the settled headline straight away when reduced motion is on', () => {
-    const original = window.matchMedia;
-    window.matchMedia = ((q: string) => ({ ...original(q), matches: q.includes('reduce') })) as typeof window.matchMedia;
-    try {
-      const { container } = render(<HomePage {...props()} />);
-      expect(container.querySelector('[lang="bn"]')).not.toBeNull();
-      expect(container.querySelector('[lang="hi"]')).toBeNull();
-    } finally {
-      window.matchMedia = original;
-    }
+  it('new learners see how it works; returning learners see their streak and mistakes to review', async () => {
+    attempts.list = [];
+    const { unmount } = render(<HomePage {...props()} />);
+    expect(await screen.findByRole('heading', { name: 'How it works' })).toBeInTheDocument();
+    unmount();
+
+    attempts.list = [{
+      id: 'a1', source: 'lesson', kind: 'quick', title: 'Volcanoes', language: 'en', createdAt: new Date().toISOString(),
+      scorePct: 50, grade: 'C', total: 2, correct: 1, durationSec: 30,
+      answers: [
+        { question: 'What is lava?', options: ['Magma on the surface', 'Ice'], answer: 0, chosen: 1, difficulty: 'easy' },
+        { question: 'Where is magma?', options: ['Underground', 'Sky'], answer: 0, chosen: 0, difficulty: 'easy' },
+      ],
+    }];
+    const p = { ...props(), onOpenProgress: vi.fn() };
+    render(<HomePage {...p} />);
+    expect(await screen.findByRole('heading', { name: 'Keep going' })).toBeInTheDocument();
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Review 1 mistake' }));
+    expect(p.onOpenProgress).toHaveBeenCalled();
+    attempts.list = [];
   });
 });
 

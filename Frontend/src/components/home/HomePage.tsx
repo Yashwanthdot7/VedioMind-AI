@@ -1,42 +1,18 @@
-import { FormEvent, KeyboardEvent, useEffect, useRef, useState } from 'react';
-import { Languages, PlayCircle, ChevronRight, ChevronLeft, Play, Youtube, PenLine, Wand2 } from 'lucide-react';
+import { FormEvent, useEffect, useRef, useState } from 'react';
+import {
+  Languages, PlayCircle, Play, Youtube, PenLine, Flame, Target, RotateCcw, ArrowRight,
+  Link2, BookOpenText, ListChecks, GraduationCap, Presentation, Clock,
+} from 'lucide-react';
 import { LANGUAGES } from '../../constants/languages';
 import { useAuth } from '../../context/AuthContext';
+import { useLearner } from '../../context/LearnerContext';
 import { getLibrary } from '../../services/apiService';
 import { LibraryItem } from '../../types';
-import { useReveal } from '../../hooks/useReveal';
-import PortalArt from '../art/PortalArt';
-import WorldTile from '../art/WorldTile';
-import { SHOWCASE, WORLDS } from './topics';
-import { sampleFor } from '../../data/sampleLessons';
-
-/** "Learn anything," in six Indian scripts; the line settles on the last one */
-const SCRIPTS = [
-  { text: 'कुछ भी सीखिए,', lang: 'hi' },
-  { text: 'ಏನನ್ನಾದರೂ ಕಲಿಯಿರಿ,', lang: 'kn' },
-  { text: 'எதையும் கற்றுக்கொள்ளுங்கள்,', lang: 'ta' },
-  { text: 'ఏదైనా నేర్చుకోండి,', lang: 'te' },
-  { text: 'എന്തും പഠിക്കൂ,', lang: 'ml' },
-  { text: 'যেকোনো কিছু শিখুন,', lang: 'bn' },
-];
-
-const prefersReducedMotion = () =>
-  typeof window !== 'undefined' && Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
-
-function CyclingLine() {
-  const [i, setI] = useState(() => (prefersReducedMotion() ? SCRIPTS.length - 1 : 0));
-  useEffect(() => {
-    if (i >= SCRIPTS.length - 1) return;
-    const id = window.setTimeout(() => setI((n) => n + 1), 900);
-    return () => window.clearTimeout(id);
-  }, [i]);
-  const s = SCRIPTS[i];
-  return (
-    <span className={`block py-[0.08em] text-[0.62em] leading-[1.15] ${i < SCRIPTS.length - 1 ? 'min-h-[2.4em] sm:min-h-[1.2em]' : ''}`} aria-hidden="true">
-      <span key={s.lang} lang={s.lang} className="inline-block animate-script-in normal-case text-plasma-gradient">{s.text}</span>
-    </span>
-  );
-}
+import { listAttempts } from '../../lib/attempts';
+import { currentStreak } from '../../lib/analytics';
+import { collectMistakes } from '../../lib/review';
+import { learnerLabel } from '../learner/LearnerChoice';
+import { SAMPLES, SUBJECTS } from './topics';
 
 type Mode = 'video' | 'lesson';
 
@@ -50,144 +26,80 @@ interface HomePageProps {
   onOpenLessons?: () => void;
   /** Ready-made lessons play at once; other topics open the lesson form */
   onPlayLesson?: (topic: string) => void;
+  /** The progress page, where mistakes are reviewed */
+  onOpenProgress?: () => void;
 }
 
-// ---------------------------------------------------------------- showcase carousel
+interface Stats { quizzes: number; streak: number; toReview: number; weekQuizzes: number }
 
-function Showcase({ onLaunch, onSeeAll }: { onLaunch: (topic: string) => void; onSeeAll?: () => void }) {
-  // Lessons that are ready to watch come first
-  const [index, setIndex] = useState(0);
-  const n = SHOWCASE.length;
-  const go = (d: number) => setIndex((i) => (i + d + n) % n);
-  const current = SHOWCASE[index];
-  const next = SHOWCASE[(index + 1) % n];
-  const { ref, shown } = useReveal<HTMLElement>(0.15);
-
-  const onKey = (e: KeyboardEvent) => {
-    if (e.key === 'ArrowRight') go(1);
-    if (e.key === 'ArrowLeft') go(-1);
-  };
-
-  return (
-    <section
-      ref={ref}
-      aria-roledescription="carousel"
-      aria-label="Lessons to start with"
-      onKeyDown={onKey}
-      className={`relative mx-auto max-w-[1400px] px-4 transition duration-700 sm:px-8 ${shown ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}
-    >
-      <div className="relative h-[560px] [perspective:1600px] sm:h-[600px]">
-        {/* the next slide peeks in from the right */}
-        <div className="absolute right-[-6%] top-[8%] hidden h-[84%] w-[30%] overflow-hidden rounded-[28px] opacity-60 md:block" style={{ transform: 'rotateY(-24deg) rotateZ(2deg)' }} aria-hidden="true">
-          <WorldTile key={next.topic} theme={next.theme} className="h-full w-full" />
-        </div>
-
-        <div
-          key={current.topic}
-          className="absolute inset-y-0 left-0 right-0 animate-script-in overflow-hidden rounded-[28px] border border-white/10 md:right-[18%]"
-          style={{ transform: 'rotateY(7deg) rotateZ(-1.5deg)', transformOrigin: 'left center' }}
-          role="group"
-          aria-roledescription="slide"
-          aria-label={`${index + 1} of ${n}: ${current.topic}`}
-        >
-          <WorldTile theme={current.theme} className="absolute inset-0 h-full w-full" iconSize={110} />
-          <div className="absolute inset-0 bg-gradient-to-t from-ink-950 via-ink-950/40 to-transparent" />
-          <div className="absolute inset-x-0 bottom-0 p-6 sm:p-12">
-            <div className="flex flex-wrap items-center gap-2">
-              {current.tags.map((t, i) => (
-                <span key={t} className={i === 0 ? 'font-display text-2xl text-plasma-300' : 'rounded-md bg-white/15 px-2.5 py-1 text-xs font-semibold tracking-[0.14em] text-ink-50 backdrop-blur'}>
-                  {i === 0 ? t : t.toUpperCase()}
-                </span>
-              ))}
-            </div>
-            <h3 className="mt-3 max-w-3xl font-display text-6xl text-white sm:text-8xl">{current.topic}</h3>
-            <p className="mt-4 max-w-md text-sm font-medium uppercase tracking-[0.08em] text-ink-200">{current.blurb}</p>
-            {sampleFor(current.topic) ? (
-              <div className="mt-6 flex flex-wrap items-center gap-4">
-                <button onClick={() => onLaunch(current.topic)} className="btn-launch" aria-label={`Play lesson: ${current.topic}`}>
-                  <Play className="h-3.5 w-3.5 fill-current" /> Play
-                </button>
-                <span className="text-sm text-ink-200">Ready to watch, about a minute</span>
-              </div>
-            ) : (
-              <div className="mt-6 flex flex-wrap items-center gap-4">
-                <button onClick={() => onLaunch(current.topic)} className="btn-launch" aria-label={`Make lesson: ${current.topic}`}>
-                  <Wand2 className="h-3.5 w-3.5" /> Make it
-                </button>
-                <span className="text-sm text-ink-200">Takes about a minute to make</span>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* controls */}
-        <div className="absolute right-2 top-1/2 flex -translate-y-1/2 flex-col gap-4 sm:right-6">
-          {[{ d: 1, Icon: ChevronRight, label: 'Next lesson' }, { d: -1, Icon: ChevronLeft, label: 'Previous lesson' }].map(({ d, Icon, label }) => (
-            <button
-              key={label}
-              onClick={() => go(d)}
-              aria-label={label}
-              className="flex h-14 w-14 items-center justify-center rounded-full text-white transition hover:scale-105 active:scale-95 sm:h-16 sm:w-16"
-              style={{ background: 'linear-gradient(#050506cc, #050506cc) padding-box, linear-gradient(135deg, #8FF7FF, #8A4FD6, #3EBDD4) border-box', border: '2px solid transparent' }}
-            >
-              <Icon className="h-5 w-5" />
-            </button>
-          ))}
-        </div>
-
-        <div className="absolute bottom-6 right-4 hidden flex-col items-end gap-3 sm:right-8 md:flex">
-          {onSeeAll && (
-            <button onClick={onSeeAll} className="flex items-center gap-1 text-sm font-semibold tracking-[0.16em] text-white hover:text-neon-200">
-              SEE ALL LESSONS <Play className="h-3 w-3 fill-current" />
-            </button>
-          )}
-          <div className="flex gap-2">
-            {SHOWCASE.map((s, i) => (
-              <button
-                key={s.topic}
-                onClick={() => setIndex(i)}
-                aria-label={`Show ${s.topic}`}
-                aria-current={i === index}
-                className={`h-14 w-20 overflow-hidden rounded-lg transition ${i === index ? 'ring-2 ring-white' : 'opacity-60 hover:opacity-100'}`}
-              >
-                <WorldTile theme={s.theme} className="h-full w-full" iconSize={18} />
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-    </section>
-  );
+/** Progress from quizzes taken here (account or browser), used to encourage the next step */
+function useStats(): Stats | null {
+  const { user } = useAuth();
+  const [stats, setStats] = useState<Stats | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    listAttempts()
+      .then(({ attempts }) => {
+        if (cancelled) return;
+        const weekAgo = Date.now() - 7 * 86_400_000;
+        setStats({
+          quizzes: attempts.length,
+          streak: currentStreak(attempts),
+          toReview: collectMistakes(attempts).filter((m) => !m.fixed).length,
+          weekQuizzes: attempts.filter((a) => Date.parse(a.createdAt) >= weekAgo).length,
+        });
+      })
+      .catch(() => { if (!cancelled) setStats(null); });
+    return () => { cancelled = true; };
+  }, [user]);
+  return stats;
 }
 
-// ---------------------------------------------------------------- mirrored wordmark moment
-
-function MirrorType() {
-  const { ref, shown } = useReveal<HTMLDivElement>(0.4);
-  const line = 'font-display block whitespace-nowrap text-center text-[11vw] leading-[0.8] transition-transform duration-700 ease-out sm:text-[8vw]';
+/** An example of what one video turns into: shows the product instead of describing it */
+function ExampleCard() {
   return (
-    <div ref={ref} className="relative overflow-hidden py-10" aria-hidden="true">
-      <span className={`${line} text-white`} style={{ transform: shown ? 'scaleY(1)' : 'scaleY(0.4)' }}>VideoMind</span>
-      <div className="relative z-10 mx-auto my-2 flex max-w-5xl items-center gap-2 px-6">
-        <span className="h-1.5 w-1.5 rotate-45 bg-white" />
-        <span className="h-px flex-1 bg-gradient-to-r from-white via-plasma-400 to-white" />
-        <span className="h-1.5 w-1.5 rotate-45 bg-white" />
+    <div className="relative rounded-2xl border border-white/10 bg-ink-900 p-5 shadow-[0_30px_80px_-40px_rgba(138,79,214,0.6)]" aria-hidden="true">
+      <div className="flex items-center gap-3">
+        <div className="flex h-10 w-16 items-center justify-center rounded-md bg-ink-800"><Play className="h-4 w-4 fill-ink-300 text-ink-300" /></div>
+        <div>
+          <p className="text-sm font-semibold text-ink-50">How photosynthesis works</p>
+          <p className="text-xs text-ink-500">12 min video → 1 page</p>
+        </div>
       </div>
-      <span className={`${line} text-white/70`} style={{ transform: shown ? 'scaleY(-0.7)' : 'scaleY(-0.2)', WebkitMaskImage: 'linear-gradient(to top, transparent, #000 90%)', maskImage: 'linear-gradient(to top, transparent, #000 90%)' }}>VideoMind</span>
+      <p className="mt-5 text-xs font-semibold text-neon-300">Summary</p>
+      <ul className="mt-2 space-y-2 text-sm text-ink-200">
+        <li className="flex gap-2"><span className="rounded bg-plasma-400/10 px-1.5 text-xs leading-5 text-plasma-300">1:40</span> Chlorophyll captures light energy</li>
+        <li className="flex gap-2"><span className="rounded bg-plasma-400/10 px-1.5 text-xs leading-5 text-plasma-300">4:05</span> Water and CO₂ become glucose</li>
+        <li className="flex gap-2"><span className="rounded bg-plasma-400/10 px-1.5 text-xs leading-5 text-plasma-300">8:30</span> Oxygen is released as a by-product</li>
+      </ul>
+      <div className="mt-5 rounded-xl bg-ink-950/70 p-4">
+        <p className="text-xs font-semibold text-neon-300">Check yourself · 3 of 5</p>
+        <p className="mt-1.5 text-sm text-ink-100">What does chlorophyll absorb?</p>
+        <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+          <span className="rounded-lg border border-plasma-400/60 bg-plasma-400/10 px-3 py-2 text-ink-50">Red and blue light ✓</span>
+          <span className="rounded-lg border border-white/10 px-3 py-2 text-ink-400">Only green light</span>
+        </div>
+        <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-ink-800"><div className="h-full w-3/5 rounded-full bg-plasma-400" /></div>
+      </div>
     </div>
   );
 }
 
-// ---------------------------------------------------------------- page
+const STEPS = [
+  { icon: Link2, title: 'Paste a link or a topic', text: 'Any YouTube video, a topic, your notes, or a PDF chapter.' },
+  { icon: BookOpenText, title: 'Learn it your way', text: 'A summary, notes and a tutor at your level, or a short narrated lesson.' },
+  { icon: ListChecks, title: 'Check what stuck', text: 'Quick quizzes and flashcards. Anything you miss comes back for review.' },
+];
 
-export default function HomePage({ busy, language, onLanguageChange, onSummarize, onMakeLesson, onOpenLibraryItem, onOpenLessons, onPlayLesson }: HomePageProps) {
+export default function HomePage({ busy, language, onLanguageChange, onSummarize, onMakeLesson, onOpenLibraryItem, onOpenLessons, onPlayLesson, onOpenProgress }: HomePageProps) {
   const play = onPlayLesson || onMakeLesson;
   const { user } = useAuth();
+  const { learner, openSettings } = useLearner();
+  const stats = useStats();
   const [mode, setMode] = useState<Mode>('video');
   const [value, setValue] = useState('');
   const [recent, setRecent] = useState<LibraryItem[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
-  const worlds = useReveal<HTMLElement>(0.1);
 
   useEffect(() => {
     if (!user) { setRecent([]); return; }
@@ -207,92 +119,133 @@ export default function HomePage({ busy, language, onLanguageChange, onSummarize
     requestAnimationFrame(() => inputRef.current?.focus());
   };
 
+  const firstName = ((user?.user_metadata?.full_name as string) || '').split(' ')[0];
+  const returning = !!stats && stats.quizzes > 0;
+
   return (
     <div>
       {/* ------------------------------------------------ hero */}
-      <section className="relative isolate flex min-h-[92dvh] flex-col justify-center overflow-hidden pb-16 pt-24 sm:justify-end sm:pt-28">
-        <PortalArt />
-        <div className="relative mx-auto w-full max-w-[1400px] px-5 sm:px-10">
-          <h1 className="font-display text-[2.7rem] text-white sm:text-7xl lg:text-[7.5rem]">
-            <span className="sr-only">Learn anything, in your language.</span>
-            <span aria-hidden="true" className="block">Learn anything,</span>
-            <CyclingLine />
-            <span aria-hidden="true" className="block">in your language.</span>
-          </h1>
+      <section className="relative overflow-hidden">
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-[480px] bg-[radial-gradient(60%_80%_at_30%_0%,rgba(138,79,214,0.22),transparent_70%)]" aria-hidden="true" />
+        <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-4 pb-16 pt-12 sm:px-6 lg:grid-cols-[1.15fr_0.85fr] lg:pt-20">
+          <div>
+            <p className="text-sm font-medium text-plasma-400">
+              {firstName ? `Welcome back, ${firstName}` : 'Free, in 15 languages'}
+            </p>
+            <h1 className="mt-3 text-4xl font-bold leading-[1.08] tracking-tight text-white sm:text-5xl lg:text-[3.6rem]">
+              Understand any video.{' '}<br />Learn any topic.
+            </h1>
+            <p className="mt-5 max-w-xl text-lg leading-relaxed text-ink-300">
+              Paste a YouTube link or type a topic. VideoMind explains it at your level, in your language, then checks what you learned.
+            </p>
 
-          <form onSubmit={submit} className="glass mt-6 max-w-3xl rounded-2xl p-2 sm:mt-8">
-            <div role="tablist" aria-label="What do you want to do?" className="flex gap-1 p-1">
-              {([['video', 'Summarize a video', Youtube], ['lesson', 'Make a lesson', PenLine]] as const).map(([m, label, Icon]) => (
-                <button
-                  key={m}
-                  type="button"
-                  role="tab"
-                  aria-selected={mode === m}
-                  onClick={() => pickMode(m)}
-                  className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition ${mode === m ? 'bg-neon-400 text-white' : 'text-ink-300 hover:text-white'}`}
-                >
-                  <Icon className="h-4 w-4" /> {label}
+            <form onSubmit={submit} className="mt-8 max-w-2xl rounded-2xl border border-white/10 bg-ink-900 p-2">
+              <div role="tablist" aria-label="What do you want to do?" className="flex gap-1 p-1">
+                {([['video', 'Summarize a video', Youtube], ['lesson', 'Make a lesson', PenLine]] as const).map(([m, label, Icon]) => (
+                  <button
+                    key={m}
+                    type="button"
+                    role="tab"
+                    aria-selected={mode === m}
+                    onClick={() => pickMode(m)}
+                    className={`flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-semibold transition ${mode === m ? 'bg-white/[0.08] text-white' : 'text-ink-400 hover:text-white'}`}
+                  >
+                    <Icon className={`h-4 w-4 ${mode === m ? 'text-plasma-400' : ''}`} /> {label}
+                  </button>
+                ))}
+              </div>
+              <div className="flex flex-col gap-2 p-1 sm:flex-row">
+                <label className="flex-1">
+                  <span className="sr-only">{mode === 'video' ? 'YouTube link' : 'Lesson topic'}</span>
+                  <input
+                    ref={inputRef}
+                    type="text"
+                    inputMode={mode === 'video' ? 'url' : 'text'}
+                    value={value}
+                    onChange={(e) => setValue(e.target.value)}
+                    disabled={busy}
+                    placeholder={mode === 'video' ? 'Paste a YouTube link' : 'A topic, or paste your notes'}
+                    className="w-full rounded-xl bg-ink-950 px-4 py-3.5 text-base text-white placeholder-ink-500 ring-1 ring-white/10 focus:outline-none focus:ring-2 focus:ring-neon-400"
+                  />
+                </label>
+                <label className="relative flex items-center" title="Output language">
+                  <span className="sr-only">Output language</span>
+                  <Languages className="pointer-events-none absolute left-3 h-4 w-4 text-ink-400" />
+                  <select
+                    value={language}
+                    onChange={(e) => onLanguageChange(e.target.value)}
+                    disabled={busy}
+                    className="w-full appearance-none rounded-xl bg-ink-950 py-3.5 pl-9 pr-4 text-ink-100 ring-1 ring-white/10 focus:outline-none focus:ring-2 focus:ring-neon-400 sm:w-auto"
+                  >
+                    {LANGUAGES.map((l) => <option key={l.code} value={l.code} className="bg-ink-900">{l.native}</option>)}
+                  </select>
+                </label>
+                <button type="submit" disabled={busy || !value.trim()} className="btn-neon rounded-xl">
+                  {mode === 'video' ? (busy ? 'Working…' : 'Summarize') : 'Plan the lesson'}
                 </button>
-              ))}
-            </div>
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <label className="flex-1">
-                <span className="sr-only">{mode === 'video' ? 'YouTube link' : 'Lesson topic'}</span>
-                <input
-                  ref={inputRef}
-                  type="text"
-                  inputMode={mode === 'video' ? 'url' : 'text'}
-                  value={value}
-                  onChange={(e) => setValue(e.target.value)}
-                  disabled={busy}
-                  placeholder={mode === 'video' ? 'Paste a YouTube link' : 'A topic, or paste your notes'}
-                  className="w-full rounded-xl bg-white/5 px-4 py-3.5 text-base text-white placeholder-ink-400 focus:bg-white/10 focus:outline-none"
-                />
-              </label>
-              <label className="relative flex items-center" title="Output language">
-                <span className="sr-only">Output language</span>
-                <Languages className="pointer-events-none absolute left-3 h-4 w-4 text-ink-400" />
-                <select
-                  value={language}
-                  onChange={(e) => onLanguageChange(e.target.value)}
-                  disabled={busy}
-                  className="w-full appearance-none rounded-xl bg-white/5 py-3.5 pl-9 pr-4 text-ink-100 focus:outline-none sm:w-auto"
-                >
-                  {LANGUAGES.map((l) => <option key={l.code} value={l.code} className="bg-ink-900">{l.native}</option>)}
-                </select>
-              </label>
-              <button type="submit" disabled={busy || !value.trim()} className="btn-neon">
-                {mode === 'video' ? (busy ? 'Working…' : 'Summarize') : 'Plan the lesson'}
+              </div>
+            </form>
+
+            <div className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-3 text-sm">
+              <button onClick={() => play('Photosynthesis')} className="flex items-center gap-2 font-semibold text-white hover:text-neon-200">
+                <PlayCircle className="h-5 w-5 text-plasma-400" />
+                Watch a 1-minute sample lesson
+              </button>
+              <button onClick={openSettings} className="text-ink-400 hover:text-white">
+                Explained for: <span className="text-ink-100 underline decoration-neon-400/60 underline-offset-4">{learnerLabel(learner)}</span>
               </button>
             </div>
-          </form>
-
-          <div className="mt-5 flex max-w-3xl flex-wrap items-center gap-x-6 gap-y-3">
-            <button onClick={() => play('Photosynthesis')} className="flex items-center gap-2 text-sm font-semibold text-white hover:text-neon-200">
-              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-ink-950"><Play className="h-3.5 w-3.5 fill-current" /></span>
-              Watch a 1-minute sample lesson
-            </button>
-            <p className="text-sm text-ink-300">
-              {mode === 'video'
-                ? 'Get the transcript, a summary, notes and a tutor that answers with timestamps.'
-                : 'A narrated lesson with drawn slides or AI pictures, in 15 languages.'}
-            </p>
           </div>
+
+          <div className="hidden lg:block"><ExampleCard /></div>
         </div>
       </section>
 
-      {/* ------------------------------------------------ recent */}
+      {/* ------------------------------------------------ keep going (returning learners) */}
+      {returning && stats && (
+        <section className="mx-auto max-w-6xl px-4 sm:px-6" aria-labelledby="progress-heading">
+          <div className="rounded-2xl border border-white/10 bg-ink-900 p-6 sm:p-8">
+            <div className="flex flex-wrap items-end justify-between gap-4">
+              <div>
+                <h2 id="progress-heading" className="text-2xl font-bold text-white">Keep going</h2>
+                <p className="mt-1 text-ink-400">
+                  {stats.streak > 0 ? `You've studied ${stats.streak} day${stats.streak === 1 ? '' : 's'} in a row. One quiz today keeps it alive.` : 'Take one quiz today to start a streak.'}
+                </p>
+              </div>
+              {stats.toReview > 0 && (
+                <button onClick={onOpenProgress} className="btn-neon rounded-xl">
+                  <RotateCcw className="h-4 w-4" /> Review {stats.toReview} mistake{stats.toReview === 1 ? '' : 's'}
+                </button>
+              )}
+            </div>
+            <dl className="mt-6 grid grid-cols-3 gap-3">
+              {[
+                { icon: Flame, label: 'Day streak', value: stats.streak },
+                { icon: Target, label: 'Quizzes this week', value: stats.weekQuizzes },
+                { icon: RotateCcw, label: 'To review', value: stats.toReview },
+              ].map(({ icon: Icon, label, value: v }) => (
+                <div key={label} className="rounded-xl bg-ink-950/70 p-4">
+                  <dt className="flex items-center gap-2 text-sm text-ink-400"><Icon className="h-4 w-4 text-plasma-400" /> {label}</dt>
+                  <dd className="mt-1 text-3xl font-bold text-white">{v}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        </section>
+      )}
+
+      {/* ------------------------------------------------ recent videos */}
       {recent.length > 0 && (
-        <section className="mx-auto max-w-[1400px] px-5 pt-16 sm:px-10" aria-labelledby="recent-heading">
-          <h2 id="recent-heading" className="font-display text-5xl text-white">Pick up where you left off</h2>
-          <ul className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <section className="mx-auto max-w-6xl px-4 pt-14 sm:px-6" aria-labelledby="recent-heading">
+          <h2 id="recent-heading" className="text-2xl font-bold text-white">Pick up where you left off</h2>
+          <ul className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {recent.map((item) => (
               <li key={item.analysisId}>
-                <button onClick={() => onOpenLibraryItem(item)} className="group chamfer block w-full overflow-hidden bg-ink-900 text-left transition hover:-translate-y-1">
-                  <div className="aspect-video overflow-hidden">
+                <button onClick={() => onOpenLibraryItem(item)} className="block w-full overflow-hidden rounded-xl border border-white/10 bg-ink-900 text-left transition hover:border-neon-400/60">
+                  <div className="aspect-video overflow-hidden bg-ink-800">
                     {item.thumbnail
-                      ? <img src={item.thumbnail} alt="" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
-                      : <div className="flex h-full items-center justify-center bg-ink-800"><PlayCircle className="h-8 w-8 text-ink-500" /></div>}
+                      ? <img src={item.thumbnail} alt="" className="h-full w-full object-cover" />
+                      : <div className="flex h-full items-center justify-center"><PlayCircle className="h-8 w-8 text-ink-500" /></div>}
                   </div>
                   <p className="line-clamp-2 px-4 py-3 text-sm text-ink-100">{item.title}</p>
                 </button>
@@ -302,56 +255,104 @@ export default function HomePage({ busy, language, onLanguageChange, onSummarize
         </section>
       )}
 
-      {/* ------------------------------------------------ showcase */}
-      <div className="pt-20">
-        <h2 className="mx-auto mb-6 max-w-[1400px] px-5 font-display text-5xl text-white sm:px-10 sm:text-6xl">Watch a lesson</h2>
-        <Showcase onLaunch={play} onSeeAll={onOpenLessons} />
-      </div>
-
-      {/* ------------------------------------------------ the mirrored wordmark */}
-      <MirrorType />
-
-      {/* ------------------------------------------------ worlds */}
-      <section
-        ref={worlds.ref}
-        aria-labelledby="worlds-heading"
-        className={`mx-auto max-w-[1400px] px-5 pb-24 transition duration-700 sm:px-10 ${worlds.shown ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}
-      >
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <h2 id="worlds-heading" className="font-display text-5xl text-white sm:text-6xl">Choose a world</h2>
-          <p className="max-w-md text-ink-300">Pick a topic and VideoMind writes and narrates a lesson on it. Making one takes about a minute.</p>
-        </div>
-        <ul className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {WORLDS.map((w) => (
-            <li key={w.name} className="group chamfer-lg relative overflow-hidden border border-white/10 bg-ink-900 transition duration-300 hover:-translate-y-1.5 hover:border-white/25">
-              <div className="aspect-[4/3] overflow-hidden">
-                <WorldTile theme={w.theme} className="h-full w-full transition-transform duration-500 group-hover:scale-105" iconSize={64} />
-              </div>
-              <div className="p-5">
-                <h3 className="font-display-wide text-lg text-white">{w.name}</h3>
-                <p className="mt-2 text-xs text-ink-400">Make a lesson about…</p>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {w.topics.map((t) => (
-                    <button
-                      key={t}
-                      onClick={() => onMakeLesson(t)}
-                      className="rounded-full border border-white/15 px-3 py-1.5 text-sm text-ink-200 transition hover:border-neon-300 hover:bg-neon-400/10 hover:text-white"
-                    >
-                      {t}
-                    </button>
-                  ))}
+      {/* ------------------------------------------------ how it works (new learners) */}
+      {!returning && (
+        <section className="mx-auto max-w-6xl px-4 sm:px-6" aria-labelledby="how-heading">
+          <h2 id="how-heading" className="text-2xl font-bold text-white">How it works</h2>
+          <ol className="mt-6 grid gap-4 md:grid-cols-3">
+            {STEPS.map(({ icon: Icon, title, text }, i) => (
+              <li key={title} className="rounded-2xl border border-white/10 bg-ink-900 p-6">
+                <div className="flex items-center gap-3">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-neon-400/15 text-sm font-bold text-neon-200">{i + 1}</span>
+                  <Icon className="h-5 w-5 text-plasma-400" />
                 </div>
+                <h3 className="mt-4 text-lg font-semibold text-white">{title}</h3>
+                <p className="mt-1.5 leading-relaxed text-ink-400">{text}</p>
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
+
+      {/* ------------------------------------------------ sample lessons */}
+      <section className="mx-auto max-w-6xl px-4 pt-16 sm:px-6" aria-labelledby="samples-heading">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h2 id="samples-heading" className="text-2xl font-bold text-white">Start with a 1-minute lesson</h2>
+            <p className="mt-1 text-ink-400">Ready to watch now, with a short quiz at the end.</p>
+          </div>
+          {onOpenLessons && (
+            <button onClick={onOpenLessons} className="flex items-center gap-1.5 text-sm font-semibold text-neon-200 hover:text-white">
+              All video lessons <ArrowRight className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+        <ul className="mt-6 grid gap-4 md:grid-cols-3">
+          {SAMPLES.map(({ topic, subject, blurb, icon: Icon }) => (
+            <li key={topic} className="flex flex-col rounded-2xl border border-white/10 bg-ink-900 p-6 transition hover:border-neon-400/50">
+              <div className="flex items-center justify-between">
+                <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-neon-400/15"><Icon className="h-5 w-5 text-neon-200" /></span>
+                <span className="flex items-center gap-1 text-xs text-ink-500"><Clock className="h-3.5 w-3.5" /> about 1 min</span>
+              </div>
+              <p className="mt-4 text-xs font-medium text-plasma-400">{subject}</p>
+              <h3 className="mt-1 text-lg font-semibold text-white">{topic}</h3>
+              <p className="mt-1.5 flex-1 text-sm leading-relaxed text-ink-400">{blurb}</p>
+              <button onClick={() => play(topic)} aria-label={`Play lesson: ${topic}`} className="mt-5 flex items-center justify-center gap-2 rounded-xl bg-white/[0.06] py-2.5 text-sm font-semibold text-white transition hover:bg-neon-400">
+                <Play className="h-4 w-4 fill-current" /> Play
+              </button>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      {/* ------------------------------------------------ subjects */}
+      <section className="mx-auto max-w-6xl px-4 pt-16 sm:px-6" aria-labelledby="subjects-heading">
+        <h2 id="subjects-heading" className="text-2xl font-bold text-white">Make a lesson on anything</h2>
+        <p className="mt-1 text-ink-400">Pick a topic to start, or type your own above. Making one takes about a minute.</p>
+        <ul className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {SUBJECTS.map(({ name, topics, icon: Icon }) => (
+            <li key={name} className="rounded-2xl border border-white/10 bg-ink-900 p-5">
+              <h3 className="flex items-center gap-2.5 font-semibold text-white"><Icon className="h-5 w-5 text-plasma-400" /> {name}</h3>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {topics.map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => onMakeLesson(t)}
+                    className="rounded-lg bg-white/[0.05] px-3 py-1.5 text-sm text-ink-200 transition hover:bg-neon-400/20 hover:text-white"
+                  >
+                    {t}
+                  </button>
+                ))}
               </div>
             </li>
           ))}
         </ul>
       </section>
 
-      <footer className="border-t border-white/10">
-        <div className="mx-auto flex max-w-[1400px] flex-wrap items-center gap-6 px-5 py-10 text-sm text-ink-400 sm:px-10">
-          <span className="font-display text-3xl text-white">VideoMind</span>
+      {/* ------------------------------------------------ students and teachers */}
+      <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6" aria-labelledby="who-heading">
+        <h2 id="who-heading" className="sr-only">For students and teachers</h2>
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-neon-400/15 to-ink-900 p-7">
+            <GraduationCap className="h-7 w-7 text-neon-200" />
+            <h3 className="mt-4 text-xl font-semibold text-white">For students</h3>
+            <p className="mt-2 leading-relaxed text-ink-300">Pick beginner, intermediate or advanced. Summaries, tutor answers and lessons are explained at that level, and your mistakes come back until you've got them.</p>
+            <button onClick={openSettings} className="mt-5 text-sm font-semibold text-neon-200 hover:text-white">Set my level →</button>
+          </div>
+          <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-plasma-400/10 to-ink-900 p-7">
+            <Presentation className="h-7 w-7 text-plasma-400" />
+            <h3 className="mt-4 text-xl font-semibold text-white">For teachers</h3>
+            <p className="mt-2 leading-relaxed text-ink-300">Make a teaching guide or a video for your class, get a printable lesson plan with it, and share a link students can open without an account.</p>
+            <button onClick={onOpenLessons} className="mt-5 text-sm font-semibold text-plasma-300 hover:text-white">Make a class lesson →</button>
+          </div>
+        </div>
+      </section>
+
+      <footer className="border-t border-white/[0.07]">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-8 text-sm text-ink-500 sm:px-6">
+          <span className="font-semibold text-ink-200">VideoMind</span>
           <span className="mr-auto">Free and open source. Summaries, study tools and video lessons in 15 languages.</span>
-          <a href="https://github.com/Yashwanthdot7/VedioMind-AI" target="_blank" rel="noreferrer" className="tracking-[0.14em] hover:text-white">SOURCE CODE</a>
+          <a href="https://github.com/Yashwanthdot7/VedioMind-AI" target="_blank" rel="noreferrer" className="hover:text-white">Source code</a>
         </div>
       </footer>
     </div>

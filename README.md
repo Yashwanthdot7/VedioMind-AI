@@ -85,7 +85,7 @@ The 40% budget shows the same order. The set is small, and one document shows no
 
 ## Design
 
-Jet black background, royal amethyst for actions and the active state, electric cyan for glow and highlights. Condensed display type (Anek, which also covers 8 Indian scripts), a framed header and a full-screen menu. All art is drawn in code (SVG and CSS); no images are copied from anywhere. Text contrast is at least 4.5:1, and the progress charts use one validated colour.
+A calm learning app: a jet black background, royal amethyst for actions and the selected state, and electric cyan for highlights and progress. Plain navigation, sentence-case headings and one font (Anek, which also covers 8 Indian scripts). The home page puts the input first, shows what one video turns into, and then gives returning learners their streak and the mistakes to review. Text contrast is at least 4.5:1, and the progress charts use one validated colour.
 
 ## Tech stack
 
@@ -199,7 +199,6 @@ VedioMind-AI/
 ├── Frontend/src/
 │   ├── components/
 │   │   ├── shell/         framed header, full-screen menu, loader, link bar
-│   │   ├── art/           portal and world art drawn in CSS and SVG
 │   │   ├── home/          home page
 │   │   ├── lessons/       lesson form, player, progress, MP4 export, course player
 │   │   ├── study/         notes, quiz, flashcards, mind map

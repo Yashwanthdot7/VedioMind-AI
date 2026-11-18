@@ -1,113 +1,122 @@
-import { useEffect, useState } from 'react';
-import { LogIn } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { LogIn, LogOut, Menu, X, PlaySquare, UserRound } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { Wordmark } from './Wordmark';
 import { useLearner } from '../../context/LearnerContext';
 import { learnerLabel } from '../learner/LearnerChoice';
-
-/** Three converging strokes: our menu glyph */
-function MenuGlyph({ open }: { open: boolean }) {
-  return (
-    <svg viewBox="0 0 28 16" className="h-4 w-7" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
-      {open ? (
-        <>
-          <path d="M6 2 L22 14" />
-          <path d="M22 2 L6 14" />
-        </>
-      ) : (
-        <>
-          <path d="M2 2 L14 8 L26 2" />
-          <path d="M2 8 H26" />
-          <path d="M2 14 L14 8 L26 14" />
-        </>
-      )}
-    </svg>
-  );
-}
+import { AppView } from '../../lib/navigation';
+import { NAV_ITEMS } from './navItems';
 
 interface HeaderProps {
-  menuOpen: boolean;
-  onToggleMenu: () => void;
+  view: AppView;
+  hasVideo: boolean;
+  onNavigate: (view: AppView) => void;
   onGoHome: () => void;
   onOpenAuth: () => void;
-  onCreate: () => void;
-  /** Over the home hero the frame floats on the art until the page scrolls */
-  overArt?: boolean;
 }
 
-/**
- * Fixed frame across the top: a thin rule with a notch that holds the wordmark,
- * MENU on the left, a quick action and the account on the right.
- */
-export default function Header({ menuOpen, onToggleMenu, onGoHome, onOpenAuth, onCreate, overArt = false }: HeaderProps) {
-  const [scrolled, setScrolled] = useState(false);
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 40);
-    onScroll();
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
-  const solid = !overArt || scrolled || menuOpen;
+/** A plain top bar: logo, the main pages, your learning profile and account. On phones the pages fold into a menu. */
+export default function Header({ view, hasVideo, onNavigate, onGoHome, onOpenAuth }: HeaderProps) {
+  const [open, setOpen] = useState(false);
+  const firstLink = useRef<HTMLButtonElement>(null);
   const { learner, openSettings } = useLearner();
-
-  const { enabled: authEnabled, user, loading } = useAuth();
+  const { enabled: authEnabled, user, loading, signOut } = useAuth();
   const name = (user?.user_metadata?.full_name as string) || user?.email || '';
-  const avatar = user?.user_metadata?.avatar_url as string | undefined;
+
+  useEffect(() => {
+    if (!open) return;
+    firstLink.current?.focus();
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [open]);
+
+  const items = [
+    ...NAV_ITEMS,
+    ...(hasVideo ? [{ view: 'dashboard' as AppView, label: 'Current video', icon: PlaySquare, needsAccount: false }] : []),
+  ];
+  const go = (v: AppView, needsAccount?: boolean) => {
+    setOpen(false);
+    if (needsAccount && authEnabled && !user) onOpenAuth();
+    else onNavigate(v);
+  };
+
+  const account = authEnabled && !loading && (user ? (
+    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-neon-400 text-sm font-bold text-white" title={name}>
+      {(name || '?').charAt(0).toUpperCase()}
+    </span>
+  ) : (
+    <button onClick={onOpenAuth} className="btn-outline">
+      <LogIn className="h-4 w-4" /> Sign in
+    </button>
+  ));
 
   return (
-    <header className="fixed inset-x-0 top-0 z-[60] px-3 pt-3 sm:px-6">
-      <div className={`absolute inset-x-0 top-0 h-[76px] border-b transition-colors duration-300 ${solid ? 'border-white/10 bg-ink-950/85 backdrop-blur-xl' : 'border-transparent bg-transparent'}`} aria-hidden="true" />
-      {/* the frame */}
-      <div className="pointer-events-none absolute inset-x-3 top-3 flex h-[64px] sm:inset-x-6" aria-hidden="true">
-        <div className="mt-[2px] h-px flex-1 bg-gradient-to-r from-transparent via-white/25 to-white/25" />
-        <svg viewBox="0 0 260 64" className="h-[64px] w-[220px] shrink-0 sm:w-[260px]" preserveAspectRatio="none" fill="none">
-          <path d="M0 2.5 H22 L46 40 H214 L238 2.5 H260" stroke="rgba(255,255,255,0.25)" strokeWidth="1" />
-          <path d="M14 10 L32 38" stroke="rgba(255,255,255,0.12)" strokeWidth="1" />
-          <path d="M246 10 L228 38" stroke="rgba(255,255,255,0.12)" strokeWidth="1" />
-        </svg>
-        <div className="mt-[2px] h-px flex-1 bg-gradient-to-l from-transparent via-white/25 to-white/25" />
-      </div>
+    <header className="sticky top-0 z-[60] border-b border-white/[0.07] bg-ink-950/90 backdrop-blur-lg">
+      <div className="mx-auto flex h-16 max-w-6xl items-center gap-6 px-4 sm:px-6">
+        <Wordmark onClick={() => { setOpen(false); onGoHome(); }} />
 
-      <div className="relative flex h-[56px] items-center gap-3 px-2 sm:px-4">
-        <button
-          onClick={onToggleMenu}
-          aria-expanded={menuOpen}
-          aria-controls="site-menu"
-          aria-label={menuOpen ? 'Close menu' : 'Menu'}
-          className="flex items-center gap-3 rounded-md px-2 py-2 text-ink-100 transition-opacity hover:opacity-70"
-        >
-          <MenuGlyph open={menuOpen} />
-          <span className="hidden text-sm font-medium tracking-[0.18em] sm:inline">{menuOpen ? 'CLOSE' : 'MENU'}</span>
-        </button>
-
-        <div className="absolute left-1/2 top-[2px] -translate-x-1/2">
-          <Wordmark onClick={onGoHome} compact />
-        </div>
-
-        <div className="ml-auto flex items-center gap-4">
-          <button onClick={openSettings} className="hidden text-sm font-medium uppercase tracking-[0.14em] text-neon-200 transition-opacity hover:opacity-70 lg:inline" title="Change how things are explained to you">
-            {learnerLabel(learner)}
-          </button>
-          <button onClick={onCreate} className="hidden text-sm font-medium tracking-[0.14em] text-ink-100 transition-opacity hover:opacity-70 md:inline">
-            MAKE A LESSON
-          </button>
-          {authEnabled && !loading && (user ? (
-            <span className="flex items-center gap-2" title={name}>
-              {avatar ? (
-                <img src={avatar} alt="" className="h-8 w-8 rounded-full ring-1 ring-neon-300/60" referrerPolicy="no-referrer" />
-              ) : (
-                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-neon-400 text-sm font-bold text-white">
-                  {(name || '?').charAt(0).toUpperCase()}
-                </span>
-              )}
-            </span>
-          ) : (
-            <button onClick={onOpenAuth} className="btn-outline">
-              <LogIn className="h-4 w-4 sm:hidden" /> <span className="hidden sm:inline">Login</span>
+        <nav aria-label="Main" className="hidden items-center gap-1 lg:flex">
+          {items.map((n) => (
+            <button
+              key={n.view}
+              onClick={() => go(n.view, n.needsAccount)}
+              aria-current={view === n.view ? 'page' : undefined}
+              className={`rounded-lg px-3 py-2 text-[15px] font-medium transition-colors ${view === n.view ? 'bg-white/[0.06] text-white' : 'text-ink-300 hover:text-white'}`}
+            >
+              {n.label}
             </button>
           ))}
+        </nav>
+
+        <div className="ml-auto flex items-center gap-3">
+          <button onClick={openSettings} className="hidden items-center gap-2 rounded-full border border-white/10 px-3 py-1.5 text-sm text-ink-200 hover:border-neon-300/60 hover:text-white md:flex" title="Change how things are explained to you">
+            <UserRound className="h-4 w-4 text-plasma-400" /> {learnerLabel(learner)}
+          </button>
+          <span className="hidden lg:block">{account}</span>
+          {authEnabled && user && <button onClick={signOut} className="hidden rounded-lg p-2 text-ink-400 hover:text-white lg:block" aria-label="Sign out"><LogOut className="h-4 w-4" /></button>}
+          <button
+            onClick={() => setOpen((o) => !o)}
+            aria-expanded={open}
+            aria-controls="site-menu"
+            aria-label={open ? 'Close menu' : 'Menu'}
+            className="rounded-lg p-2 text-ink-100 hover:bg-white/5 lg:hidden"
+          >
+            {open ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+          </button>
         </div>
       </div>
+
+      {open && (
+        <div id="site-menu" role="dialog" aria-label="Menu" className="border-t border-white/[0.07] bg-ink-950 px-4 pb-5 pt-2 lg:hidden">
+          <nav aria-label="Pages" className="flex flex-col">
+            {items.map((n, i) => {
+              const Icon = n.icon;
+              return (
+                <button
+                  key={n.view}
+                  ref={i === 0 ? firstLink : undefined}
+                  onClick={() => go(n.view, n.needsAccount)}
+                  aria-current={view === n.view ? 'page' : undefined}
+                  className={`flex items-center gap-3 rounded-lg px-3 py-3 text-left text-base font-medium ${view === n.view ? 'bg-white/[0.06] text-white' : 'text-ink-200'}`}
+                >
+                  <Icon className="h-5 w-5 text-neon-300" /> {n.label}
+                </button>
+              );
+            })}
+          </nav>
+          <div className="mt-3 flex flex-col gap-1 border-t border-white/[0.07] pt-3 text-sm">
+            <button onClick={() => { setOpen(false); openSettings(); }} className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-left text-ink-200">
+              <UserRound className="h-5 w-5 text-plasma-400" /> Learning profile: {learnerLabel(learner)}
+            </button>
+            {authEnabled && (user ? (
+              <button onClick={() => { setOpen(false); signOut(); }} className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-left text-ink-200"><LogOut className="h-5 w-5" /> Sign out</button>
+            ) : (
+              <button onClick={() => { setOpen(false); onOpenAuth(); }} className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-left text-ink-200"><LogIn className="h-5 w-5" /> Sign in or create an account</button>
+            ))}
+          </div>
+        </div>
+      )}
     </header>
   );
 }

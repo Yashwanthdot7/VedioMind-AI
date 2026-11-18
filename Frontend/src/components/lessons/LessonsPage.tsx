@@ -284,7 +284,7 @@ export default function LessonsPage({ currentVideo, preferVideo, defaultLanguage
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
             <div className="mb-4">
               <div className="flex flex-wrap items-start gap-3">
-                <h1 className="font-display text-4xl md:text-6xl text-white mr-auto">{active.title}</h1>
+                <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white mr-auto">{active.title}</h1>
                 {active.isOwner && !active.courseId && (
                   <ShareButton
                     kind="lesson" id={active.id} title={active.title}
@@ -336,7 +336,7 @@ export default function LessonsPage({ currentVideo, preferVideo, defaultLanguage
     <div className="max-w-5xl mx-auto">
       <div className="flex items-center gap-3 mb-2">
         <Clapperboard className="w-7 h-7 text-neon-400" />
-        <h1 className="font-display text-5xl md:text-7xl text-white">Create a video lesson</h1>
+        <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white">Create a video lesson</h1>
       </div>
       <p className="text-ink-400 mb-8">Turn any topic, notes, PDF or Word chapter, or YouTube video into a narrated, animated lesson — in {LANGUAGES.length} languages, for kids, students or teachers. Free.</p>
 
