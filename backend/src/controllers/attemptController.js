@@ -60,6 +60,11 @@ function parseAttempt(body) {
             answer,
             correct: chosen === answer,
             difficulty: DIFFICULTIES.includes(a.difficulty) ? a.difficulty : null,
+            // Kept so a wrong answer can be retried later ("Review my mistakes")
+            ...(Array.isArray(a.options) && a.options.length >= 2 && a.options.length <= 6 && {
+                options: a.options.map((o) => String(o ?? '').slice(0, 200)),
+            }),
+            ...(a.explanation && { explanation: String(a.explanation).slice(0, 600) }),
         };
     });
     const total = answers.length;

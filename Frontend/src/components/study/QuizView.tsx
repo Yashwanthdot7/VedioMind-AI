@@ -63,6 +63,8 @@ export default function QuizView({ quiz, videoTitle, onSeek, onComplete, onOpenA
         chosen: answers[i] ?? -1,
         answer: q.answerIndex,
         difficulty: q.difficulty ?? null,
+        options: q.options,
+        explanation: q.explanation,
       })).filter((a) => a.chosen >= 0),
     };
     if (!result.answers.length) return;

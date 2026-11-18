@@ -186,6 +186,9 @@ export interface AttemptAnswer {
   answer: number;
   correct?: boolean;
   difficulty: Difficulty | null;
+  /** Saved since "Review my mistakes"; older attempts don't have them */
+  options?: string[];
+  explanation?: string;
 }
 
 export interface AttemptInput {

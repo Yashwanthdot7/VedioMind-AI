@@ -133,3 +133,21 @@ test('delete one and clear all only touch your own history', async () => {
     assert.equal((await call('GET', '/quiz-attempts', 'token-alice')).body.data.length, 0);
     assert.equal((await call('GET', '/quiz-attempts', 'token-bob')).body.data.length, 1);
 });
+
+test('answer options and explanations are kept for "Review my mistakes", and trimmed', () => {
+    const parsed = parseAttempt({
+        source: 'study', kind: 'quiz', title: 'Volcanoes', language: 'en', durationSec: 30,
+        answers: [
+            { question: 'Magma on the surface?', chosen: 1, answer: 0, options: ['Lava', 'Ash', 'Steam', 'Ice'], explanation: 'Magma that erupts is lava.' },
+            { question: 'Too many options', chosen: 0, answer: 0, options: Array.from({ length: 9 }, (_, i) => `o${i}`) },
+            { question: 'Old client', chosen: 0, answer: 1 },
+            { question: 'Long option', chosen: 0, answer: 0, options: ['x'.repeat(500), 'y'], explanation: 'z'.repeat(2000) },
+        ],
+    });
+    assert.deepEqual(parsed.answers[0].options, ['Lava', 'Ash', 'Steam', 'Ice']);
+    assert.equal(parsed.answers[0].explanation, 'Magma that erupts is lava.');
+    assert.equal(parsed.answers[1].options, undefined, 'more than 6 options are dropped');
+    assert.equal(parsed.answers[2].options, undefined);
+    assert.equal(parsed.answers[3].options[0].length, 200);
+    assert.equal(parsed.answers[3].explanation.length, 600);
+});
