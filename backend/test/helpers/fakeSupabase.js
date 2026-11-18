@@ -21,6 +21,7 @@ function createFake(users) {
             update(obj) { s.op = 'update'; s.payload = obj; return api; },
             delete() { s.op = 'delete'; return api; },
             eq(col, val) { s.filters.push([col, val]); return api; },
+            match(obj) { Object.entries(obj).forEach(([c, v]) => s.filters.push([c, v])); return api; },
             order(col, { ascending = true } = {}) { s.order = [col, ascending]; return api; },
             limit(n) { s.limit = n; return api; },
             single() { s.one = 'single'; return api; },

@@ -47,7 +47,7 @@ Turn any YouTube video into a transcript, summary, study kit and a tutor you can
 - **File upload with no server.** PDF (pdf.js) and Word (mammoth) text is pulled out in the browser and loaded only when a file is picked, so the main bundle stays at about 67 kB gzipped. Scanned PDFs get a clear message instead of an empty lesson.
 - **Multi-script UI.** The Anek type family covers Latin and seven Indian scripts.
 - **Security.** Owner-only edits on shared items (a test caught and fixed a student-delete hole), Supabase Row Level Security, server-computed quiz grades, per-user rate limits, and the secret key kept on the server.
-- **Tests.** 72 backend tests (YouTube, Gemini, voice and pictures faked) plus typecheck, lint and build, run on every push by [GitHub Actions](.github/workflows/ci.yml).
+- **Tests.** 72 backend tests, 24 frontend unit and component tests, and 7 Playwright end-to-end tests against the real app with outside services faked, plus typecheck, lint and build, all run on every push by [GitHub Actions](.github/workflows/ci.yml).
 
 ## Architecture
 
@@ -85,7 +85,7 @@ The 40% budget shows the same order. The set is small, and one document shows no
 | Backend | Node.js, Express, express-rate-limit, node:test |
 | AI | Gemini Flash (auto-selected with fallback): JSON-mode analysis, chat, scripts, course outlines, TTS. FLUX.1-schnell for pictures |
 | Data | Supabase Postgres, Auth (email, optional Google), Row Level Security, Storage |
-| CI | GitHub Actions: backend tests, frontend typecheck, lint and build |
+| Testing | node:test, Vitest, Testing Library, Playwright; GitHub Actions |
 
 ## Getting started
 
@@ -245,11 +245,14 @@ Errors are returned as `{ success: false, code, error }`, e.g. `NO_TRANSCRIPT`, 
 
 ## Tests
 
-```bash
-cd backend && npm test                      # 72 tests, no network or API key needed
-cd Frontend && npm run typecheck && npm run lint && npm run build
-node backend/scripts/compareScenePlanning.js   # scene planning benchmark
-```
+| Suite | What it covers | Run |
+|---|---|---|
+| Backend (node:test, 72) | API, lessons, courses, sharing and permissions, TextRank, quiz grading. YouTube, Gemini, voice, pictures and Supabase are faked | `cd backend && npm test` |
+| Frontend (Vitest + Testing Library, 24) | Spaced-repetition schedule, mistake collection, PDF text cleanup, analytics, quiz flow, home page, share dialog | `cd Frontend && npm test` |
+| End-to-end (Playwright, 7) | Summarize and chat, lesson and quiz, 3-module course, PDF/Word upload, teacher shares and student opens a link, mistake review, phone layout. Real frontend and API, outside services faked | `cd Frontend && npx playwright install chromium && npm run e2e` |
+| Benchmark | Scene planning comparison | `node backend/scripts/compareScenePlanning.js` |
+
+All of them run on every push and pull request in [GitHub Actions](.github/workflows/ci.yml), with no API keys.
 
 ## Known limitations
 

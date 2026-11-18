@@ -12,8 +12,8 @@ export function gradeFor(scorePct: number): Grade {
 export function gradeClass(grade: string): string {
   switch (grade) {
     case 'A+':
-    case 'A': return 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30';
-    case 'B': return 'bg-indigo-500/15 text-indigo-200 border-indigo-500/30';
+    case 'A': return 'bg-lagoon-500/15 text-lagoon-300 border-lagoon-500/40';
+    case 'B': return 'bg-ink-700/60 text-ink-100 border-ink-500/60';
     case 'C': return 'bg-amber-500/15 text-amber-200 border-amber-500/30';
     default: return 'bg-red-500/15 text-red-300 border-red-500/30';
   }
