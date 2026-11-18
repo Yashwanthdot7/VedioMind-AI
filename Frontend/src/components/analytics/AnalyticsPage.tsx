@@ -11,6 +11,7 @@ import { errorMessage } from '../../lib/errors';
 import { useAuth } from '../../context/AuthContext';
 import { navigate } from '../../lib/navigation';
 import { DifficultyBars, GradeColumns, ScoreTrendChart } from './Charts';
+import ReviewSection from './ReviewSection';
 
 const KIND_LABEL: Record<QuizAttempt['kind'], string> = { quiz: 'Video quiz', quick: 'Lesson quiz', test: 'Lesson test' };
 
@@ -68,8 +69,8 @@ export default function AnalyticsPage() {
   const [localCount, setLocalCount] = useState(0);
   const [importing, setImporting] = useState(false);
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  const load = useCallback(async (quiet = false) => {
+    if (!quiet) setLoading(true);
     setError(null);
     try {
       const res = await listAttempts();
@@ -154,6 +155,8 @@ export default function AnalyticsPage() {
         </div>
       )}
       {error && <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-sm">{error}</div>}
+
+      <ReviewSection attempts={attempts} scope={user?.id || 'guest'} onAttemptSaved={() => load(true)} />
 
       {attempts.length === 0 ? (
         <div className="text-center py-20 rounded-2xl border border-dashed border-ink-800">

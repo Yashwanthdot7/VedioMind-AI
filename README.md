@@ -31,6 +31,8 @@ Turn any YouTube video into a transcript, summary, study kit and a tutor you can
 
 **Track progress.** Every quiz is graded A+ to D. The progress page shows score over time, accuracy by difficulty, streaks and the questions worth revisiting.
 
+**Review your mistakes.** Every question you got wrong comes back: as a retry quiz (the most-missed first), and as flashcards on a spaced-repetition schedule (Leitner boxes: 1, 3, 7, 14 and 30 days). Answering one right in a later quiz marks it fixed.
+
 ## Engineering highlights
 
 - **TextRank scene planning, measured.** Long notes and 40-minute transcripts are condensed to their key sentences before the script is written. It works in any script, including captions with no punctuation. On a hand-labelled benchmark with a 25% budget it covers nearly twice as many key points as cutting the text off (47% vs 25%, details below).
@@ -45,7 +47,7 @@ Turn any YouTube video into a transcript, summary, study kit and a tutor you can
 - **File upload with no server.** PDF (pdf.js) and Word (mammoth) text is pulled out in the browser and loaded only when a file is picked, so the main bundle stays at about 67 kB gzipped. Scanned PDFs get a clear message instead of an empty lesson.
 - **Multi-script UI.** The Anek type family covers Latin and seven Indian scripts.
 - **Security.** Owner-only edits on shared items (a test caught and fixed a student-delete hole), Supabase Row Level Security, server-computed quiz grades, per-user rate limits, and the secret key kept on the server.
-- **Tests.** 71 backend tests (YouTube, Gemini, voice and pictures faked) plus typecheck, lint and build, run on every push by [GitHub Actions](.github/workflows/ci.yml).
+- **Tests.** 72 backend tests (YouTube, Gemini, voice and pictures faked) plus typecheck, lint and build, run on every push by [GitHub Actions](.github/workflows/ci.yml).
 
 ## Architecture
 
@@ -244,7 +246,7 @@ Errors are returned as `{ success: false, code, error }`, e.g. `NO_TRANSCRIPT`, 
 ## Tests
 
 ```bash
-cd backend && npm test                      # 71 tests, no network or API key needed
+cd backend && npm test                      # 72 tests, no network or API key needed
 cd Frontend && npm run typecheck && npm run lint && npm run build
 node backend/scripts/compareScenePlanning.js   # scene planning benchmark
 ```
