@@ -57,7 +57,7 @@ export default function SharedPage({ slug, onMakeOwn }: { slug: string; onMakeOw
       ) : lesson ? (
         lesson.status === 'done' ? (
           <>
-            <h1 className="font-display text-4xl md:text-6xl text-white mb-4">{lesson.title}</h1>
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white mb-4">{lesson.title}</h1>
             <LessonPlayer lesson={lesson} />
           </>
         ) : (

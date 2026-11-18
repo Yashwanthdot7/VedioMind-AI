@@ -126,7 +126,7 @@ export default function AnalyticsPage() {
     <div className="max-w-6xl mx-auto space-y-6">
       <div className="flex flex-wrap items-center gap-3">
         <BarChart3 className="w-7 h-7 text-neon-400" />
-        <h1 className="font-display text-5xl md:text-7xl text-white mr-auto">Your progress</h1>
+        <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white mr-auto">Your progress</h1>
         {attempts.length > 0 && (
           <>
             <Segmented label="Time range" value={range} onChange={setRange} options={[

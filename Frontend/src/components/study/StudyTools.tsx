@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { GraduationCap, NotebookPen, ListChecks, Layers, Network, Loader2, RefreshCw, AlertCircle } from 'lucide-react';
-import { StudyDataMap, StudyLevel, StudyType, VideoData } from '../../types';
+import { Learner, StudyDataMap, StudyLevel, StudyType, VideoData } from '../../types';
+import { useLearner } from '../../context/LearnerContext';
 import { getStudyMaterial } from '../../services/apiService';
 import { errorMessage } from '../../lib/errors';
 import { recordAttempt } from '../../lib/attempts';
@@ -24,10 +25,18 @@ const TOOLS: { type: StudyType; label: string; icon: typeof NotebookPen; blurb: 
 ];
 
 const LEVELS: { value: StudyLevel; label: string }[] = [
-  { value: 'kids', label: '🧒 Kids' },
-  { value: 'student', label: '🎓 Student' },
-  { value: 'teacher', label: '🧑‍🏫 Teacher' },
+  { value: 'kids', label: 'Kids' },
+  { value: 'beginner', label: 'Beginner' },
+  { value: 'student', label: 'Intermediate' },
+  { value: 'advanced', label: 'Advanced' },
+  { value: 'teacher', label: 'Teacher' },
 ];
+
+/** The learner's profile picks the starting level; a level chosen here wins for next time */
+function profileLevel(l: Learner): StudyLevel {
+  if (l.role === 'teacher') return 'teacher';
+  return l.level === 'beginner' ? 'beginner' : l.level === 'advanced' ? 'advanced' : 'student';
+}
 
 type Entry<T extends StudyType = StudyType> =
   | { status: 'loading' }
@@ -36,19 +45,20 @@ type Entry<T extends StudyType = StudyType> =
 
 const LEVEL_STORAGE_KEY = 'videomind.studyLevel';
 
-function loadLevel(): StudyLevel {
+function loadLevel(fallback: StudyLevel): StudyLevel {
   try {
     const saved = localStorage.getItem(LEVEL_STORAGE_KEY);
-    if (saved === 'kids' || saved === 'student' || saved === 'teacher') return saved;
+    if (LEVELS.some((l) => l.value === saved)) return saved as StudyLevel;
   } catch {
     /* storage unavailable */
   }
-  return 'student';
+  return fallback;
 }
 
 export default function StudyTools({ video, onSeek }: StudyToolsProps) {
   const [active, setActive] = useState<StudyType | null>(null);
-  const [level, setLevel] = useState<StudyLevel>(loadLevel);
+  const { learner } = useLearner();
+  const [level, setLevel] = useState<StudyLevel>(() => loadLevel(profileLevel(learner)));
   // keyed by `${type}:${level}` so switching level keeps earlier results
   const [entries, setEntries] = useState<Record<string, Entry>>({});
 

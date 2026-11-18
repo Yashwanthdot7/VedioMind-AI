@@ -7,7 +7,7 @@ test.beforeEach(async ({ page }) => { await offlineYouTube(page); });
 
 test('summarize a video, read the insights and ask the tutor', async ({ page }) => {
   await page.goto('/');
-  await expect(page.getByRole('heading', { level: 1 })).toContainText('Learn anything');
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('Understand any video');
   await page.getByLabel('YouTube link').fill('https://www.youtube.com/watch?v=abcdefghijk');
   await page.getByRole('button', { name: 'Summarize' }).click();
 
@@ -19,10 +19,10 @@ test('summarize a video, read the insights and ask the tutor', async ({ page }) 
   await page.getByRole('button', { name: 'Send' }).click();
   await expect(page.getByText(/reflects green\./)).toBeVisible();
   // The menu now offers the open video
-  await page.getByRole('button', { name: 'Menu', exact: true }).click();
-  await expect(page.getByRole('dialog', { name: 'Menu' }).getByRole('button', { name: 'Open video' })).toBeVisible();
-  await page.keyboard.press('Escape');
-  await expect(page.getByRole('dialog', { name: 'Menu' })).toBeHidden();
+  // The video stays one click away from any page
+  await goTo(page, 'Progress');
+  await goTo(page, 'Current video');
+  await expect(page.getByText('Plants make glucose from sunlight.')).toBeVisible();
 });
 
 test('make a video lesson from a topic, play it, and take the quick quiz', async ({ page }) => {

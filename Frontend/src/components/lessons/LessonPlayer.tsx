@@ -307,12 +307,14 @@ export default function LessonPlayer({ lesson }: LessonPlayerProps) {
               >
                 <ListChecks className="w-4 h-4" /> Quick quiz (5)
               </button>
+{!lesson.sample && (
               <button
                 onClick={() => openQuiz('test')}
                 className="flex items-center gap-2 px-4 py-2 rounded-lg bg-neon-400 hover:bg-neon-500 text-white text-sm"
               >
                 <GraduationCap className="w-4 h-4" /> Full test (10)
               </button>
+              )}
             </div>
           </div>
         )}
@@ -378,16 +380,17 @@ export default function LessonPlayer({ lesson }: LessonPlayerProps) {
         <div className="flex flex-wrap items-center gap-3">
           <div className="mr-auto">
             <h3 className="text-lg font-semibold text-ink-100">Test yourself</h3>
-            <p className="text-xs text-ink-500">Made from this lesson when you ask, in {lesson.language === 'en' ? 'English' : 'the lesson’s language'}</p>
+            <p className="text-xs text-ink-500">{lesson.sample ? 'A sample quiz for this lesson, in' : 'Made from this lesson when you ask, in'} {lesson.language === 'en' ? 'English' : 'the lesson’s language'}</p>
           </div>
           <button
-            onClick={() => openQuiz('quick', quiz?.kind === 'quick')}
+            onClick={() => openQuiz('quick', !lesson.sample && quiz?.kind === 'quick')}
             disabled={quizLoading !== null}
             className="flex items-center gap-2 px-4 py-2 rounded-lg bg-neon-400 hover:bg-neon-500 disabled:opacity-50 text-white text-sm"
           >
             {quizLoading === 'quick' ? <Loader2 className="w-4 h-4 animate-spin" /> : <ListChecks className="w-4 h-4" />}
-            {quiz?.kind === 'quick' && showQuiz ? 'New quick quiz' : 'Quick quiz (5)'}
+            {quiz?.kind === 'quick' && showQuiz && !lesson.sample ? 'New quick quiz' : 'Quick quiz (5)'}
           </button>
+          {!lesson.sample && (
           <button
             onClick={() => openQuiz('test', quiz?.kind === 'test')}
             disabled={quizLoading !== null}
@@ -396,6 +399,7 @@ export default function LessonPlayer({ lesson }: LessonPlayerProps) {
             {quizLoading === 'test' ? <Loader2 className="w-4 h-4 animate-spin" /> : <GraduationCap className="w-4 h-4" />}
             {quiz?.kind === 'test' && showQuiz ? 'New full test' : 'Full test (10)'}
           </button>
+          )}
         </div>
 
         {showQuiz && (

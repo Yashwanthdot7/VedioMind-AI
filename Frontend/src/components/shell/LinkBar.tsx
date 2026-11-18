@@ -19,8 +19,8 @@ export default function LinkBar({ busy, language, onLanguageChange, onSummarize 
   };
 
   return (
-    <div role="search" className="sticky top-[76px] z-40 border-b border-white/10 bg-ink-950/90 backdrop-blur-xl">
-      <div className="mx-auto flex max-w-[1400px] items-center gap-3 px-4 py-3 sm:px-8 lg:px-10">
+    <div role="search" className="border-b border-white/[0.07] bg-ink-950">
+      <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3 sm:px-6">
         <form onSubmit={submit} className="flex flex-1 items-center gap-2 max-w-3xl">
           <label className="relative flex-1 flex items-center">
             <span className="sr-only">YouTube link</span>

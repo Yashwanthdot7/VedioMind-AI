@@ -62,7 +62,7 @@ export default function Library({ onOpen }: LibraryProps) {
       <div className="flex flex-wrap items-center gap-4 mb-8">
         <div className="flex items-center gap-3 mr-auto">
           <LibraryIcon className="w-7 h-7 text-neon-400" />
-          <h1 className="font-display text-5xl md:text-7xl text-white">Your library</h1>
+          <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white">Your library</h1>
           {!loading && <span className="text-sm text-ink-500">{items.length} videos</span>}
         </div>
         <button

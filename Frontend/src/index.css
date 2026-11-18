@@ -35,74 +35,26 @@
 }
 
 @layer components {
-  /*
-   * Display type: Anek squeezed to its narrowest width at full weight, in capitals.
-   * The same family covers seven Indian scripts, so headings never fall back to another face.
-   */
-  .font-display {
-    font-stretch: 75%;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: -0.005em;
-    line-height: 0.86;
-  }
-  .font-display-wide {
-    font-stretch: 112%;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.18em;
-  }
-
-  /* Cut corners: the sci-fi panel frame */
-  .chamfer {
-    clip-path: polygon(14px 0, calc(100% - 14px) 0, 100% 14px, 100% calc(100% - 14px), calc(100% - 14px) 100%, 14px 100%, 0 calc(100% - 14px), 0 14px);
-  }
-  .chamfer-lg {
-    clip-path: polygon(28px 0, 100% 0, 100% calc(100% - 28px), calc(100% - 28px) 100%, 0 100%, 0 28px);
-  }
-
-  /* Frosted glass over art */
+  /* Frosted panel */
   .glass {
     @apply bg-ink-900/60 border border-white/10 backdrop-blur-xl;
   }
 
-  /* Primary action: violet pill */
+  /* Primary action: royal amethyst */
   .btn-neon {
-    @apply inline-flex items-center justify-center gap-2 rounded-full bg-neon-400 px-6 py-3 font-semibold text-white transition
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-neon-400 px-6 py-3 font-semibold text-white transition
       hover:bg-neon-500 active:scale-[0.97] disabled:bg-ink-800 disabled:text-ink-500 disabled:active:scale-100;
-    box-shadow: 0 0 0 1px rgb(255 255 255 / 0.08) inset, 0 10px 30px -10px theme('colors.neon.400');
+    box-shadow: 0 0 0 1px rgb(255 255 255 / 0.08) inset;
   }
-  /* Launch: white pill with a glowing gradient rim */
-  .btn-launch {
-    @apply inline-flex items-center justify-center gap-2 rounded-full bg-white px-8 py-3 text-sm font-semibold text-ink-950 transition active:scale-[0.97];
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-    box-shadow: 0 0 0 3px theme('colors.ink.950'), 0 0 0 5px theme('colors.plasma.400'), 0 0 24px -2px theme('colors.plasma.400');
-  }
-  .btn-launch:hover {
-    box-shadow: 0 0 0 3px theme('colors.ink.950'), 0 0 0 5px theme('colors.aqua.300'), 0 0 30px 0 theme('colors.aqua.400');
-  }
-  /* Outline: Login-style */
+  /* Outline: secondary action */
   .btn-outline {
-    @apply inline-flex items-center justify-center gap-2 rounded-md border border-neon-400/70 px-4 py-2 text-sm font-medium text-neon-200 transition
+    @apply inline-flex items-center justify-center gap-2 rounded-lg border border-white/15 px-4 py-2 text-sm font-medium text-ink-100 transition
       hover:border-neon-300 hover:bg-neon-400/10 hover:text-white active:scale-[0.97];
   }
 
-  .text-plasma-gradient {
-    background: linear-gradient(100deg, theme('colors.neon.300'), theme('colors.plasma.400') 55%, theme('colors.aqua.300'));
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-  }
 }
 
 @layer utilities {
-  /* Anek's width axis */
-  .font-wide { font-stretch: 125%; }
-  .font-semiwide { font-stretch: 112%; }
-  .font-narrow { font-stretch: 88%; }
-  .font-condensed { font-stretch: 75%; }
-
   .custom-scrollbar::-webkit-scrollbar {
     width: 8px;
     height: 8px;

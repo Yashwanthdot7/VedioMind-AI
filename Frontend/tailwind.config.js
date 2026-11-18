@@ -1,45 +1,45 @@
 /** @type {import('tailwindcss').Config} */
 
 /**
- * "Portal" design tokens: a learning world at night
- *   ink    violet-black neutrals (void background → starlight text)
- *   neon   electric violet: actions, focus, the active state
- *   plasma magenta glow: art, highlights, gradient edges (never body text on dark)
+ * Design tokens: jet black, royal amethyst, electric cyan
+ *   ink    jet-black neutrals (page background → bright text), faintly amethyst-tinted
+ *   neon   royal amethyst: actions, focus, the active state
+ *   plasma electric cyan: highlights, icons, progress
  *   aqua   success and data (aqua-500 is the validated chart colour on ink-900)
  */
 const ink = {
-  50: '#F7F4FF',
-  100: '#F1ECFF', // starlight: primary text
-  200: '#DCD3F5',
-  300: '#C3B8E6',
-  400: '#A99CCB', // haze: secondary text
-  500: '#8D80B3', // muted text
-  600: '#66598F',
-  700: '#463A6E',
-  800: '#2D2150', // borders, raised controls
-  900: '#150D2A', // nebula: panels
-  950: '#0B0716', // void: page background
+  50: '#FAF9FC',
+  100: '#F2F0F6', // primary text
+  200: '#E0DCE8',
+  300: '#CBC5D7',
+  400: '#ADA6BC', // secondary text
+  500: '#8A8299', // muted text
+  600: '#5C5568',
+  700: '#3A3545',
+  800: '#211E29', // borders, raised controls
+  900: '#0E0D12', // panels
+  950: '#050506', // jet black: page background
 };
 
 const neon = {
-  50: '#F3F0FF',
-  100: '#E6E0FF',
-  200: '#CEC2FF',
-  300: '#B3A1FF', // accent text on dark
-  400: '#7650FF', // filled buttons (white text 5.2:1)
-  500: '#6438F0', // pressed / hover on filled
-  600: '#5128CC',
-  700: '#3F1FA3',
-  800: '#2E1878',
-  900: '#1F114F',
-  950: '#12092F',
+  50: '#F6F0FE',
+  100: '#EBDDFD',
+  200: '#D8BDFA',
+  300: '#C29BF5', // accent text on black
+  400: '#8A4FD6', // royal amethyst: filled buttons
+  500: '#7638C2', // pressed / hover on filled
+  600: '#622BA3',
+  700: '#4E2283',
+  800: '#3B1A63',
+  900: '#281245',
+  950: '#170A29',
 };
 
 const plasma = {
-  300: '#F29BFF',
-  400: '#E040FB',
-  500: '#C21FE0',
-  600: '#9612B0',
+  300: '#8FF7FF',
+  400: '#00E5FF', // electric cyan
+  500: '#00C2DB',
+  600: '#0097AD',
 };
 
 const aqua = {
@@ -71,33 +71,6 @@ module.exports = {
       },
       borderRadius: {
         panel: '1.25rem',
-      },
-      keyframes: {
-        'script-in': {
-          '0%': { opacity: '0', transform: 'translateY(0.35em)', filter: 'blur(6px)' },
-          '100%': { opacity: '1', transform: 'translateY(0)', filter: 'blur(0)' },
-        },
-        'portal-spin': { to: { transform: 'rotate(360deg)' } },
-        'portal-breathe': {
-          '0%, 100%': { opacity: '0.85', transform: 'scale(1)' },
-          '50%': { opacity: '1', transform: 'scale(1.03)' },
-        },
-        drift: {
-          '0%, 100%': { transform: 'translate3d(0, 0, 0) rotate(var(--r, 0deg))' },
-          '50%': { transform: 'translate3d(0, -14px, 0) rotate(calc(var(--r, 0deg) + 6deg))' },
-        },
-        'menu-in': {
-          '0%': { opacity: '0', transform: 'translateX(-24px)' },
-          '100%': { opacity: '1', transform: 'translateX(0)' },
-        },
-      },
-      animation: {
-        'script-in': 'script-in 520ms cubic-bezier(0.2, 0.8, 0.2, 1) both',
-        'portal-spin': 'portal-spin 40s linear infinite',
-        'portal-spin-rev': 'portal-spin 60s linear infinite reverse',
-        'portal-breathe': 'portal-breathe 6s ease-in-out infinite',
-        drift: 'drift 9s ease-in-out infinite',
-        'menu-in': 'menu-in 420ms cubic-bezier(0.2, 0.8, 0.2, 1) both',
       },
     },
   },

@@ -3,6 +3,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Mail, Lock, User as UserIcon, Loader2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { errorMessage } from '../lib/errors';
+import { useLearner } from '../context/LearnerContext';
+import LearnerChoice from './learner/LearnerChoice';
+import { Learner } from '../types';
 
 type Mode = 'signin' | 'signup' | 'reset';
 
@@ -28,6 +31,8 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
+  const { learner: current } = useLearner();
+  const [learner, setLearner] = useState<Learner>(current);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -48,7 +53,7 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
         await signInWithPassword(email, password);
         onClose();
       } else if (mode === 'signup') {
-        const { needsConfirmation } = await signUpWithPassword(email, password, fullName);
+        const { needsConfirmation } = await signUpWithPassword(email, password, fullName, learner);
         if (needsConfirmation) {
           setNotice('Check your email to confirm your account, then sign in.');
           setMode('signin');
@@ -92,7 +97,7 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.95, opacity: 0 }}
             transition={{ type: 'spring', damping: 22 }}
-            className="relative w-full max-w-md bg-ink-900 border border-ink-800 rounded-2xl p-8 shadow-2xl"
+            className="relative w-full max-w-md max-h-[calc(100dvh-2rem)] overflow-y-auto bg-ink-900 border border-ink-800 rounded-2xl p-8 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
             role="dialog"
             aria-modal="true"
@@ -153,6 +158,11 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
                   className="flex-1 bg-transparent text-ink-200 placeholder-ink-500 focus:outline-none"
                 />
               </label>
+              {mode === 'signup' && (
+                <div className="pt-1 pb-2">
+                  <LearnerChoice value={learner} onChange={setLearner} compact />
+                </div>
+              )}
               {mode !== 'reset' && (
                 <label className="flex items-center gap-3 px-4 py-3 bg-ink-950/60 border border-ink-800 rounded-xl focus-within:ring-2 focus-within:ring-neon-500">
                   <Lock className="w-4 h-4 text-ink-500" />
