@@ -28,6 +28,7 @@ async function resolveContext({ analysisId, videoId, language, videoContext }) {
             language,
             title: videoContext.title.slice(0, 500),
             summary: String(videoContext.summary || '').slice(0, 20000),
+            keyTakeaways: Array.isArray(videoContext.keyTakeaways) ? videoContext.keyTakeaways.slice(0, 10).map(String) : [],
             transcript,
         };
     }

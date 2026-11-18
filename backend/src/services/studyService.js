@@ -1,4 +1,5 @@
 const { SchemaType } = require('@google/generative-ai');
+const { LEVEL_GUIDANCE: LEARNER_LEVELS } = require('../config/learner');
 const AppError = require('../lib/AppError');
 const geminiService = require('./geminiService');
 const { formatTranscript, wrapGeminiError } = require('./geminiService');
@@ -12,7 +13,8 @@ const { LIMITS } = require('../types/constants');
  */
 
 const STUDY_TYPES = ['notes', 'quiz', 'flashcards', 'mindmap'];
-const LEVELS = ['kids', 'student', 'teacher'];
+// 'student' is the intermediate level (kept as the stored key so existing cached materials still match)
+const LEVELS = ['kids', 'beginner', 'student', 'advanced', 'teacher'];
 const DEFAULT_LEVEL = 'student';
 
 const S = SchemaType;
@@ -123,7 +125,9 @@ const SCHEMAS = {
 
 const LEVEL_GUIDANCE = {
     kids: 'The audience is children aged 8-12. Use very simple words, short sentences, friendly tone, and everyday examples. Avoid jargon; if a technical word is needed, explain it simply.',
+    beginner: `The audience is students who are new to this subject. ${LEARNER_LEVELS.beginner}`,
     student: 'The audience is high-school or college students preparing for exams. Be clear, accurate and exam-focused.',
+    advanced: `The audience is advanced students. ${LEARNER_LEVELS.advanced} Questions and cards should test understanding and application, not just recall.`,
     teacher: 'The audience is a teacher preparing a lesson. Be precise, include the key concepts to teach, common misconceptions, and points suitable for classroom discussion.',
 };
 

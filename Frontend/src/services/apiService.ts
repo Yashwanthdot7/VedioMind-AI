@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase';
-import { AttemptInput, Course, CourseSummary, ShareState, SharedTarget, QuizAttempt, Lesson, LessonAudience, LessonQuizQuestion, LessonSummary, LibraryItem, Message, StudyDataMap, StudyLevel, StudyType, VideoData } from '../types';
+import { AttemptInput, Course, CourseSummary, ShareState, SharedTarget, Learner, LearnerLevel, LearnerProfile, TeacherMode, TeacherPlan, QuizAttempt, Lesson, LessonAudience, LessonQuizQuestion, LessonSummary, LibraryItem, Message, StudyDataMap, StudyLevel, StudyType, VideoData } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
@@ -20,6 +20,12 @@ async function authHeaders(): Promise<Record<string, string>> {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
+// Who's learning ("student:beginner"); signed-in users' profiles win on the server
+let learnerHeader = 'student:intermediate';
+export function setLearnerHeader(learner: Learner) {
+  learnerHeader = `${learner.role}:${learner.level}`;
+}
+
 async function request<T>(path: string, options: { method?: string; body?: unknown } = {}): Promise<T> {
   let response: Response;
   try {
@@ -27,6 +33,7 @@ async function request<T>(path: string, options: { method?: string; body?: unkno
       method: options.method || 'GET',
       headers: {
         ...(options.body !== undefined && { 'Content-Type': 'application/json' }),
+        'X-Learner': learnerHeader,
         ...(await authHeaders()),
       },
       body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
@@ -156,6 +163,8 @@ export interface CreateLessonInput {
   length: 'short' | 'standard';
   voice?: string;
   visuals?: 'pictures' | 'slides';
+  level?: LearnerLevel;
+  teacherMode?: TeacherMode;
 }
 
 function lessonBody(input: CreateLessonInput): Record<string, unknown> {
@@ -165,6 +174,8 @@ function lessonBody(input: CreateLessonInput): Record<string, unknown> {
     length: input.length,
     voice: input.voice,
     visuals: input.visuals,
+    level: input.level,
+    teacherMode: input.audience === 'teacher' ? input.teacherMode : undefined,
   };
   if (input.video) {
     Object.assign(body, {
@@ -315,3 +326,26 @@ export async function resolveShare(slug: string): Promise<SharedTarget> {
 }
 
 export const shareUrl = (slug: string) => `${window.location.origin}/?s=${slug}`;
+
+// ------------------------------------------------------------------ learning profile
+
+export async function getProfile(): Promise<LearnerProfile> {
+  return (await request<{ data: LearnerProfile }>('/profile')).data;
+}
+
+export async function saveProfile(learner: Learner): Promise<LearnerProfile> {
+  return (await request<{ data: LearnerProfile }>('/profile', { method: 'PUT', body: learner })).data;
+}
+
+/** The video's summary rewritten for a level ("intermediate" is the shared one) */
+export async function getSummaryForLevel(video: VideoData, level: LearnerLevel): Promise<{ summary: string; keyTakeaways: string[]; level: LearnerLevel }> {
+  const body = {
+    videoId: video.videoId, analysisId: video.analysisId, language: video.language, level,
+    videoContext: { title: video.title, summary: video.summary, keyTakeaways: video.keyTakeaways, transcript: video.transcript },
+  };
+  return (await request<{ data: { summary: string; keyTakeaways: string[]; level: LearnerLevel } }>('/video/summary', { method: 'POST', body })).data;
+}
+
+export async function getTeacherPlan(lessonId: string, refresh = false): Promise<TeacherPlan> {
+  return (await request<{ data: TeacherPlan }>(`/lessons/${lessonId}/plan`, { method: 'POST', body: { refresh } })).data;
+}

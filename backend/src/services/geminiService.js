@@ -1,4 +1,5 @@
 const { GoogleGenerativeAI, SchemaType } = require('@google/generative-ai');
+const { learnerGuidance } = require('../config/learner');
 const AppError = require('../lib/AppError');
 const { languageName } = require('../config/languages');
 const { MODEL_CANDIDATES, PROMPTS, LIMITS } = require('../types/constants');
@@ -149,8 +150,8 @@ class GeminiService {
      * Multi-turn chat about a video. The transcript goes in the system
      * instruction, so earlier turns stay grounded in the video.
      */
-    async chat({ messages, context, language }) {
-        const systemInstruction = PROMPTS.CHAT_SYSTEM
+    async chat({ messages, context, language, learner }) {
+        const systemInstruction = `${learner ? `Who you are talking to: ${learnerGuidance(learner)}\n\n` : ''}${PROMPTS.CHAT_SYSTEM}`
             .replace('{language}', languageName(language))
             .replace('{title}', context.title)
             .replace('{summary}', context.summary || '')
@@ -238,3 +239,4 @@ class GeminiService {
 module.exports = new GeminiService();
 module.exports.formatTranscript = formatTranscript;
 module.exports.wrapGeminiError = wrapGeminiError;
+module.exports.ANALYSIS_SCHEMA = ANALYSIS_SCHEMA;

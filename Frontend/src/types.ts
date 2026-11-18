@@ -25,6 +25,9 @@ export interface VideoMetadata {
 }
 
 export interface VideoData {
+  /** Level the summary was written for (students who chose beginner or advanced get their own) */
+  level?: LearnerLevel;
+  levelNotice?: string;
   analysisId: string | null;
   videoId: string;
   language: string;
@@ -62,7 +65,8 @@ export interface PlayerHandle {
 // ------------------------------------------------------------------ study tools
 
 export type StudyType = 'notes' | 'quiz' | 'flashcards' | 'mindmap';
-export type StudyLevel = 'kids' | 'student' | 'teacher';
+/** 'student' is the intermediate level */
+export type StudyLevel = 'kids' | 'beginner' | 'student' | 'advanced' | 'teacher';
 
 export interface StudyNotes {
   title: string;
@@ -106,6 +110,30 @@ export interface StudyDataMap {
 export type LessonLayout = 'title' | 'bullets' | 'fact' | 'steps' | 'compare' | 'summary';
 export type LessonStatus = 'queued' | 'scripting' | 'voice' | 'done' | 'failed';
 export type LessonAudience = 'kids' | 'student' | 'teacher';
+export type LearnerRole = 'student' | 'teacher';
+export type LearnerLevel = 'beginner' | 'intermediate' | 'advanced';
+export type TeacherMode = 'guide' | 'class';
+
+export interface Learner {
+  role: LearnerRole;
+  level: LearnerLevel;
+}
+
+export interface LearnerProfile extends Learner {
+  onboarded: boolean;
+}
+
+export interface TeacherPlan {
+  objectives: string[];
+  durationMinutes: number;
+  materials: string[];
+  steps: { minutes: number; title: string; teacher: string; students: string; scene: number }[];
+  misconceptions: { misconception: string; fix: string }[];
+  activity: { title: string; instructions: string };
+  questions: string[];
+  exitTicket: string[];
+  differentiation: string;
+}
 
 export interface LessonScene {
   layout: LessonLayout;
@@ -140,6 +168,9 @@ export interface Lesson {
   imageNotice?: string | null;
   courseId?: string | null;
   moduleIndex?: number | null;
+  level?: LearnerLevel;
+  teacherMode?: TeacherMode | null;
+  teacherPlan?: TeacherPlan | null;
   /** Sharing: isOwner is true only for the signed-in owner, who also sees shareSlug */
   isOwner?: boolean;
   isPublic?: boolean;

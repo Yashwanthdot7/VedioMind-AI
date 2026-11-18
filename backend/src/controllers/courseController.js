@@ -24,7 +24,7 @@ class CourseController {
     /** POST /api/courses — same body as a lesson, plus { modules: 3-5 } */
     async create(req, res, next) {
         try {
-            const { length, ...input } = await readLessonInput(req.body || {}); // eslint-disable-line no-unused-vars
+            const { length, ...input } = await readLessonInput(req.body || {}, req.learner); // eslint-disable-line no-unused-vars
             const course = await courseJobs.create({ userId: req.user?.id, ...input, moduleCount: req.body?.modules });
             res.status(202).json({ success: true, data: publicCourse(await courseJobs.get(course.id), req) });
         } catch (error) {

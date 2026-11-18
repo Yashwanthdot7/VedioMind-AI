@@ -52,7 +52,7 @@ class LessonController {
      */
     async create(req, res, next) {
         try {
-            const input = await readLessonInput(req.body || {});
+            const input = await readLessonInput(req.body || {}, req.learner);
             const lesson = await lessonJobs.create({ userId: req.user?.id, ...input });
             res.status(202).json({ success: true, data: publicLesson(lesson, req) });
         } catch (error) {
@@ -125,6 +125,18 @@ class LessonController {
             const kind = req.body?.kind === 'test' ? 'test' : 'quick';
             const questions = await lessonJobs.ensureQuiz(lesson, kind, { refresh: req.body?.refresh === true });
             res.json({ success: true, data: { kind, questions } });
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    /** POST /api/lessons/:id/plan  { refresh? } — the teacher's printable lesson plan, made on first request */
+    async plan(req, res, next) {
+        try {
+            const lesson = await loadAccessible(req);
+            if (lesson.status !== 'done') throw new AppError('The lesson is still being created.', 409, 'NOT_READY');
+            const plan = await lessonJobs.ensurePlan(lesson, { refresh: req.body?.refresh === true });
+            res.json({ success: true, data: plan });
         } catch (error) {
             next(error);
         }
