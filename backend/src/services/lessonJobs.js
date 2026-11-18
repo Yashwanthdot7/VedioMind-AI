@@ -21,6 +21,7 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 const VOICE_FALLBACK_CODES = new Set(['TTS_QUOTA', 'TTS_UNAVAILABLE', 'TTS_EMPTY']);
 
 const jobs = new Map(); // id -> lesson (in memory while the server runs)
+const running = new Map(); // id -> promise that settles when the job finishes
 
 const dirOf = (id) => path.join(STORAGE, id);
 const isLessonId = (id) => UUID_RE.test(String(id || ''));
@@ -54,6 +55,7 @@ async function syncToDb(lesson) {
         status: lesson.status,
         progress: lesson.progress,
         script: {
+            courseId: lesson.courseId || null, moduleIndex: lesson.moduleIndex ?? null,
             title: lesson.title, voice: lesson.voice, voiceMode: lesson.voiceMode, visuals: lesson.visuals, scenes: lesson.scenes, sourceVideo: lesson.sourceVideo || null,
         },
         quiz: lesson.quiz?.length ? { kind: lesson.quizKind || 'quick', questions: lesson.quiz } : [],
@@ -86,6 +88,8 @@ function lessonFromRow(row) {
         visuals: script.visuals || 'slides',
         source: row.source === 'youtube' ? 'video' : 'text',
         sourceVideo: script.sourceVideo || null,
+        courseId: script.courseId || null,
+        moduleIndex: script.moduleIndex ?? null,
         scenes: script.scenes || [],
         quiz: Array.isArray(row.quiz) ? row.quiz : (row.quiz?.questions || []),
         quizKind: Array.isArray(row.quiz) ? (row.quiz.length ? 'quick' : null) : (row.quiz?.kind || null),
@@ -116,7 +120,8 @@ async function listForUser(userId) {
         .order('created_at', { ascending: false })
         .limit(100);
     if (error) throw error;
-    return (data || []).map((row) => ({
+    // Course modules are listed under their course, not as separate lessons
+    return (data || []).filter((row) => !row.script?.courseId).map((row) => ({
         id: row.id,
         title: row.script?.title || 'Untitled lesson',
         icon: row.script?.scenes?.[0]?.icon || '🎬',
@@ -207,16 +212,16 @@ async function illustrateScenes(lesson, onProgress) {
 }
 
 /** Runs in the background after create() has returned */
-async function runJob(lesson, material) {
+async function runJob(lesson, material, context = '') {
     try {
         lesson.status = 'scripting';
         lesson.progress = 5;
         await save(lesson);
 
         const script = await lessonService.writeScript({
-            material, audience: lesson.audience, language: lesson.language, length: lesson.length,
+            material, context, audience: lesson.audience, language: lesson.language, length: lesson.length,
         });
-        lesson.title = script.title || lesson.title;
+        if (!lesson.courseId) lesson.title = script.title || lesson.title; // modules keep the course outline title
         lesson.quiz = []; // made on demand, only if the viewer asks for it
         lesson.planning = script.planning || null;
         const wantPictures = lesson.visuals === 'pictures' && imageService.enabled();
@@ -278,11 +283,13 @@ async function ensureQuiz(lesson, kind, { refresh = false } = {}) {
  * Create a lesson job and start processing in the background.
  * @returns the lesson (status "queued")
  */
-async function create({ userId, material, inputText, source, sourceVideo, audience, language, length, voice, visuals }) {
+async function create({ userId, material, inputText, source, sourceVideo, audience, language, length, voice, visuals, courseId = null, moduleIndex = null, title = null, context = '' }) {
     const lesson = {
         id: crypto.randomUUID(),
         userId: userId || null,
-        title: sourceVideo?.title ? `Lesson: ${sourceVideo.title}`.slice(0, 100) : 'New lesson',
+        title: title || (sourceVideo?.title ? `Lesson: ${sourceVideo.title}`.slice(0, 100) : 'New lesson'),
+        courseId,
+        moduleIndex,
         status: 'queued',
         progress: 0,
         source,
@@ -305,10 +312,18 @@ async function create({ userId, material, inputText, source, sourceVideo, audien
     };
     await save(lesson);
     // Fire and forget; progress is saved as it goes
-    setImmediate(() => { runJob(lesson, material); });
+    const done = new Promise((resolve) => {
+        setImmediate(() => { runJob(lesson, material, context).then(resolve, resolve); });
+    }).finally(() => running.delete(lesson.id));
+    running.set(lesson.id, done);
     return lesson;
 }
 
+/** Resolves when the lesson's background job has finished (immediately if it isn't running) */
+function whenDone(id) {
+    return running.get(id) || Promise.resolve();
+}
+
 module.exports = {
-    create, get, listForUser, remove, audioPath, imagePath, isLessonId, ensureQuiz, STORAGE, _jobs: jobs, _runJob: runJob,
+    create, whenDone, get, listForUser, remove, audioPath, imagePath, isLessonId, ensureQuiz, STORAGE, _jobs: jobs, _runJob: runJob,
 };

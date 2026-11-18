@@ -79,7 +79,7 @@ function planMaterial(material, length) {
     return textrank.planLesson(material, { maxChars: len.budget, sceneCount: len.sceneCount });
 }
 
-function buildPrompt({ material, audience, language, length, plan = [] }) {
+function buildPrompt({ material, audience, language, length, plan = [], context = '' }) {
     const len = LENGTHS[length];
     const planText = plan.length
         ? `\nThe material was condensed to its key sentences. Suggested key ideas, in order (one or two scenes each; merge or skip if they repeat):\n${plan.map((p, i) => `${i + 1}. ${p}`).join('\n')}\n`
@@ -97,7 +97,7 @@ Structure:
 
 Write ALL text (titles, narration, slides) in ${languageName(language)}, except "imagePrompt", which is always in English. Emojis stay as emojis.
 Stay accurate to the material; do not invent facts.
-${planText}
+${context ? `\n${context}\n` : ''}${planText}
 Material:
 ${material}`;
 }
@@ -226,7 +226,7 @@ Transcript:
 ${transcript}`;
 }
 
-async function writeScript({ material, audience, language, length }) {
+async function writeScript({ material, audience, language, length, context = '' }) {
     const planning = planMaterial(material, length);
     const options = {
         generationConfig: {
@@ -239,7 +239,7 @@ async function writeScript({ material, audience, language, length }) {
     let raw;
     try {
         raw = await geminiService.withModel(options, async (model) => {
-            const result = await model.generateContent(buildPrompt({ material: planning.material, audience, language, length, plan: planning.plan }));
+            const result = await model.generateContent(buildPrompt({ material: planning.material, audience, language, length, plan: planning.plan, context }));
             return result.response.text();
         });
     } catch (error) {
