@@ -261,7 +261,7 @@ export default function LessonPlayer({ lesson }: LessonPlayerProps) {
         ref={frameRef}
         tabIndex={0}
         onKeyDown={onKeyDown}
-        className={`relative bg-black rounded-2xl overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-turmeric-500 ${fullscreen ? 'flex items-center justify-center' : ''}`}
+        className={`relative bg-black rounded-2xl overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-neon-500 ${fullscreen ? 'flex items-center justify-center' : ''}`}
       >
         <div className={`relative ${fullscreen ? 'w-full h-full flex items-center justify-center' : ''}`}>
         <canvas
@@ -276,7 +276,7 @@ export default function LessonPlayer({ lesson }: LessonPlayerProps) {
 
         {!ready && !loadError && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-ink-950/70 text-ink-300">
-            <Loader2 className="w-8 h-8 animate-spin text-turmeric-400" />
+            <Loader2 className="w-8 h-8 animate-spin text-neon-400" />
             <span className="text-sm">Loading {picturesExpected ? 'pictures and narration' : 'narration'}…</span>
           </div>
         )}
@@ -303,13 +303,13 @@ export default function LessonPlayer({ lesson }: LessonPlayerProps) {
               </button>
               <button
                 onClick={() => openQuiz('quick')}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-turmeric-400 hover:bg-turmeric-300 text-ink-950 text-sm"
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-neon-400 hover:bg-neon-500 text-white text-sm"
               >
                 <ListChecks className="w-4 h-4" /> Quick quiz (5)
               </button>
               <button
                 onClick={() => openQuiz('test')}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-turmeric-400 hover:bg-turmeric-300 text-ink-950 text-sm"
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-neon-400 hover:bg-neon-500 text-white text-sm"
               >
                 <GraduationCap className="w-4 h-4" /> Full test (10)
               </button>
@@ -335,7 +335,7 @@ export default function LessonPlayer({ lesson }: LessonPlayerProps) {
           <div className="ml-auto flex items-center gap-1">
             <button
               onClick={() => setCaptions((c) => !c)}
-              className={`p-2 rounded-lg hover:bg-white/10 ${captions ? 'text-turmeric-300' : 'text-ink-500'}`}
+              className={`p-2 rounded-lg hover:bg-white/10 ${captions ? 'text-neon-300' : 'text-ink-500'}`}
               aria-label={captions ? 'Hide captions' : 'Show captions'}
               aria-pressed={captions}
             >
@@ -364,7 +364,7 @@ export default function LessonPlayer({ lesson }: LessonPlayerProps) {
             key={i}
             onClick={() => goTo(i)}
             className={`shrink-0 w-40 p-2.5 rounded-xl border text-left transition-colors ${
-              i === sceneIndex ? 'border-turmeric-500/60 bg-turmeric-500/10' : 'border-ink-800 bg-ink-900/50 hover:border-ink-700'
+              i === sceneIndex ? 'border-neon-500/60 bg-neon-500/10' : 'border-ink-800 bg-ink-900/50 hover:border-ink-700'
             }`}
           >
             <span className="text-xl">{s.icon}</span>
@@ -383,7 +383,7 @@ export default function LessonPlayer({ lesson }: LessonPlayerProps) {
           <button
             onClick={() => openQuiz('quick', quiz?.kind === 'quick')}
             disabled={quizLoading !== null}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-turmeric-400 hover:bg-turmeric-300 disabled:opacity-50 text-ink-950 text-sm"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-neon-400 hover:bg-neon-500 disabled:opacity-50 text-white text-sm"
           >
             {quizLoading === 'quick' ? <Loader2 className="w-4 h-4 animate-spin" /> : <ListChecks className="w-4 h-4" />}
             {quiz?.kind === 'quick' && showQuiz ? 'New quick quiz' : 'Quick quiz (5)'}
@@ -391,7 +391,7 @@ export default function LessonPlayer({ lesson }: LessonPlayerProps) {
           <button
             onClick={() => openQuiz('test', quiz?.kind === 'test')}
             disabled={quizLoading !== null}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-turmeric-400 hover:bg-turmeric-300 disabled:opacity-50 text-ink-950 text-sm"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-neon-400 hover:bg-neon-500 disabled:opacity-50 text-white text-sm"
           >
             {quizLoading === 'test' ? <Loader2 className="w-4 h-4 animate-spin" /> : <GraduationCap className="w-4 h-4" />}
             {quiz?.kind === 'test' && showQuiz ? 'New full test' : 'Full test (10)'}
@@ -402,7 +402,7 @@ export default function LessonPlayer({ lesson }: LessonPlayerProps) {
           <div className="mt-5">
             {quizLoading && (
               <p className="flex items-center justify-center gap-2 py-10 text-sm text-ink-400">
-                <Loader2 className="w-5 h-5 animate-spin text-turmeric-400" /> Writing your {quizLoading === 'test' ? 'test' : 'quiz'}… (about 10 seconds)
+                <Loader2 className="w-5 h-5 animate-spin text-neon-400" /> Writing your {quizLoading === 'test' ? 'test' : 'quiz'}… (about 10 seconds)
               </p>
             )}
             {quizError && !quizLoading && <p className="text-sm text-red-400 py-4">{quizError}</p>}

@@ -158,7 +158,7 @@ export default function LessonExport({ lesson, audioBlobs, images, captions, onC
     <div className="fixed inset-0 z-[200] bg-ink-950/90 backdrop-blur-sm flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="Download video">
       <div className="w-full max-w-3xl bg-ink-900 border border-ink-800 rounded-2xl overflow-hidden shadow-2xl">
         <div className="flex items-center justify-between px-5 py-4 border-b border-ink-800">
-          <h3 className="flex items-center gap-2 text-lg font-semibold text-ink-100"><Film className="w-5 h-5 text-turmeric-400" /> Download video</h3>
+          <h3 className="flex items-center gap-2 text-lg font-semibold text-ink-100"><Film className="w-5 h-5 text-neon-400" /> Download video</h3>
           <button onClick={close} className="p-2 rounded-full hover:bg-ink-800 text-ink-400" aria-label="Close"><X className="w-5 h-5" /></button>
         </div>
 
@@ -186,7 +186,7 @@ export default function LessonExport({ lesson, audioBlobs, images, captions, onC
                       This lesson uses your browser's voice, which can't be recorded — the video will be silent with captions.
                     </p>
                   )}
-                  <button onClick={start} className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-turmeric-400 hover:bg-turmeric-300 text-ink-950 font-medium">
+                  <button onClick={start} className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-neon-400 hover:bg-neon-500 text-white font-medium">
                     <Film className="w-4 h-4" /> Start recording
                   </button>
                 </>
@@ -197,7 +197,7 @@ export default function LessonExport({ lesson, audioBlobs, images, captions, onC
           {phase === 'recording' && (
             <div className="space-y-2">
               <div className="h-2 bg-ink-800 rounded-full overflow-hidden">
-                <div className="h-full transition-all bg-turmeric-400 text-ink-950" style={{ width: `${progress}%` }} />
+                <div className="h-full transition-all bg-neon-400 text-white" style={{ width: `${progress}%` }} />
               </div>
               <p className="flex items-center gap-2 text-sm text-ink-400">
                 <Loader2 className="w-4 h-4 animate-spin" /> Recording… {mmss(elapsed)} / {mmss(total)} — keep this tab open
@@ -210,7 +210,7 @@ export default function LessonExport({ lesson, audioBlobs, images, captions, onC
               <a
                 href={result.url}
                 download={`${slugify(lesson.title)}.${result.ext}`}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-lagoon-600 hover:bg-lagoon-500 text-white font-medium"
+                className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-aqua-600 hover:bg-aqua-500 text-white font-medium"
               >
                 <Download className="w-4 h-4" /> Save {result.ext.toUpperCase()} ({(result.size / 1_048_576).toFixed(1)} MB)
               </a>

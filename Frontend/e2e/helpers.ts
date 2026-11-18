@@ -18,8 +18,16 @@ export async function offlineYouTube(page: Page) {
 
 export const API = 'http://localhost:3101/api';
 
+/** Open the full-screen menu and pick a page */
+export async function goTo(page: Page, label: string) {
+  await page.getByRole('button', { name: 'Menu', exact: true }).click();
+  const menu = page.getByRole('dialog', { name: 'Menu' });
+  await menu.getByRole('button', { name: label, exact: true }).click();
+  await expect(menu).toBeHidden();
+}
+
 export async function openLessons(page: Page) {
   await page.goto('/');
-  await page.getByRole('navigation', { name: 'Main' }).first().getByRole('button', { name: 'Video lessons' }).click();
+  await goTo(page, 'Video lessons');
   await expect(page.getByRole('heading', { name: 'Create a video lesson' })).toBeVisible();
 }

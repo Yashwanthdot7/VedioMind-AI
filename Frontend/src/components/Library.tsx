@@ -61,8 +61,8 @@ export default function Library({ onOpen }: LibraryProps) {
     <div className="max-w-7xl mx-auto">
       <div className="flex flex-wrap items-center gap-4 mb-8">
         <div className="flex items-center gap-3 mr-auto">
-          <LibraryIcon className="w-7 h-7 text-turmeric-400" />
-          <h1 className="font-semiwide text-3xl font-extrabold tracking-tight text-ink-50">Your library</h1>
+          <LibraryIcon className="w-7 h-7 text-neon-400" />
+          <h1 className="font-display text-5xl md:text-7xl text-white">Your library</h1>
           {!loading && <span className="text-sm text-ink-500">{items.length} videos</span>}
         </div>
         <button
@@ -80,7 +80,7 @@ export default function Library({ onOpen }: LibraryProps) {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search your videos…"
-            className="w-full pl-9 pr-3 py-2 bg-ink-900/50 border border-ink-700/50 rounded-lg text-sm text-ink-200 placeholder-ink-500 focus:outline-none focus:ring-2 focus:ring-turmeric-500"
+            className="w-full pl-9 pr-3 py-2 bg-ink-900/50 border border-ink-700/50 rounded-lg text-sm text-ink-200 placeholder-ink-500 focus:outline-none focus:ring-2 focus:ring-neon-500"
           />
         </div>
       </div>
@@ -90,7 +90,7 @@ export default function Library({ onOpen }: LibraryProps) {
       )}
 
       {loading ? (
-        <div className="flex justify-center py-24"><Loader2 className="w-8 h-8 text-turmeric-400 animate-spin" /></div>
+        <div className="flex justify-center py-24"><Loader2 className="w-8 h-8 text-neon-400 animate-spin" /></div>
       ) : visible.length === 0 ? (
         <div className="text-center py-24 text-ink-500">
           {items.length === 0
@@ -105,7 +105,7 @@ export default function Library({ onOpen }: LibraryProps) {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: Math.min(i * 0.03, 0.3) }}
-              className="group bg-ink-900/50 border border-ink-800/50 hover:border-turmeric-500/40 rounded-2xl overflow-hidden transition-colors"
+              className="group bg-ink-900/50 border border-ink-800/50 hover:border-neon-500/40 rounded-2xl overflow-hidden transition-colors"
             >
               <button onClick={() => onOpen(item)} className="block w-full text-left">
                 <div className="relative aspect-video bg-ink-950">

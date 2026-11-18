@@ -28,7 +28,7 @@ export default function AIInsights({ summary, keyTakeaways, onSeek, scrollable =
     <div className={`bg-ink-900/50 border border-ink-800/50 rounded-2xl overflow-hidden backdrop-blur-sm ${scrollable ? 'lg:max-h-[calc(100vh-8rem)] lg:flex lg:flex-col' : ''}`}>
       <div className="p-4 border-b border-ink-800/50 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2">
-          <Brain className="w-5 h-5 text-turmeric-400" />
+          <Brain className="w-5 h-5 text-neon-400" />
           <h2 className="text-lg font-semibold text-ink-200">AI Insights</h2>
         </div>
         <button
@@ -37,26 +37,26 @@ export default function AIInsights({ summary, keyTakeaways, onSeek, scrollable =
           title="Copy summary and takeaways"
           aria-label="Copy summary and takeaways"
         >
-          {copied ? <Check className="w-4 h-4 text-lagoon-400" /> : <Copy className="w-4 h-4" />}
+          {copied ? <Check className="w-4 h-4 text-aqua-400" /> : <Copy className="w-4 h-4" />}
         </button>
       </div>
 
       <div className={`p-6 space-y-6 ${scrollable ? 'lg:overflow-y-auto custom-scrollbar' : ''}`}>
         <div>
-          <h3 className="text-sm font-semibold text-turmeric-400 mb-3">Summary</h3>
+          <h3 className="text-sm font-semibold text-neon-400 mb-3">Summary</h3>
           <RichText text={summary} onSeek={onSeek} className="text-ink-300" />
         </div>
 
         {keyTakeaways.length > 0 && (
           <div className="pt-6 border-t border-ink-800/50">
             <div className="flex items-center gap-2 mb-4">
-              <Lightbulb className="w-5 h-5 text-amber-400" />
-              <h3 className="text-sm font-semibold text-amber-400">Key takeaways</h3>
+              <Lightbulb className="w-5 h-5 text-plasma-300" />
+              <h3 className="text-sm font-semibold text-plasma-300">Key takeaways</h3>
             </div>
             <ul className="space-y-3">
               {keyTakeaways.map((takeaway, index) => (
                 <li key={index} className="flex items-start gap-3 group">
-                  <CheckCircle2 className="w-5 h-5 text-lagoon-400 flex-shrink-0 mt-0.5" />
+                  <CheckCircle2 className="w-5 h-5 text-aqua-400 flex-shrink-0 mt-0.5" />
                   <span className="text-ink-300 leading-relaxed group-hover:text-ink-200 transition-colors">
                     {takeaway}
                   </span>

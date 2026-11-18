@@ -268,7 +268,7 @@ export default function LessonsPage({ currentVideo, preferVideo, defaultLanguage
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
             <div className="mb-4">
               <div className="flex flex-wrap items-start gap-3">
-                <h1 className="font-semiwide text-2xl md:text-3xl font-extrabold tracking-tight text-ink-50 mr-auto">{active.title}</h1>
+                <h1 className="font-display text-4xl md:text-6xl text-white mr-auto">{active.title}</h1>
                 {active.isOwner && !active.courseId && (
                   <ShareButton
                     kind="lesson" id={active.id} title={active.title}
@@ -307,8 +307,8 @@ export default function LessonsPage({ currentVideo, preferVideo, defaultLanguage
   return (
     <div className="max-w-5xl mx-auto">
       <div className="flex items-center gap-3 mb-2">
-        <Clapperboard className="w-7 h-7 text-turmeric-400" />
-        <h1 className="font-semiwide text-3xl font-extrabold tracking-tight text-ink-50">Create a video lesson</h1>
+        <Clapperboard className="w-7 h-7 text-neon-400" />
+        <h1 className="font-display text-5xl md:text-7xl text-white">Create a video lesson</h1>
       </div>
       <p className="text-ink-400 mb-8">Turn any topic, notes, PDF or Word chapter, or YouTube video into a narrated, animated lesson — in {LANGUAGES.length} languages, for kids, students or teachers. Free.</p>
 
@@ -318,20 +318,20 @@ export default function LessonsPage({ currentVideo, preferVideo, defaultLanguage
           <div className="flex flex-wrap gap-2 mb-3" role="tablist">
             <button
               role="tab" aria-selected={source === 'text'} onClick={() => setSource('text')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium ${source === 'text' ? 'bg-turmeric-400 text-ink-950' : 'bg-ink-800/60 text-ink-300 hover:bg-ink-700/60'}`}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium ${source === 'text' ? 'bg-neon-400 text-white' : 'bg-ink-800/60 text-ink-300 hover:bg-ink-700/60'}`}
             >
               <PenLine className="w-4 h-4" /> <span>Topic<span className="hidden sm:inline"> or text</span></span>
             </button>
             <button
               role="tab" aria-selected={source === 'file'} onClick={() => setSource('file')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium ${source === 'file' ? 'bg-turmeric-400 text-ink-950' : 'bg-ink-800/60 text-ink-300 hover:bg-ink-700/60'}`}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium ${source === 'file' ? 'bg-neon-400 text-white' : 'bg-ink-800/60 text-ink-300 hover:bg-ink-700/60'}`}
             >
               <FileUp className="w-4 h-4" /> <span><span className="sm:hidden">File</span><span className="hidden sm:inline">PDF or Word file</span></span>
             </button>
             <button
               role="tab" aria-selected={source === 'video'} onClick={() => setSource('video')} disabled={!currentVideo}
               title={currentVideo ? undefined : 'Summarize a YouTube video first'}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed ${source === 'video' ? 'bg-turmeric-400 text-ink-950' : 'bg-ink-800/60 text-ink-300 hover:bg-ink-700/60'}`}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed ${source === 'video' ? 'bg-neon-400 text-white' : 'bg-ink-800/60 text-ink-300 hover:bg-ink-700/60'}`}
             >
               <Youtube className="w-4 h-4" /> <span><span className="hidden sm:inline">From a </span>YouTube<span className="hidden sm:inline"> video</span></span>
             </button>
@@ -345,7 +345,7 @@ export default function LessonsPage({ currentVideo, preferVideo, defaultLanguage
                 rows={6}
                 maxLength={MAX_TEXT}
                 placeholder="Type a topic (e.g. “How do volcanoes erupt?”) or paste your notes, a textbook paragraph, or an article…"
-                className="w-full p-4 bg-ink-950/60 border border-ink-700/50 rounded-xl text-ink-200 placeholder-ink-500 focus:outline-none focus:ring-2 focus:ring-turmeric-500 resize-y"
+                className="w-full p-4 bg-ink-950/60 border border-ink-700/50 rounded-xl text-ink-200 placeholder-ink-500 focus:outline-none focus:ring-2 focus:ring-neon-500 resize-y"
                 aria-label="Topic or text for the lesson"
               />
               <div className="flex flex-wrap items-center gap-2 mt-2">
@@ -381,9 +381,9 @@ export default function LessonsPage({ currentVideo, preferVideo, defaultLanguage
             ].map((f) => (
               <button
                 key={f.value} role="radio" aria-checked={format === f.value} onClick={() => setFormat(f.value)}
-                className={`flex items-start gap-3 p-3 rounded-xl border text-left ${format === f.value ? 'border-turmeric-500/60 bg-turmeric-500/10' : 'border-ink-800 bg-ink-950/40 hover:border-ink-700'}`}
+                className={`flex items-start gap-3 p-3 rounded-xl border text-left ${format === f.value ? 'border-neon-500/60 bg-neon-500/10' : 'border-ink-800 bg-ink-950/40 hover:border-ink-700'}`}
               >
-                <f.icon className="w-5 h-5 text-turmeric-300 mt-0.5 shrink-0" />
+                <f.icon className="w-5 h-5 text-neon-300 mt-0.5 shrink-0" />
                 <span>
                   <span className="block text-sm text-ink-200 font-medium">{f.label}</span>
                   <span className="block text-[11px] text-ink-500 mt-0.5">{f.hint}</span>
@@ -396,7 +396,7 @@ export default function LessonsPage({ currentVideo, preferVideo, defaultLanguage
         {format === 'lesson' && source !== 'video' && material.length > LONG_FOR_ONE_LESSON && (
           <p className="-mt-3 text-sm text-ink-300">
             That's a lot of material for one short lesson. The most important parts will be picked out, but{' '}
-            <button type="button" onClick={() => setFormat('course')} className="text-turmeric-300 hover:text-turmeric-200 underline underline-offset-2">
+            <button type="button" onClick={() => setFormat('course')} className="text-neon-300 hover:text-neon-200 underline underline-offset-2">
               a course with modules
             </button>{' '}
             would cover more of it.
@@ -411,7 +411,7 @@ export default function LessonsPage({ currentVideo, preferVideo, defaultLanguage
               {AUDIENCES.map((a) => (
                 <button
                   key={a.value} role="radio" aria-checked={audience === a.value} onClick={() => setAudience(a.value)}
-                  className={`p-2.5 rounded-xl border text-left ${audience === a.value ? 'border-turmeric-500/60 bg-turmeric-500/10' : 'border-ink-800 bg-ink-950/40 hover:border-ink-700'}`}
+                  className={`p-2.5 rounded-xl border text-left ${audience === a.value ? 'border-neon-500/60 bg-neon-500/10' : 'border-ink-800 bg-ink-950/40 hover:border-ink-700'}`}
                 >
                   <p className="text-sm text-ink-200 font-medium">{a.label}</p>
                   <p className="text-[11px] text-ink-500 mt-0.5 leading-tight">{a.hint}</p>
@@ -422,21 +422,21 @@ export default function LessonsPage({ currentVideo, preferVideo, defaultLanguage
           <div className="grid grid-cols-2 gap-3">
             <label className="block">
               <span className="block text-xs font-semibold text-ink-400 mb-2">Language</span>
-              <select value={language} onChange={(e) => setLanguage(e.target.value)} className="w-full px-3 py-2.5 bg-ink-950/60 border border-ink-700/50 rounded-xl text-sm text-ink-200 focus:outline-none focus:ring-2 focus:ring-turmeric-500">
+              <select value={language} onChange={(e) => setLanguage(e.target.value)} className="w-full px-3 py-2.5 bg-ink-950/60 border border-ink-700/50 rounded-xl text-sm text-ink-200 focus:outline-none focus:ring-2 focus:ring-neon-500">
                 {LANGUAGES.map((l) => <option key={l.code} value={l.code} className="bg-ink-900">{l.native}</option>)}
               </select>
             </label>
             {format === 'course' ? (
               <label className="block">
                 <span className="block text-xs font-semibold text-ink-400 mb-2">Modules</span>
-                <select value={moduleCount} onChange={(e) => setModuleCount(Number(e.target.value))} className="w-full px-3 py-2.5 bg-ink-950/60 border border-ink-700/50 rounded-xl text-sm text-ink-200 focus:outline-none focus:ring-2 focus:ring-turmeric-500">
+                <select value={moduleCount} onChange={(e) => setModuleCount(Number(e.target.value))} className="w-full px-3 py-2.5 bg-ink-950/60 border border-ink-700/50 rounded-xl text-sm text-ink-200 focus:outline-none focus:ring-2 focus:ring-neon-500">
                   {[3, 4, 5].map((n) => <option key={n} value={n} className="bg-ink-900">{n} modules (~{n} min)</option>)}
                 </select>
               </label>
             ) : (
               <label className="block">
                 <span className="block text-xs font-semibold text-ink-400 mb-2">Length</span>
-                <select value={length} onChange={(e) => setLength(e.target.value as 'short' | 'standard')} className="w-full px-3 py-2.5 bg-ink-950/60 border border-ink-700/50 rounded-xl text-sm text-ink-200 focus:outline-none focus:ring-2 focus:ring-turmeric-500">
+                <select value={length} onChange={(e) => setLength(e.target.value as 'short' | 'standard')} className="w-full px-3 py-2.5 bg-ink-950/60 border border-ink-700/50 rounded-xl text-sm text-ink-200 focus:outline-none focus:ring-2 focus:ring-neon-500">
                   <option value="short" className="bg-ink-900">Short (~1 min)</option>
                   <option value="standard" className="bg-ink-900">Standard (~2–3 min)</option>
                 </select>
@@ -444,7 +444,7 @@ export default function LessonsPage({ currentVideo, preferVideo, defaultLanguage
             )}
             <label className="block col-span-2">
               <span className="block text-xs font-semibold text-ink-400 mb-2">Narrator voice</span>
-              <select value={voice} onChange={(e) => setVoice(e.target.value)} className="w-full px-3 py-2.5 bg-ink-950/60 border border-ink-700/50 rounded-xl text-sm text-ink-200 focus:outline-none focus:ring-2 focus:ring-turmeric-500">
+              <select value={voice} onChange={(e) => setVoice(e.target.value)} className="w-full px-3 py-2.5 bg-ink-950/60 border border-ink-700/50 rounded-xl text-sm text-ink-200 focus:outline-none focus:ring-2 focus:ring-neon-500">
                 <option value="" className="bg-ink-900">Automatic (best for the audience)</option>
                 {options && Object.entries(options.voices).map(([name, label]) => (
                   <option key={name} value={name} className="bg-ink-900">{name} — {label}</option>
@@ -466,9 +466,9 @@ export default function LessonsPage({ currentVideo, preferVideo, defaultLanguage
               return (
                 <button
                   key={v.value} role="radio" aria-checked={selected} disabled={disabled} onClick={() => setVisuals(v.value)}
-                  className={`flex items-start gap-3 p-3 rounded-xl border text-left disabled:opacity-40 ${selected ? 'border-turmeric-500/60 bg-turmeric-500/10' : 'border-ink-800 bg-ink-950/40 hover:border-ink-700'}`}
+                  className={`flex items-start gap-3 p-3 rounded-xl border text-left disabled:opacity-40 ${selected ? 'border-neon-500/60 bg-neon-500/10' : 'border-ink-800 bg-ink-950/40 hover:border-ink-700'}`}
                 >
-                  <v.icon className="w-5 h-5 text-turmeric-300 mt-0.5 shrink-0" />
+                  <v.icon className="w-5 h-5 text-neon-300 mt-0.5 shrink-0" />
                   <span>
                     <span className="block text-sm text-ink-200 font-medium">{v.label}</span>
                     <span className="block text-[11px] text-ink-500 mt-0.5">{disabled ? 'Not available on this server' : v.hint}</span>
@@ -485,7 +485,7 @@ export default function LessonsPage({ currentVideo, preferVideo, defaultLanguage
           <button
             onClick={submit}
             disabled={!canSubmit}
-            className="flex items-center gap-2 px-6 py-3 rounded-xl disabled:cursor-not-allowed disabled:bg-ink-800 disabled:text-ink-500 font-semibold bg-turmeric-400 text-ink-950 hover:bg-turmeric-300"
+            className="flex items-center gap-2 px-6 py-3 rounded-xl disabled:cursor-not-allowed disabled:bg-ink-800 disabled:text-ink-500 font-semibold bg-neon-400 text-white hover:bg-neon-500"
           >
             {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Wand2 className="w-5 h-5" />}
             {format === 'course' ? `Create a ${moduleCount}-module course` : 'Create video lesson'}
@@ -502,9 +502,9 @@ export default function LessonsPage({ currentVideo, preferVideo, defaultLanguage
           <h2 className="text-lg font-semibold text-ink-200 mb-4">{user ? 'Your courses' : 'Recent courses on this browser'}</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {courses.map((item) => (
-              <div key={item.id} className="group flex items-center gap-3 p-4 rounded-xl bg-ink-900/50 border border-ink-800/60 hover:border-turmeric-500/40 transition-colors">
+              <div key={item.id} className="group flex items-center gap-3 p-4 rounded-xl bg-ink-900/50 border border-ink-800/60 hover:border-neon-500/40 transition-colors">
                 <button onClick={() => openCourse(item.id)} className="flex-1 flex items-center gap-3 min-w-0 text-left">
-                  <ListTree className="w-7 h-7 text-turmeric-300 shrink-0" />
+                  <ListTree className="w-7 h-7 text-neon-300 shrink-0" />
                   <span className="min-w-0">
                     <span className="block text-sm font-medium text-ink-200 truncate">{item.title}</span>
                     <span className="block text-xs text-ink-500 mt-0.5">
@@ -527,7 +527,7 @@ export default function LessonsPage({ currentVideo, preferVideo, defaultLanguage
           <h2 className="text-lg font-semibold text-ink-200 mb-4">{user ? 'Your video lessons' : 'Recent lessons on this browser'}</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {lessons.map((item) => (
-              <div key={item.id} className="group flex items-center gap-3 p-4 rounded-xl bg-ink-900/50 border border-ink-800/60 hover:border-turmeric-500/40 transition-colors">
+              <div key={item.id} className="group flex items-center gap-3 p-4 rounded-xl bg-ink-900/50 border border-ink-800/60 hover:border-neon-500/40 transition-colors">
                 <button onClick={() => open(item.id)} className="flex-1 flex items-center gap-3 min-w-0 text-left">
                   <span className="text-3xl">{item.icon}</span>
                   <span className="min-w-0">

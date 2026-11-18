@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { API, offlineYouTube, openLessons } from './helpers';
+import { API, goTo, offlineYouTube, openLessons } from './helpers';
 
 test.beforeEach(async ({ page }) => { await offlineYouTube(page); });
 
@@ -18,8 +18,11 @@ test('summarize a video, read the insights and ask the tutor', async ({ page }) 
   await page.getByPlaceholder('Ask anything about the video...').fill('What does chlorophyll do?');
   await page.getByRole('button', { name: 'Send' }).click();
   await expect(page.getByText(/reflects green\./)).toBeVisible();
-  // The sidebar now offers the open video
-  await expect(page.getByRole('navigation', { name: 'Main' }).first()).toContainText('How Photosynthesis Works');
+  // The menu now offers the open video
+  await page.getByRole('button', { name: 'Menu', exact: true }).click();
+  await expect(page.getByRole('dialog', { name: 'Menu' }).getByRole('button', { name: 'Open video' })).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog', { name: 'Menu' })).toBeHidden();
 });
 
 test('make a video lesson from a topic, play it, and take the quick quiz', async ({ page }) => {
@@ -109,7 +112,7 @@ test('review mistakes: retry them as a quiz, then flip cards', async ({ page }) 
     }
   }, attempt);
   await page.goto('/');
-  await page.getByRole('navigation', { name: 'Main' }).first().getByRole('button', { name: 'Progress' }).click();
+  await goTo(page, 'Progress');
   await expect(page.getByRole('heading', { name: 'Review your mistakes' })).toBeVisible();
 
   await page.getByRole('button', { name: /Retry 2 questions/ }).click();

@@ -53,7 +53,7 @@ export default function FlashcardsView({ deck, videoTitle, onSeek }: FlashcardsV
   return (
     <div className="space-y-4 max-w-xl mx-auto" onKeyDown={onKeyDown}>
       <div className="flex items-center justify-between gap-2 text-xs text-ink-500">
-        <span>Card {position + 1} of {total} · <span className="text-lagoon-400">{known.size} known</span></span>
+        <span>Card {position + 1} of {total} · <span className="text-aqua-400">{known.size} known</span></span>
         <div className="flex gap-1">
           <button onClick={() => { setOrder(shuffled(total)); setPosition(0); setFlipped(false); }} className="p-2 rounded-lg hover:bg-ink-800 text-ink-400" title="Shuffle" aria-label="Shuffle cards">
             <Shuffle className="w-4 h-4" />
@@ -72,24 +72,24 @@ export default function FlashcardsView({ deck, videoTitle, onSeek }: FlashcardsV
           type="button"
           onClick={() => setFlipped((f) => !f)}
           aria-label={flipped ? 'Show question' : 'Show answer'}
-          className="relative w-full h-56 focus:outline-none focus-visible:ring-2 focus-visible:ring-turmeric-500 rounded-2xl"
+          className="relative w-full h-56 focus:outline-none focus-visible:ring-2 focus-visible:ring-neon-500 rounded-2xl"
           style={{ transformStyle: 'preserve-3d', transition: 'transform 0.5s', transform: flipped ? 'rotateY(180deg)' : 'none' }}
         >
           <div
-            className="absolute inset-0 flex flex-col items-center justify-center p-6 rounded-2xl border border-turmeric-500/30 bg-turmeric-400 text-ink-950"
+            className="absolute inset-0 flex flex-col items-center justify-center p-6 rounded-2xl border border-neon-500/30 bg-neon-400 text-white"
             style={{ backfaceVisibility: 'hidden' }}
           >
-            <span className="absolute top-3 left-4 text-[10px] text-turmeric-300/70">Question</span>
+            <span className="absolute top-3 left-4 text-[10px] text-neon-300/70">Question</span>
             <p className="text-lg font-medium text-ink-100 text-center leading-snug">{card.front}</p>
             <span className="absolute bottom-3 text-[11px] text-ink-500">Tap to flip</span>
           </div>
           <div
-            className="absolute inset-0 flex flex-col items-center justify-center p-6 rounded-2xl border border-lagoon-500/30 bg-lagoon-500/10"
+            className="absolute inset-0 flex flex-col items-center justify-center p-6 rounded-2xl border border-aqua-500/30 bg-aqua-500/10"
             style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
           >
-            <span className="absolute top-3 left-4 text-[10px] text-lagoon-300/70">Answer</span>
+            <span className="absolute top-3 left-4 text-[10px] text-aqua-300/70">Answer</span>
             <p className="text-base text-ink-100 text-center leading-relaxed">{card.back}</p>
-            {known.has(order[position]) && <Check className="absolute top-3 right-4 w-4 h-4 text-lagoon-400" />}
+            {known.has(order[position]) && <Check className="absolute top-3 right-4 w-4 h-4 text-aqua-400" />}
           </div>
         </button>
       </div>
@@ -102,7 +102,7 @@ export default function FlashcardsView({ deck, videoTitle, onSeek }: FlashcardsV
           <TimestampChip timestamp={card.timestamp} onSeek={onSeek} label="Watch" />
         </div>
         {flipped && (
-          <button onClick={markKnown} className="px-3 py-2 text-sm rounded-xl bg-lagoon-600/80 hover:bg-lagoon-500 text-white">
+          <button onClick={markKnown} className="px-3 py-2 text-sm rounded-xl bg-aqua-600/80 hover:bg-aqua-500 text-white">
             I knew it
           </button>
         )}

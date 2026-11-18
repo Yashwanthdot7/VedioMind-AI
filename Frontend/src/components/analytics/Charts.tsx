@@ -10,13 +10,13 @@ import { DifficultyStat } from '../../lib/analytics';
  */
 
 const VIZ = {
-  surface: '#1F1C3B', // ink-900, the panel colour
-  series: '#30A893', // lagoon-500, validated: dark band, chroma, >= 3:1 on the surface
-  grid: 'rgba(169,163,194,0.14)',
-  axis: 'rgba(169,163,194,0.35)',
-  textPrimary: '#EEEAF6',
-  textSecondary: '#A9A3C2',
-  textMuted: '#8C86AE',
+  surface: '#150D2A', // ink-900, the panel colour
+  series: '#1E9FB8', // aqua-500, validated: dark band, chroma, >= 3:1 on the surface
+  grid: 'rgba(169,156,203,0.14)',
+  axis: 'rgba(169,156,203,0.35)',
+  textPrimary: '#F1ECFF',
+  textSecondary: '#A99CCB',
+  textMuted: '#8D80B3',
 };
 
 function useWidth<T extends HTMLElement>() {

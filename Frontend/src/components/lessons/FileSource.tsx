@@ -75,17 +75,17 @@ export default function FileSource({ file, onChange, maxChars }: FileSourceProps
           onDragLeave={() => setDragging(false)}
           onDrop={onDrop}
           className={`flex flex-col items-center justify-center gap-3 p-8 rounded-xl border-2 border-dashed text-center transition-colors ${
-            dragging ? 'border-turmeric-400 bg-turmeric-500/5' : 'border-ink-700'
+            dragging ? 'border-neon-400 bg-neon-500/5' : 'border-ink-700'
           }`}
         >
-          {busy ? <Loader2 className="w-8 h-8 text-turmeric-400 animate-spin" /> : <FileUp className="w-8 h-8 text-ink-500" />}
+          {busy ? <Loader2 className="w-8 h-8 text-neon-400 animate-spin" /> : <FileUp className="w-8 h-8 text-ink-500" />}
           <p className="text-ink-200">{busy ? 'Reading the file…' : 'Drop a PDF, Word or text file here'}</p>
           <p className="text-xs text-ink-500">A textbook chapter, class notes or an article. The text is read on your device, so the file is never uploaded.</p>
           <button
             type="button"
             onClick={() => input.current?.click()}
             disabled={busy}
-            className="px-4 py-2 rounded-lg border border-ink-600 text-sm text-ink-100 hover:border-turmeric-400/60 disabled:opacity-50"
+            className="px-4 py-2 rounded-lg border border-ink-600 text-sm text-ink-100 hover:border-neon-400/60 disabled:opacity-50"
           >
             Choose a file
           </button>
@@ -94,7 +94,7 @@ export default function FileSource({ file, onChange, maxChars }: FileSourceProps
       ) : (
         <div className="p-4 rounded-xl bg-ink-950/60 border border-ink-700/50 space-y-3">
           <div className="flex items-start gap-3">
-            <FileText className="w-6 h-6 text-turmeric-300 shrink-0 mt-0.5" />
+            <FileText className="w-6 h-6 text-neon-300 shrink-0 mt-0.5" />
             <div className="min-w-0 flex-1">
               <p className="text-sm font-medium text-ink-100 truncate">{file.name}</p>
               <p className="text-xs text-ink-500 mt-0.5">
@@ -124,7 +124,7 @@ export default function FileSource({ file, onChange, maxChars }: FileSourceProps
                   onChange={(e) => setRange([range[0], Number(e.target.value)])}
                   className="w-24 px-2.5 py-1.5 rounded-lg bg-ink-950 border border-ink-700 text-ink-100" />
               </label>
-              <button type="submit" disabled={busy} className="px-3 py-1.5 rounded-lg border border-ink-600 text-ink-100 hover:border-turmeric-400/60 disabled:opacity-50">
+              <button type="submit" disabled={busy} className="px-3 py-1.5 rounded-lg border border-ink-600 text-ink-100 hover:border-neon-400/60 disabled:opacity-50">
                 {busy ? 'Reading…' : 'Use these pages'}
               </button>
             </form>

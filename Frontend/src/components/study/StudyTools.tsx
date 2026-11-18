@@ -86,7 +86,7 @@ export default function StudyTools({ video, onSeek }: StudyToolsProps) {
     <div className="bg-ink-900/50 border border-ink-800/50 rounded-2xl overflow-hidden backdrop-blur-sm">
       <div className="p-4 border-b border-ink-800/50 flex flex-wrap items-center gap-3">
         <div className="flex items-center gap-2 mr-auto">
-          <GraduationCap className="w-5 h-5 text-turmeric-400" />
+          <GraduationCap className="w-5 h-5 text-neon-400" />
           <h2 className="text-lg font-semibold text-ink-200">Study tools</h2>
         </div>
         <div className="flex rounded-lg bg-ink-950/60 border border-ink-800 p-0.5" role="radiogroup" aria-label="Level">
@@ -97,7 +97,7 @@ export default function StudyTools({ video, onSeek }: StudyToolsProps) {
               aria-checked={level === l.value}
               onClick={() => changeLevel(l.value)}
               className={`px-2.5 py-1 text-xs rounded-md transition-colors ${
-                level === l.value ? 'bg-turmeric-400 text-ink-950' : 'text-ink-400 hover:text-ink-200'
+                level === l.value ? 'bg-neon-400 text-white' : 'text-ink-400 hover:text-ink-200'
               }`}
             >
               {l.label}
@@ -114,7 +114,7 @@ export default function StudyTools({ video, onSeek }: StudyToolsProps) {
             aria-selected={active === type}
             onClick={() => open(type)}
             className={`flex flex-col items-center gap-1 py-2 sm:px-8 rounded-lg text-xs font-medium transition-colors ${
-              active === type ? 'bg-turmeric-500/15 text-turmeric-200' : 'text-ink-400 hover:bg-ink-800/50 hover:text-ink-200'
+              active === type ? 'bg-neon-500/15 text-neon-200' : 'text-ink-400 hover:bg-ink-800/50 hover:text-ink-200'
             }`}
           >
             <Icon className="w-5 h-5" />
@@ -130,9 +130,9 @@ export default function StudyTools({ video, onSeek }: StudyToolsProps) {
               <button
                 key={type}
                 onClick={() => open(type)}
-                className="p-4 text-left rounded-xl bg-ink-950/40 border border-ink-800/60 hover:border-turmeric-500/40 hover:bg-turmeric-500/5 transition-colors"
+                className="p-4 text-left rounded-xl bg-ink-950/40 border border-ink-800/60 hover:border-neon-500/40 hover:bg-neon-500/5 transition-colors"
               >
-                <Icon className="w-5 h-5 text-turmeric-400 mb-2" />
+                <Icon className="w-5 h-5 text-neon-400 mb-2" />
                 <p className="text-sm font-semibold text-ink-200">{label}</p>
                 <p className="text-xs text-ink-500 mt-0.5">{blurb}</p>
               </button>
@@ -142,7 +142,7 @@ export default function StudyTools({ video, onSeek }: StudyToolsProps) {
 
         {active && entry?.status === 'loading' && (
           <div className="flex flex-col items-center justify-center py-12 gap-3 text-ink-400">
-            <Loader2 className="w-8 h-8 text-turmeric-400 animate-spin" />
+            <Loader2 className="w-8 h-8 text-neon-400 animate-spin" />
             <p className="text-sm">{tool?.wait}…</p>
             <p className="text-xs text-ink-600">Usually takes 10–30 seconds</p>
           </div>

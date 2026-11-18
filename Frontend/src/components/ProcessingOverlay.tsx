@@ -26,7 +26,7 @@ export default function ProcessingOverlay({ isVisible, steps, progress }: Proces
             className="bg-ink-900 border border-ink-800 rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl"
           >
             <div className="text-center mb-8">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-4 bg-turmeric-400 text-ink-950">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-4 bg-neon-400 text-white">
                 <Loader2 className="w-8 h-8 text-white animate-spin" />
               </div>
               <h2 className="text-2xl font-bold text-ink-200 mb-2">Reading the video</h2>
@@ -41,11 +41,11 @@ export default function ProcessingOverlay({ isVisible, steps, progress }: Proces
                   initial={{ width: 0 }}
                   animate={{ width: `${progress}%` }}
                   transition={{ duration: 0.5, ease: 'easeOut' }}
-                  className="h-full rounded-full bg-turmeric-400 text-ink-950"
+                  className="h-full rounded-full bg-neon-400 text-white"
                 />
               </div>
               <div className="text-right mt-2">
-                <span className="text-sm font-medium text-turmeric-400">{progress}%</span>
+                <span className="text-sm font-medium text-neon-400">{progress}%</span>
               </div>
             </div>
 
@@ -58,18 +58,18 @@ export default function ProcessingOverlay({ isVisible, steps, progress }: Proces
                   transition={{ delay: index * 0.1 }}
                   className={`flex items-center gap-3 p-3 rounded-lg transition-all ${
                     step.completed
-                      ? 'bg-lagoon-500/10 border border-lagoon-500/20'
+                      ? 'bg-aqua-500/10 border border-aqua-500/20'
                       : 'bg-ink-800/30 border border-ink-700/30'
                   }`}
                 >
                   {step.completed ? (
-                    <CheckCircle2 className="w-5 h-5 text-lagoon-400 flex-shrink-0" />
+                    <CheckCircle2 className="w-5 h-5 text-aqua-400 flex-shrink-0" />
                   ) : (
                     <div className="w-5 h-5 rounded-full border-2 border-ink-600 flex-shrink-0" />
                   )}
                   <span
                     className={`text-sm font-medium ${
-                      step.completed ? 'text-lagoon-400' : 'text-ink-400'
+                      step.completed ? 'text-aqua-400' : 'text-ink-400'
                     }`}
                   >
                     {step.label}

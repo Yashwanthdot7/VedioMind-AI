@@ -19,7 +19,7 @@ function StatTile({ icon: Icon, label, value, sub }: { icon: typeof Trophy; labe
   return (
     <div className="p-4 rounded-2xl bg-ink-900/50 border border-ink-800/60">
       <div className="flex items-center gap-2 text-xs text-ink-400">
-        <Icon className="w-4 h-4 text-turmeric-300" /> {label}
+        <Icon className="w-4 h-4 text-neon-300" /> {label}
       </div>
       <p className="mt-2 text-3xl font-bold text-ink-100 tabular-nums">{value}</p>
       {sub && <p className="text-xs text-ink-500 mt-1">{sub}</p>}
@@ -49,7 +49,7 @@ function Segmented<T extends string>({ value, options, onChange, label }: {
           role="radio"
           aria-checked={value === o.value}
           onClick={() => onChange(o.value)}
-          className={`px-3 py-1.5 text-xs rounded-md transition-colors ${value === o.value ? 'bg-turmeric-400 text-ink-950' : 'text-ink-400 hover:text-ink-200'}`}
+          className={`px-3 py-1.5 text-xs rounded-md transition-colors ${value === o.value ? 'bg-neon-400 text-white' : 'text-ink-400 hover:text-ink-200'}`}
         >
           {o.label}
         </button>
@@ -119,14 +119,14 @@ export default function AnalyticsPage() {
   };
 
   if (loading) {
-    return <div className="flex justify-center py-24"><Loader2 className="w-8 h-8 text-turmeric-400 animate-spin" /></div>;
+    return <div className="flex justify-center py-24"><Loader2 className="w-8 h-8 text-neon-400 animate-spin" /></div>;
   }
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       <div className="flex flex-wrap items-center gap-3">
-        <BarChart3 className="w-7 h-7 text-turmeric-400" />
-        <h1 className="font-semiwide text-3xl font-extrabold tracking-tight text-ink-50 mr-auto">Your progress</h1>
+        <BarChart3 className="w-7 h-7 text-neon-400" />
+        <h1 className="font-display text-5xl md:text-7xl text-white mr-auto">Your progress</h1>
         {attempts.length > 0 && (
           <>
             <Segmented label="Time range" value={range} onChange={setRange} options={[
@@ -146,10 +146,10 @@ export default function AnalyticsPage() {
         </p>
       )}
       {localCount > 0 && (
-        <div className="flex flex-wrap items-center gap-3 p-3 rounded-xl bg-turmeric-500/10 border border-turmeric-500/30 text-sm text-turmeric-100">
+        <div className="flex flex-wrap items-center gap-3 p-3 rounded-xl bg-neon-500/10 border border-neon-500/30 text-sm text-neon-100">
           <Upload className="w-4 h-4" />
           {localCount} quiz{localCount === 1 ? '' : 'zes'} from before you signed in {localCount === 1 ? 'is' : 'are'} saved on this browser.
-          <button onClick={importLocal} disabled={importing} className="ml-auto px-3 py-1.5 rounded-lg bg-turmeric-400 hover:bg-turmeric-300 text-ink-950 text-xs disabled:opacity-50">
+          <button onClick={importLocal} disabled={importing} className="ml-auto px-3 py-1.5 rounded-lg bg-neon-400 hover:bg-neon-500 text-white text-xs disabled:opacity-50">
             {importing ? 'Importing…' : 'Add to my account'}
           </button>
         </div>
@@ -166,7 +166,7 @@ export default function AnalyticsPage() {
             Take a quiz from a video’s study tools, or a Quick quiz / Full test after a video lesson. Your scores, grades and progress will appear here.
           </p>
           <div className="flex justify-center gap-3 mt-5">
-            <button onClick={() => navigate('lessons')} className="px-4 py-2 rounded-lg bg-turmeric-400 hover:bg-turmeric-300 text-ink-950 text-sm">Create a video lesson</button>
+            <button onClick={() => navigate('lessons')} className="px-4 py-2 rounded-lg bg-neon-400 hover:bg-neon-500 text-white text-sm">Create a video lesson</button>
             <button onClick={() => navigate('home')} className="px-4 py-2 rounded-lg bg-ink-800 hover:bg-ink-700 text-ink-200 text-sm">Summarize a video</button>
           </div>
         </div>

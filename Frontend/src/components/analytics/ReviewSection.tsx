@@ -46,12 +46,12 @@ function Cards({ cards, schedule, onGrade, onDone }: {
   if (!card) {
     return (
       <div className="py-12 text-center space-y-3">
-        <PartyPopper className="w-9 h-9 mx-auto text-turmeric-400" />
+        <PartyPopper className="w-9 h-9 mx-auto text-neon-400" />
         <p className="text-lg font-semibold text-ink-100">Review done</p>
         <p className="text-sm text-ink-400">
           You knew {knewCount} of {queue.length}. Cards you knew come back in a few days; the ones you missed come back today.
         </p>
-        <button onClick={onDone} className="px-4 py-2 rounded-lg border border-ink-600 text-ink-100 hover:border-turmeric-400/60">Back to progress</button>
+        <button onClick={onDone} className="px-4 py-2 rounded-lg border border-ink-600 text-ink-100 hover:border-neon-400/60">Back to progress</button>
       </div>
     );
   }
@@ -65,7 +65,7 @@ function Cards({ cards, schedule, onGrade, onDone }: {
         <p className="mt-3 text-lg text-ink-50 leading-relaxed">{card.question}</p>
         {flipped ? (
           <div className="mt-5 pt-5 border-t border-ink-800 space-y-2">
-            <p className="text-lagoon-300 font-medium">{card.options?.[card.answer]}</p>
+            <p className="text-aqua-300 font-medium">{card.options?.[card.answer]}</p>
             {card.explanation && <p className="text-sm text-ink-300 leading-relaxed">{card.explanation}</p>}
           </div>
         ) : (
@@ -79,7 +79,7 @@ function Cards({ cards, schedule, onGrade, onDone }: {
           <button onClick={() => grade(false)} className="flex items-center justify-center gap-2 py-3 rounded-xl border border-red-500/40 text-red-300 hover:bg-red-500/10">
             <X className="w-4 h-4" /> Didn't know <span className="text-xs text-ink-500">(1)</span>
           </button>
-          <button onClick={() => grade(true)} className="flex items-center justify-center gap-2 py-3 rounded-xl border border-lagoon-500/50 text-lagoon-300 hover:bg-lagoon-500/10">
+          <button onClick={() => grade(true)} className="flex items-center justify-center gap-2 py-3 rounded-xl border border-aqua-500/50 text-aqua-300 hover:bg-aqua-500/10">
             <Check className="w-4 h-4" /> Knew it <span className="text-xs text-ink-500">(2)</span>
           </button>
         </div>
@@ -119,7 +119,7 @@ export default function ReviewSection({ attempts, scope, onAttemptSaved }: Revie
   };
 
   return (
-    <section className="p-5 rounded-2xl bg-ink-900/50 border border-turmeric-500/25" aria-labelledby="review-title">
+    <section className="p-5 rounded-2xl bg-ink-900/50 border border-neon-500/25" aria-labelledby="review-title">
       {mode !== 'summary' && (
         <button onClick={() => setMode('summary')} className="flex items-center gap-1.5 text-sm text-ink-400 hover:text-ink-200 mb-4">
           <ArrowLeft className="w-4 h-4" /> Back
@@ -144,14 +144,14 @@ export default function ReviewSection({ attempts, scope, onAttemptSaved }: Revie
           <button
             onClick={() => start('retry')}
             disabled={stats.retryable === 0}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-turmeric-400 hover:bg-turmeric-300 text-ink-950 font-semibold disabled:bg-ink-800 disabled:text-ink-500"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-neon-400 hover:bg-neon-500 text-white font-semibold disabled:bg-ink-800 disabled:text-ink-500"
           >
             <RotateCcw className="w-4 h-4" /> Retry {Math.min(stats.retryable, 10)} question{Math.min(stats.retryable, 10) === 1 ? '' : 's'}
           </button>
           <button
             onClick={() => start('cards')}
             disabled={stats.due === 0}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-ink-600 text-ink-100 hover:border-turmeric-400/60 disabled:opacity-40"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-ink-600 text-ink-100 hover:border-neon-400/60 disabled:opacity-40"
           >
             <Layers className="w-4 h-4" /> Review cards{stats.due ? ` (${stats.due})` : ''}
           </button>

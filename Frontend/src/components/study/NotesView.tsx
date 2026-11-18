@@ -51,10 +51,10 @@ export default function NotesView({ notes, videoTitle, videoId, onSeek }: NotesV
   return (
     <div className="space-y-5">
       <div className="flex items-start gap-3">
-        <BookOpen className="w-5 h-5 text-turmeric-400 mt-0.5 shrink-0" />
+        <BookOpen className="w-5 h-5 text-neon-400 mt-0.5 shrink-0" />
         <h3 className="flex-1 text-base font-semibold text-ink-100 leading-snug">{notes.title || videoTitle}</h3>
         <button onClick={copy} className="p-2 rounded-lg bg-ink-800/50 hover:bg-ink-700/50 text-ink-400 hover:text-ink-200" title="Copy notes as Markdown" aria-label="Copy notes">
-          {copied ? <Check className="w-4 h-4 text-lagoon-400" /> : <Copy className="w-4 h-4" />}
+          {copied ? <Check className="w-4 h-4 text-aqua-400" /> : <Copy className="w-4 h-4" />}
         </button>
         <button
           onClick={() => downloadText(`${slugify(videoTitle)}-notes.md`, markdown(), 'text/markdown')}
@@ -72,7 +72,7 @@ export default function NotesView({ notes, videoTitle, videoId, onSeek }: NotesV
         {notes.sections.map((section, i) => (
           <section key={i} className="p-4 rounded-xl bg-ink-950/40 border border-ink-800/60">
             <div className="flex items-center justify-between gap-3 mb-2">
-              <h4 className="text-sm font-semibold text-turmeric-300">
+              <h4 className="text-sm font-semibold text-neon-300">
                 <span className="text-ink-500 mr-1.5">{i + 1}.</span>{section.heading}
               </h4>
               <TimestampChip timestamp={section.timestamp} onSeek={onSeek} />

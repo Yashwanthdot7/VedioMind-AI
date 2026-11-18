@@ -15,7 +15,7 @@ export default function TimestampChip({ timestamp, onSeek, label }: TimestampChi
     <button
       type="button"
       onClick={(e) => { e.stopPropagation(); onSeek(seconds); }}
-      className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-turmeric-500/15 border border-turmeric-500/30 text-turmeric-300 font-mono text-xs hover:bg-turmeric-500/30 transition-colors shrink-0"
+      className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-neon-500/15 border border-neon-500/30 text-neon-300 font-mono text-xs hover:bg-neon-500/30 transition-colors shrink-0"
       title={`Watch at ${timestamp}`}
     >
       <PlayCircle className="w-3 h-3" />
