@@ -155,18 +155,18 @@ export default function LessonExport({ lesson, audioBlobs, images, captions, onC
   const mmss = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 
   return createPortal(
-    <div className="fixed inset-0 z-[200] bg-slate-950/90 backdrop-blur-sm flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="Download video">
-      <div className="w-full max-w-3xl bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800">
-          <h3 className="flex items-center gap-2 text-lg font-semibold text-slate-100"><Film className="w-5 h-5 text-indigo-400" /> Download video</h3>
-          <button onClick={close} className="p-2 rounded-full hover:bg-slate-800 text-slate-400" aria-label="Close"><X className="w-5 h-5" /></button>
+    <div className="fixed inset-0 z-[200] bg-ink-950/90 backdrop-blur-sm flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="Download video">
+      <div className="w-full max-w-3xl bg-ink-900 border border-ink-800 rounded-2xl overflow-hidden shadow-2xl">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-ink-800">
+          <h3 className="flex items-center gap-2 text-lg font-semibold text-ink-100"><Film className="w-5 h-5 text-turmeric-400" /> Download video</h3>
+          <button onClick={close} className="p-2 rounded-full hover:bg-ink-800 text-ink-400" aria-label="Close"><X className="w-5 h-5" /></button>
         </div>
 
         <div className="p-5 space-y-4">
           <canvas ref={canvasRef} width={WIDTH} height={HEIGHT} className={`w-full rounded-xl bg-black ${phase === 'intro' ? 'hidden' : ''}`} />
 
           {phase === 'intro' && (
-            <div className="space-y-3 text-sm text-slate-300">
+            <div className="space-y-3 text-sm text-ink-300">
               {!format ? (
                 <p className="flex items-start gap-2 text-amber-300"><AlertTriangle className="w-4 h-4 mt-0.5" /> This browser can't record video. Please use Chrome or Edge.</p>
               ) : (
@@ -175,8 +175,8 @@ export default function LessonExport({ lesson, audioBlobs, images, captions, onC
                     The video is recorded in your browser while it plays, so this takes about <strong className="text-white">{mmss(total)}</strong>.
                     Keep this tab open until it finishes.
                   </p>
-                  <p className="text-slate-500">
-                    Format: <span className="text-slate-300 uppercase">{format.ext}</span>
+                  <p className="text-ink-500">
+                    Format: <span className="text-ink-300">{format.ext}</span>
                     {format.ext === 'webm' && ' (your browser can’t record MP4; WebM plays in Chrome, VLC and on YouTube)'}
                     {captions ? ' · captions included' : ' · no captions'}
                   </p>
@@ -186,7 +186,7 @@ export default function LessonExport({ lesson, audioBlobs, images, captions, onC
                       This lesson uses your browser's voice, which can't be recorded — the video will be silent with captions.
                     </p>
                   )}
-                  <button onClick={start} className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-medium">
+                  <button onClick={start} className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-turmeric-400 hover:bg-turmeric-300 text-ink-950 font-medium">
                     <Film className="w-4 h-4" /> Start recording
                   </button>
                 </>
@@ -196,10 +196,10 @@ export default function LessonExport({ lesson, audioBlobs, images, captions, onC
 
           {phase === 'recording' && (
             <div className="space-y-2">
-              <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
-                <div className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all" style={{ width: `${progress}%` }} />
+              <div className="h-2 bg-ink-800 rounded-full overflow-hidden">
+                <div className="h-full transition-all bg-turmeric-400 text-ink-950" style={{ width: `${progress}%` }} />
               </div>
-              <p className="flex items-center gap-2 text-sm text-slate-400">
+              <p className="flex items-center gap-2 text-sm text-ink-400">
                 <Loader2 className="w-4 h-4 animate-spin" /> Recording… {mmss(elapsed)} / {mmss(total)} — keep this tab open
               </p>
             </div>
@@ -210,11 +210,11 @@ export default function LessonExport({ lesson, audioBlobs, images, captions, onC
               <a
                 href={result.url}
                 download={`${slugify(lesson.title)}.${result.ext}`}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-medium"
+                className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-lagoon-600 hover:bg-lagoon-500 text-white font-medium"
               >
                 <Download className="w-4 h-4" /> Save {result.ext.toUpperCase()} ({(result.size / 1_048_576).toFixed(1)} MB)
               </a>
-              <span className="text-sm text-slate-500">Ready! Share it, upload it, or play it offline.</span>
+              <span className="text-sm text-ink-500">Ready! Share it, upload it, or play it offline.</span>
             </div>
           )}
 

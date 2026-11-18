@@ -80,7 +80,7 @@ export default function QuizView({ quiz, videoTitle, onSeek, onComplete, onOpenA
   const downloadButton = (
     <button
       onClick={() => downloadText(`${slugify(videoTitle)}-quiz.md`, toMarkdown(quiz, videoTitle), 'text/markdown')}
-      className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg bg-slate-800/50 hover:bg-slate-700/50 text-slate-400 hover:text-slate-200"
+      className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg bg-ink-800/50 hover:bg-ink-700/50 text-ink-400 hover:text-ink-200"
       title="Download quiz with answer key (.md) — handy for teachers"
     >
       <Download className="w-3.5 h-3.5" /> Printable quiz
@@ -92,27 +92,27 @@ export default function QuizView({ quiz, videoTitle, onSeek, onComplete, onOpenA
     const message = pct === 100 ? 'Perfect score! 🎉' : pct >= 70 ? 'Great job!' : pct >= 40 ? 'Good effort — review the ones you missed.' : 'Keep going — rewatch the parts below and try again.';
     return (
       <div className="space-y-5 max-w-2xl mx-auto">
-        <div className="text-center p-6 rounded-2xl bg-gradient-to-br from-indigo-500/10 to-purple-500/10 border border-indigo-500/20">
+        <div className="text-center p-6 rounded-2xl border border-turmeric-500/20 bg-turmeric-400 text-ink-950">
           <Trophy className="w-10 h-10 mx-auto text-amber-400 mb-2" />
           <div className="flex items-center justify-center gap-3">
-            <p className="text-3xl font-bold text-slate-100">{score} / {total}</p>
+            <p className="text-3xl font-bold text-ink-100">{score} / {total}</p>
             <span className={`px-2.5 py-1 rounded-lg border text-sm font-bold ${gradeClass(gradeFor(pct))}`} aria-label={`Grade ${gradeFor(pct)}`}>
               {gradeFor(pct)}
             </span>
           </div>
-          <p className="text-sm text-slate-400 mt-1">{pct}% · {message}</p>
+          <p className="text-sm text-ink-400 mt-1">{pct}% · {message}</p>
           {savedTo && (
-            <p className="text-xs text-slate-500 mt-2">
+            <p className="text-xs text-ink-500 mt-2">
               Saved to your analytics{savedTo === 'browser' ? ' on this browser' : ''}.
               {onOpenAnalytics && (
-                <button onClick={onOpenAnalytics} className="ml-1 inline-flex items-center gap-1 text-indigo-300 hover:underline">
+                <button onClick={onOpenAnalytics} className="ml-1 inline-flex items-center gap-1 text-turmeric-300 hover:underline">
                   <BarChart3 className="w-3 h-3" /> View progress
                 </button>
               )}
             </p>
           )}
           <div className="flex justify-center gap-2 mt-4">
-            <button onClick={restart} className="flex items-center gap-1.5 px-4 py-2 text-sm rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white">
+            <button onClick={restart} className="flex items-center gap-1.5 px-4 py-2 text-sm rounded-lg bg-turmeric-400 hover:bg-turmeric-300 text-ink-950">
               <RotateCcw className="w-4 h-4" /> Try again
             </button>
             {downloadButton}
@@ -122,11 +122,11 @@ export default function QuizView({ quiz, videoTitle, onSeek, onComplete, onOpenA
           {quiz.questions.map((q, i) => {
             const correct = answers[i] === q.answerIndex;
             return (
-              <li key={i} className="flex items-start gap-2 p-3 rounded-lg bg-slate-950/40 border border-slate-800/60 text-sm">
-                {correct ? <CheckCircle2 className="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" /> : <XCircle className="w-4 h-4 text-red-400 mt-0.5 shrink-0" />}
+              <li key={i} className="flex items-start gap-2 p-3 rounded-lg bg-ink-950/40 border border-ink-800/60 text-sm">
+                {correct ? <CheckCircle2 className="w-4 h-4 text-lagoon-400 mt-0.5 shrink-0" /> : <XCircle className="w-4 h-4 text-red-400 mt-0.5 shrink-0" />}
                 <div className="flex-1 min-w-0">
-                  <p className="text-slate-200">{q.question}</p>
-                  {!correct && <p className="text-xs text-emerald-300/80 mt-1">Answer: {q.options[q.answerIndex]}</p>}
+                  <p className="text-ink-200">{q.question}</p>
+                  {!correct && <p className="text-xs text-lagoon-300/80 mt-1">Answer: {q.options[q.answerIndex]}</p>}
                 </div>
                 <TimestampChip timestamp={q.timestamp} onSeek={onSeek} />
               </li>
@@ -140,11 +140,11 @@ export default function QuizView({ quiz, videoTitle, onSeek, onComplete, onOpenA
   return (
     <div className="space-y-4 max-w-2xl mx-auto">
       <div className="flex items-center justify-between gap-3">
-        <span className="text-xs text-slate-500">Question {index + 1} of {total}</span>
+        <span className="text-xs text-ink-500">Question {index + 1} of {total}</span>
         {downloadButton}
       </div>
-      <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
-        <div className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all" style={{ width: `${(index / total) * 100}%` }} />
+      <div className="h-1.5 bg-ink-800 rounded-full overflow-hidden">
+        <div className="h-full transition-all bg-turmeric-400 text-ink-950" style={{ width: `${(index / total) * 100}%` }} />
       </div>
 
       <AnimatePresence mode="wait">
@@ -156,16 +156,16 @@ export default function QuizView({ quiz, videoTitle, onSeek, onComplete, onOpenA
           transition={{ duration: 0.2 }}
           className="space-y-3"
         >
-          <p className="text-base font-medium text-slate-100 leading-snug">{current.question}</p>
+          <p className="text-base font-medium text-ink-100 leading-snug">{current.question}</p>
           <div className="space-y-2" role="radiogroup">
             {current.options.map((option, i) => {
               const isAnswer = i === current.answerIndex;
               const isChosen = i === chosen;
-              let style = 'border-slate-700/60 bg-slate-950/40 hover:border-indigo-500/50 hover:bg-indigo-500/5 text-slate-200';
+              let style = 'border-ink-700/60 bg-ink-950/40 hover:border-turmeric-500/50 hover:bg-turmeric-500/5 text-ink-200';
               if (chosen !== null) {
-                if (isAnswer) style = 'border-emerald-500/60 bg-emerald-500/10 text-emerald-100';
+                if (isAnswer) style = 'border-lagoon-500/60 bg-lagoon-500/10 text-lagoon-100';
                 else if (isChosen) style = 'border-red-500/60 bg-red-500/10 text-red-100';
-                else style = 'border-slate-800/60 bg-slate-950/20 text-slate-500';
+                else style = 'border-ink-800/60 bg-ink-950/20 text-ink-500';
               }
               return (
                 <button
@@ -176,9 +176,9 @@ export default function QuizView({ quiz, videoTitle, onSeek, onComplete, onOpenA
                   onClick={() => choose(i)}
                   className={`w-full flex items-start gap-3 p-3 rounded-xl border text-left text-sm transition-colors ${style}`}
                 >
-                  <span className="w-6 h-6 rounded-md bg-slate-800/80 flex items-center justify-center text-xs font-semibold shrink-0">{LETTERS[i]}</span>
+                  <span className="w-6 h-6 rounded-md bg-ink-800/80 flex items-center justify-center text-xs font-semibold shrink-0">{LETTERS[i]}</span>
                   <span className="flex-1 leading-relaxed">{option}</span>
-                  {chosen !== null && isAnswer && <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />}
+                  {chosen !== null && isAnswer && <CheckCircle2 className="w-5 h-5 text-lagoon-400 shrink-0" />}
                   {chosen !== null && isChosen && !isAnswer && <XCircle className="w-5 h-5 text-red-400 shrink-0" />}
                 </button>
               );
@@ -186,16 +186,16 @@ export default function QuizView({ quiz, videoTitle, onSeek, onComplete, onOpenA
           </div>
 
           {chosen !== null && (
-            <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="p-3 rounded-xl bg-slate-800/40 border border-slate-700/50 space-y-2">
-              <p className={`text-sm font-semibold ${chosen === current.answerIndex ? 'text-emerald-300' : 'text-red-300'}`}>
+            <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="p-3 rounded-xl bg-ink-800/40 border border-ink-700/50 space-y-2">
+              <p className={`text-sm font-semibold ${chosen === current.answerIndex ? 'text-lagoon-300' : 'text-red-300'}`}>
                 {chosen === current.answerIndex ? 'Correct!' : 'Not quite.'}
               </p>
-              {current.explanation && <p className="text-sm text-slate-300 leading-relaxed">{current.explanation}</p>}
+              {current.explanation && <p className="text-sm text-ink-300 leading-relaxed">{current.explanation}</p>}
               <div className="flex items-center justify-between gap-2">
                 <TimestampChip timestamp={current.timestamp} onSeek={onSeek} label="Watch" />
                 <button
                   onClick={() => setIndex((i) => i + 1)}
-                  className="ml-auto flex items-center gap-1.5 px-4 py-2 text-sm rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white"
+                  className="ml-auto flex items-center gap-1.5 px-4 py-2 text-sm rounded-lg bg-turmeric-400 hover:bg-turmeric-300 text-ink-950"
                   autoFocus
                 >
                   {index + 1 === total ? 'See score' : 'Next'} <ArrowRight className="w-4 h-4" />

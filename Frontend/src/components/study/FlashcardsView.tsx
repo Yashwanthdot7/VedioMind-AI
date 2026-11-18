@@ -52,16 +52,16 @@ export default function FlashcardsView({ deck, videoTitle, onSeek }: FlashcardsV
 
   return (
     <div className="space-y-4 max-w-xl mx-auto" onKeyDown={onKeyDown}>
-      <div className="flex items-center justify-between gap-2 text-xs text-slate-500">
-        <span>Card {position + 1} of {total} · <span className="text-emerald-400">{known.size} known</span></span>
+      <div className="flex items-center justify-between gap-2 text-xs text-ink-500">
+        <span>Card {position + 1} of {total} · <span className="text-lagoon-400">{known.size} known</span></span>
         <div className="flex gap-1">
-          <button onClick={() => { setOrder(shuffled(total)); setPosition(0); setFlipped(false); }} className="p-2 rounded-lg hover:bg-slate-800 text-slate-400" title="Shuffle" aria-label="Shuffle cards">
+          <button onClick={() => { setOrder(shuffled(total)); setPosition(0); setFlipped(false); }} className="p-2 rounded-lg hover:bg-ink-800 text-ink-400" title="Shuffle" aria-label="Shuffle cards">
             <Shuffle className="w-4 h-4" />
           </button>
-          <button onClick={() => { setKnown(new Set()); setPosition(0); setFlipped(false); }} className="p-2 rounded-lg hover:bg-slate-800 text-slate-400" title="Start over" aria-label="Start over">
+          <button onClick={() => { setKnown(new Set()); setPosition(0); setFlipped(false); }} className="p-2 rounded-lg hover:bg-ink-800 text-ink-400" title="Start over" aria-label="Start over">
             <RotateCcw className="w-4 h-4" />
           </button>
-          <button onClick={exportCsv} className="p-2 rounded-lg hover:bg-slate-800 text-slate-400" title="Download for Anki / Quizlet (.csv)" aria-label="Download flashcards">
+          <button onClick={exportCsv} className="p-2 rounded-lg hover:bg-ink-800 text-ink-400" title="Download for Anki / Quizlet (.csv)" aria-label="Download flashcards">
             <Download className="w-4 h-4" />
           </button>
         </div>
@@ -72,45 +72,45 @@ export default function FlashcardsView({ deck, videoTitle, onSeek }: FlashcardsV
           type="button"
           onClick={() => setFlipped((f) => !f)}
           aria-label={flipped ? 'Show question' : 'Show answer'}
-          className="relative w-full h-56 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded-2xl"
+          className="relative w-full h-56 focus:outline-none focus-visible:ring-2 focus-visible:ring-turmeric-500 rounded-2xl"
           style={{ transformStyle: 'preserve-3d', transition: 'transform 0.5s', transform: flipped ? 'rotateY(180deg)' : 'none' }}
         >
           <div
-            className="absolute inset-0 flex flex-col items-center justify-center p-6 rounded-2xl border border-indigo-500/30 bg-gradient-to-br from-indigo-500/15 to-purple-500/10"
+            className="absolute inset-0 flex flex-col items-center justify-center p-6 rounded-2xl border border-turmeric-500/30 bg-turmeric-400 text-ink-950"
             style={{ backfaceVisibility: 'hidden' }}
           >
-            <span className="absolute top-3 left-4 text-[10px] uppercase tracking-wider text-indigo-300/70">Question</span>
-            <p className="text-lg font-medium text-slate-100 text-center leading-snug">{card.front}</p>
-            <span className="absolute bottom-3 text-[11px] text-slate-500">Tap to flip</span>
+            <span className="absolute top-3 left-4 text-[10px] text-turmeric-300/70">Question</span>
+            <p className="text-lg font-medium text-ink-100 text-center leading-snug">{card.front}</p>
+            <span className="absolute bottom-3 text-[11px] text-ink-500">Tap to flip</span>
           </div>
           <div
-            className="absolute inset-0 flex flex-col items-center justify-center p-6 rounded-2xl border border-emerald-500/30 bg-gradient-to-br from-emerald-500/10 to-teal-500/10"
+            className="absolute inset-0 flex flex-col items-center justify-center p-6 rounded-2xl border border-lagoon-500/30 bg-lagoon-500/10"
             style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
           >
-            <span className="absolute top-3 left-4 text-[10px] uppercase tracking-wider text-emerald-300/70">Answer</span>
-            <p className="text-base text-slate-100 text-center leading-relaxed">{card.back}</p>
-            {known.has(order[position]) && <Check className="absolute top-3 right-4 w-4 h-4 text-emerald-400" />}
+            <span className="absolute top-3 left-4 text-[10px] text-lagoon-300/70">Answer</span>
+            <p className="text-base text-ink-100 text-center leading-relaxed">{card.back}</p>
+            {known.has(order[position]) && <Check className="absolute top-3 right-4 w-4 h-4 text-lagoon-400" />}
           </div>
         </button>
       </div>
 
       <div className="flex items-center gap-2">
-        <button onClick={() => go(-1)} className="p-2.5 rounded-xl bg-slate-800/60 hover:bg-slate-700/60 text-slate-300" aria-label="Previous card">
+        <button onClick={() => go(-1)} className="p-2.5 rounded-xl bg-ink-800/60 hover:bg-ink-700/60 text-ink-300" aria-label="Previous card">
           <ChevronLeft className="w-5 h-5" />
         </button>
         <div className="flex-1 flex justify-center">
           <TimestampChip timestamp={card.timestamp} onSeek={onSeek} label="Watch" />
         </div>
         {flipped && (
-          <button onClick={markKnown} className="px-3 py-2 text-sm rounded-xl bg-emerald-600/80 hover:bg-emerald-500 text-white">
+          <button onClick={markKnown} className="px-3 py-2 text-sm rounded-xl bg-lagoon-600/80 hover:bg-lagoon-500 text-white">
             I knew it
           </button>
         )}
-        <button onClick={() => go(1)} className="p-2.5 rounded-xl bg-slate-800/60 hover:bg-slate-700/60 text-slate-300" aria-label="Next card">
+        <button onClick={() => go(1)} className="p-2.5 rounded-xl bg-ink-800/60 hover:bg-ink-700/60 text-ink-300" aria-label="Next card">
           <ChevronRight className="w-5 h-5" />
         </button>
       </div>
-      <p className="text-[11px] text-slate-600 text-center">Click the card (or press Space) to flip · ← → to move</p>
+      <p className="text-[11px] text-ink-600 text-center">Click the card (or press Space) to flip · ← → to move</p>
     </div>
   );
 }

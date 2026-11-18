@@ -11,6 +11,14 @@
     "typecheck": "tsc --noEmit -p tsconfig.app.json"
   },
   "dependencies": {
+    "@fontsource-variable/anek-bangla": "^5.3.0",
+    "@fontsource-variable/anek-devanagari": "^5.3.0",
+    "@fontsource-variable/anek-gujarati": "^5.3.0",
+    "@fontsource-variable/anek-kannada": "^5.3.0",
+    "@fontsource-variable/anek-latin": "^5.3.0",
+    "@fontsource-variable/anek-malayalam": "^5.3.0",
+    "@fontsource-variable/anek-tamil": "^5.3.0",
+    "@fontsource-variable/anek-telugu": "^5.3.0",
     "@supabase/supabase-js": "^2.57.4",
     "framer-motion": "^12.34.0",
     "lucide-react": "^0.344.0",

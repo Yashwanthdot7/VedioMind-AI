@@ -3,26 +3,54 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    color-scheme: dark;
+  }
+
   body {
-    @apply antialiased;
+    @apply bg-ink-950 text-ink-100 antialiased;
+    font-stretch: 100%;
+    font-feature-settings: 'kern', 'liga';
+  }
+
+  ::selection {
+    @apply bg-turmeric-400 text-ink-950;
+  }
+
+  /* One clear, consistent keyboard focus ring everywhere */
+  :focus-visible {
+    outline: 2px solid theme('colors.turmeric.400');
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 1ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 1ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }
 
 @layer utilities {
+  /* Anek's width axis is the type system's expressive tool */
+  .font-wide { font-stretch: 125%; }
+  .font-semiwide { font-stretch: 112%; }
+  .font-narrow { font-stretch: 88%; }
+
   .custom-scrollbar::-webkit-scrollbar {
     width: 8px;
     height: 8px;
   }
-
   .custom-scrollbar::-webkit-scrollbar-track {
-    @apply bg-slate-900/50 rounded-lg;
+    @apply bg-transparent;
   }
-
   .custom-scrollbar::-webkit-scrollbar-thumb {
-    @apply bg-slate-700/50 rounded-lg hover:bg-slate-600/50;
+    @apply bg-ink-700/60 rounded-full;
   }
-
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    @apply bg-slate-600;
+    @apply bg-ink-600;
   }
 }

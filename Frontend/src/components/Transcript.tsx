@@ -75,47 +75,47 @@ export default function Transcript({ segments, currentTime = 0, onSeek }: Transc
   };
 
   return (
-    <div className="bg-slate-900/50 border border-slate-800/50 rounded-2xl overflow-hidden backdrop-blur-sm">
-      <div className="p-4 border-b border-slate-800/50 flex flex-wrap items-center gap-3">
+    <div className="bg-ink-900/50 border border-ink-800/50 rounded-2xl overflow-hidden backdrop-blur-sm">
+      <div className="p-4 border-b border-ink-800/50 flex flex-wrap items-center gap-3">
         <div className="flex items-center gap-2 mr-auto">
-          <FileText className="w-5 h-5 text-indigo-400" />
-          <h2 className="text-lg font-semibold text-slate-200">Smart Transcript</h2>
+          <FileText className="w-5 h-5 text-turmeric-400" />
+          <h2 className="text-lg font-semibold text-ink-200">Transcript</h2>
         </div>
         <div className="relative flex items-center w-full sm:w-64">
-          <Search className="absolute left-3 w-4 h-4 text-slate-500 pointer-events-none" />
+          <Search className="absolute left-3 w-4 h-4 text-ink-500 pointer-events-none" />
           <input
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search transcript…"
             aria-label="Search transcript"
-            className="w-full pl-9 pr-8 py-2 bg-slate-950/50 border border-slate-700/50 rounded-lg text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full pl-9 pr-8 py-2 bg-ink-950/50 border border-ink-700/50 rounded-lg text-sm text-ink-200 placeholder-ink-500 focus:outline-none focus:ring-2 focus:ring-turmeric-500"
           />
           {query && (
-            <button onClick={() => setQuery('')} className="absolute right-2 p-1 text-slate-500 hover:text-slate-300" aria-label="Clear search">
+            <button onClick={() => setQuery('')} className="absolute right-2 p-1 text-ink-500 hover:text-ink-300" aria-label="Clear search">
               <X className="w-3.5 h-3.5" />
             </button>
           )}
         </div>
         <button
           onClick={copyAll}
-          className="p-2 rounded-lg bg-slate-800/50 hover:bg-slate-700/50 text-slate-400 hover:text-slate-200 transition-colors"
+          className="p-2 rounded-lg bg-ink-800/50 hover:bg-ink-700/50 text-ink-400 hover:text-ink-200 transition-colors"
           title="Copy full transcript"
           aria-label="Copy full transcript"
         >
-          {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+          {copied ? <Check className="w-4 h-4 text-lagoon-400" /> : <Copy className="w-4 h-4" />}
         </button>
       </div>
 
       {trimmed && (
-        <div className="px-6 pt-3 text-xs text-slate-500">
+        <div className="px-6 pt-3 text-xs text-ink-500">
           {visible.length} {visible.length === 1 ? 'match' : 'matches'} for “{trimmed}”
         </div>
       )}
 
       <div ref={containerRef} className="relative p-4 sm:p-6 max-h-96 overflow-y-auto custom-scrollbar">
         {visible.length === 0 ? (
-          <p className="text-sm text-slate-500 text-center py-8">No part of the transcript matches your search.</p>
+          <p className="text-sm text-ink-500 text-center py-8">No part of the transcript matches your search.</p>
         ) : (
           <div className="space-y-2">
             {visible.map(({ segment, index }) => {
@@ -125,18 +125,18 @@ export default function Transcript({ segments, currentTime = 0, onSeek }: Transc
                   key={index}
                   ref={(el) => { itemRefs.current[index] = el; }}
                   className={`group flex gap-3 sm:gap-4 p-3 rounded-lg transition-colors ${
-                    isActive ? 'bg-indigo-500/10 border border-indigo-500/30' : 'border border-transparent hover:bg-slate-800/30'
+                    isActive ? 'bg-turmeric-500/10 border border-turmeric-500/30' : 'border border-transparent hover:bg-ink-800/30'
                   }`}
                 >
                   <button
                     onClick={() => onSeek?.(segment.seconds)}
-                    className="flex-shrink-0 self-start flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-800/50 hover:bg-indigo-600/20 border border-slate-700/50 hover:border-indigo-500/50 rounded-lg transition-all"
+                    className="flex-shrink-0 self-start flex items-center gap-1.5 px-2.5 py-1.5 bg-ink-800/50 hover:bg-turmeric-600/20 border border-ink-700/50 hover:border-turmeric-500/50 rounded-lg transition-all"
                     title={`Jump to ${segment.timestamp}`}
                   >
-                    <Clock className="w-3.5 h-3.5 text-indigo-400" />
-                    <span className="text-sm font-mono text-indigo-400">{segment.timestamp}</span>
+                    <Clock className="w-3.5 h-3.5 text-turmeric-400" />
+                    <span className="text-sm font-mono text-turmeric-400">{segment.timestamp}</span>
                   </button>
-                  <p className={`leading-relaxed ${isActive ? 'text-slate-100' : 'text-slate-300'}`}>
+                  <p className={`leading-relaxed ${isActive ? 'text-ink-100' : 'text-ink-300'}`}>
                     <Highlighted text={segment.text} query={trimmed} />
                   </p>
                 </div>

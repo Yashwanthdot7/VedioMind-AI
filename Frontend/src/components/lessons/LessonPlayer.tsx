@@ -242,7 +242,7 @@ export default function LessonPlayer({ lesson }: LessonPlayerProps) {
   return (
     <div className="space-y-4">
       {lesson.imageNotice && (
-        <div className="flex items-start gap-2 p-3 rounded-xl bg-slate-800/60 border border-slate-700/60 text-slate-300 text-sm">
+        <div className="flex items-start gap-2 p-3 rounded-xl bg-ink-800/60 border border-ink-700/60 text-ink-300 text-sm">
           <Info className="w-4 h-4 mt-0.5 shrink-0" />
           <span>{lesson.imageNotice}</span>
         </div>
@@ -261,7 +261,7 @@ export default function LessonPlayer({ lesson }: LessonPlayerProps) {
         ref={frameRef}
         tabIndex={0}
         onKeyDown={onKeyDown}
-        className={`relative bg-black rounded-2xl overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${fullscreen ? 'flex items-center justify-center' : ''}`}
+        className={`relative bg-black rounded-2xl overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-turmeric-500 ${fullscreen ? 'flex items-center justify-center' : ''}`}
       >
         <div className={`relative ${fullscreen ? 'w-full h-full flex items-center justify-center' : ''}`}>
         <canvas
@@ -275,13 +275,13 @@ export default function LessonPlayer({ lesson }: LessonPlayerProps) {
         <audio ref={audioRef} onEnded={next} preload="auto" />
 
         {!ready && !loadError && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-slate-950/70 text-slate-300">
-            <Loader2 className="w-8 h-8 animate-spin text-indigo-400" />
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-ink-950/70 text-ink-300">
+            <Loader2 className="w-8 h-8 animate-spin text-turmeric-400" />
             <span className="text-sm">Loading {picturesExpected ? 'pictures and narration' : 'narration'}…</span>
           </div>
         )}
         {loadError && (
-          <div className="absolute inset-0 flex items-center justify-center bg-slate-950/80 text-red-300 text-sm p-6 text-center">{loadError}</div>
+          <div className="absolute inset-0 flex items-center justify-center bg-ink-950/80 text-red-300 text-sm p-6 text-center">{loadError}</div>
         )}
 
         {ready && !playing && !finished && (
@@ -295,7 +295,7 @@ export default function LessonPlayer({ lesson }: LessonPlayerProps) {
         )}
 
         {finished && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-slate-950/75 backdrop-blur-sm">
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-ink-950/75 backdrop-blur-sm">
             <p className="text-2xl font-bold text-white">🎉 Lesson complete!</p>
             <div className="flex gap-3">
               <button onClick={togglePlay} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/15 hover:bg-white/25 text-white text-sm">
@@ -303,13 +303,13 @@ export default function LessonPlayer({ lesson }: LessonPlayerProps) {
               </button>
               <button
                 onClick={() => openQuiz('quick')}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-sm"
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-turmeric-400 hover:bg-turmeric-300 text-ink-950 text-sm"
               >
                 <ListChecks className="w-4 h-4" /> Quick quiz (5)
               </button>
               <button
                 onClick={() => openQuiz('test')}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-sm"
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-turmeric-400 hover:bg-turmeric-300 text-ink-950 text-sm"
               >
                 <GraduationCap className="w-4 h-4" /> Full test (10)
               </button>
@@ -319,7 +319,7 @@ export default function LessonPlayer({ lesson }: LessonPlayerProps) {
         </div>
 
         {/* controls */}
-        <div className={`flex items-center gap-1 px-3 py-2 bg-slate-900/90 ${fullscreen ? 'absolute bottom-0 left-0 right-0' : ''}`}>
+        <div className={`flex items-center gap-1 px-3 py-2 bg-ink-900/90 ${fullscreen ? 'absolute bottom-0 left-0 right-0' : ''}`}>
           <button onClick={togglePlay} disabled={!ready} className="p-2 rounded-lg hover:bg-white/10 text-white disabled:opacity-40" aria-label={playing ? 'Pause' : 'Play'}>
             {playing ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
           </button>
@@ -329,13 +329,13 @@ export default function LessonPlayer({ lesson }: LessonPlayerProps) {
           <button onClick={() => goTo(sceneIndex + 1)} disabled={sceneIndex >= lesson.scenes.length - 1} className="p-2 rounded-lg hover:bg-white/10 text-white disabled:opacity-30" aria-label="Next scene">
             <SkipForward className="w-4 h-4" />
           </button>
-          <span className="ml-2 text-xs text-slate-400 tabular-nums">
+          <span className="ml-2 text-xs text-ink-400 tabular-nums">
             Scene {sceneIndex + 1}/{lesson.scenes.length} · ~{Math.max(1, Math.round(totalSeconds / 60))} min
           </span>
           <div className="ml-auto flex items-center gap-1">
             <button
               onClick={() => setCaptions((c) => !c)}
-              className={`p-2 rounded-lg hover:bg-white/10 ${captions ? 'text-indigo-300' : 'text-slate-500'}`}
+              className={`p-2 rounded-lg hover:bg-white/10 ${captions ? 'text-turmeric-300' : 'text-ink-500'}`}
               aria-label={captions ? 'Hide captions' : 'Show captions'}
               aria-pressed={captions}
             >
@@ -364,26 +364,26 @@ export default function LessonPlayer({ lesson }: LessonPlayerProps) {
             key={i}
             onClick={() => goTo(i)}
             className={`shrink-0 w-40 p-2.5 rounded-xl border text-left transition-colors ${
-              i === sceneIndex ? 'border-indigo-500/60 bg-indigo-500/10' : 'border-slate-800 bg-slate-900/50 hover:border-slate-700'
+              i === sceneIndex ? 'border-turmeric-500/60 bg-turmeric-500/10' : 'border-ink-800 bg-ink-900/50 hover:border-ink-700'
             }`}
           >
             <span className="text-xl">{s.icon}</span>
-            <p className="text-xs text-slate-300 mt-1 line-clamp-2 leading-snug">{s.heading}</p>
+            <p className="text-xs text-ink-300 mt-1 line-clamp-2 leading-snug">{s.heading}</p>
           </button>
         ))}
       </div>
 
       {/* Test yourself: generated only when asked for */}
-      <div ref={quizRef} className="p-5 rounded-2xl bg-slate-900/50 border border-slate-800/50 scroll-mt-28">
+      <div ref={quizRef} className="p-5 rounded-2xl bg-ink-900/50 border border-ink-800/50 scroll-mt-28">
         <div className="flex flex-wrap items-center gap-3">
           <div className="mr-auto">
-            <h3 className="text-lg font-semibold text-slate-100">Test yourself</h3>
-            <p className="text-xs text-slate-500">Made from this lesson when you ask, in {lesson.language === 'en' ? 'English' : 'the lesson’s language'}</p>
+            <h3 className="text-lg font-semibold text-ink-100">Test yourself</h3>
+            <p className="text-xs text-ink-500">Made from this lesson when you ask, in {lesson.language === 'en' ? 'English' : 'the lesson’s language'}</p>
           </div>
           <button
             onClick={() => openQuiz('quick', quiz?.kind === 'quick')}
             disabled={quizLoading !== null}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-sm"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-turmeric-400 hover:bg-turmeric-300 disabled:opacity-50 text-ink-950 text-sm"
           >
             {quizLoading === 'quick' ? <Loader2 className="w-4 h-4 animate-spin" /> : <ListChecks className="w-4 h-4" />}
             {quiz?.kind === 'quick' && showQuiz ? 'New quick quiz' : 'Quick quiz (5)'}
@@ -391,7 +391,7 @@ export default function LessonPlayer({ lesson }: LessonPlayerProps) {
           <button
             onClick={() => openQuiz('test', quiz?.kind === 'test')}
             disabled={quizLoading !== null}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white text-sm"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-turmeric-400 hover:bg-turmeric-300 disabled:opacity-50 text-ink-950 text-sm"
           >
             {quizLoading === 'test' ? <Loader2 className="w-4 h-4 animate-spin" /> : <GraduationCap className="w-4 h-4" />}
             {quiz?.kind === 'test' && showQuiz ? 'New full test' : 'Full test (10)'}
@@ -401,8 +401,8 @@ export default function LessonPlayer({ lesson }: LessonPlayerProps) {
         {showQuiz && (
           <div className="mt-5">
             {quizLoading && (
-              <p className="flex items-center justify-center gap-2 py-10 text-sm text-slate-400">
-                <Loader2 className="w-5 h-5 animate-spin text-indigo-400" /> Writing your {quizLoading === 'test' ? 'test' : 'quiz'}… (about 10 seconds)
+              <p className="flex items-center justify-center gap-2 py-10 text-sm text-ink-400">
+                <Loader2 className="w-5 h-5 animate-spin text-turmeric-400" /> Writing your {quizLoading === 'test' ? 'test' : 'quiz'}… (about 10 seconds)
               </p>
             )}
             {quizError && !quizLoading && <p className="text-sm text-red-400 py-4">{quizError}</p>}

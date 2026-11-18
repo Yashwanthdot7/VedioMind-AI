@@ -51,14 +51,14 @@ export default function NotesView({ notes, videoTitle, videoId, onSeek }: NotesV
   return (
     <div className="space-y-5">
       <div className="flex items-start gap-3">
-        <BookOpen className="w-5 h-5 text-indigo-400 mt-0.5 shrink-0" />
-        <h3 className="flex-1 text-base font-semibold text-slate-100 leading-snug">{notes.title || videoTitle}</h3>
-        <button onClick={copy} className="p-2 rounded-lg bg-slate-800/50 hover:bg-slate-700/50 text-slate-400 hover:text-slate-200" title="Copy notes as Markdown" aria-label="Copy notes">
-          {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+        <BookOpen className="w-5 h-5 text-turmeric-400 mt-0.5 shrink-0" />
+        <h3 className="flex-1 text-base font-semibold text-ink-100 leading-snug">{notes.title || videoTitle}</h3>
+        <button onClick={copy} className="p-2 rounded-lg bg-ink-800/50 hover:bg-ink-700/50 text-ink-400 hover:text-ink-200" title="Copy notes as Markdown" aria-label="Copy notes">
+          {copied ? <Check className="w-4 h-4 text-lagoon-400" /> : <Copy className="w-4 h-4" />}
         </button>
         <button
           onClick={() => downloadText(`${slugify(videoTitle)}-notes.md`, markdown(), 'text/markdown')}
-          className="p-2 rounded-lg bg-slate-800/50 hover:bg-slate-700/50 text-slate-400 hover:text-slate-200"
+          className="p-2 rounded-lg bg-ink-800/50 hover:bg-ink-700/50 text-ink-400 hover:text-ink-200"
           title="Download notes (.md)"
           aria-label="Download notes"
         >
@@ -66,30 +66,30 @@ export default function NotesView({ notes, videoTitle, videoId, onSeek }: NotesV
         </button>
       </div>
 
-      {notes.overview && <p className="text-sm text-slate-300 leading-relaxed max-w-4xl">{notes.overview}</p>}
+      {notes.overview && <p className="text-sm text-ink-300 leading-relaxed max-w-4xl">{notes.overview}</p>}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {notes.sections.map((section, i) => (
-          <section key={i} className="p-4 rounded-xl bg-slate-950/40 border border-slate-800/60">
+          <section key={i} className="p-4 rounded-xl bg-ink-950/40 border border-ink-800/60">
             <div className="flex items-center justify-between gap-3 mb-2">
-              <h4 className="text-sm font-semibold text-indigo-300">
-                <span className="text-slate-500 mr-1.5">{i + 1}.</span>{section.heading}
+              <h4 className="text-sm font-semibold text-turmeric-300">
+                <span className="text-ink-500 mr-1.5">{i + 1}.</span>{section.heading}
               </h4>
               <TimestampChip timestamp={section.timestamp} onSeek={onSeek} />
             </div>
-            <RichText text={section.points.map((p) => `- ${p}`).join('\n')} onSeek={onSeek} className="text-sm text-slate-300" />
+            <RichText text={section.points.map((p) => `- ${p}`).join('\n')} onSeek={onSeek} className="text-sm text-ink-300" />
           </section>
         ))}
       </div>
 
       {notes.keyTerms.length > 0 && (
         <div>
-          <h4 className="text-xs font-semibold text-amber-400 uppercase tracking-wider mb-3">Key terms</h4>
+          <h4 className="text-xs font-semibold text-amber-400 mb-3">Key terms</h4>
           <dl className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
             {notes.keyTerms.map((k, i) => (
               <div key={i} className="p-3 rounded-lg bg-amber-500/5 border border-amber-500/15">
                 <dt className="text-sm font-semibold text-amber-200">{k.term}</dt>
-                <dd className="text-sm text-slate-300 mt-0.5 leading-relaxed">{k.definition}</dd>
+                <dd className="text-sm text-ink-300 mt-0.5 leading-relaxed">{k.definition}</dd>
               </div>
             ))}
           </dl>
