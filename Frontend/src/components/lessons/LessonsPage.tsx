@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
-  Clapperboard, Sparkles, Youtube, PenLine, Loader2, AlertCircle, Trash2, ArrowLeft, Wand2, Image as ImageIcon, LayoutTemplate, ListTree, Film,
+  Clapperboard, Sparkles, Youtube, PenLine, Loader2, AlertCircle, Trash2, ArrowLeft, Wand2, Image as ImageIcon, LayoutTemplate, ListTree, Film, FileUp,
 } from 'lucide-react';
 import { Course, CourseSummary, Lesson, LessonAudience, LessonSummary, VideoData } from '../../types';
 import {
@@ -14,6 +14,7 @@ import LessonPlayer from './LessonPlayer';
 import LessonProgress from './LessonProgress';
 import CoursePlayer from './CoursePlayer';
 import ShareButton from '../share/ShareButton';
+import FileSource, { UploadedFile } from './FileSource';
 
 interface LessonsPageProps {
   /** The video open on the dashboard, offered as a source */
@@ -39,6 +40,9 @@ const EXAMPLES = [
 ];
 
 const RECENT_KEY = 'videomind.recentLessons';
+/** Keep in sync with MAX_TEXT in backend/src/controllers/lessonInput.js */
+const MAX_TEXT = 100000;
+const LONG_FOR_ONE_LESSON = 15000;
 
 /** Guests have no account, so remember their lessons in this browser */
 function loadRecent(): LessonSummary[] {
@@ -89,7 +93,8 @@ function rememberCourse(course: Course) {
 export default function LessonsPage({ currentVideo, preferVideo, defaultLanguage, initialText = '' }: LessonsPageProps) {
   const { user } = useAuth();
   const [options, setOptions] = useState<LessonOptions | null>(null);
-  const [source, setSource] = useState<'text' | 'video'>(currentVideo && preferVideo ? 'video' : 'text');
+  const [source, setSource] = useState<'text' | 'file' | 'video'>(currentVideo && preferVideo ? 'video' : 'text');
+  const [upload, setUpload] = useState<UploadedFile | null>(null);
   const [text, setText] = useState(initialText);
   const [audience, setAudience] = useState<LessonAudience>('student');
   const [language, setLanguage] = useState(defaultLanguage);
@@ -219,7 +224,7 @@ export default function LessonsPage({ currentVideo, preferVideo, defaultLanguage
     setSubmitting(true);
     try {
       const common = {
-        text: source === 'text' ? text : undefined,
+        text: source === 'text' ? text : source === 'file' ? upload?.text.slice(0, MAX_TEXT) : undefined,
         video: source === 'video' && currentVideo ? currentVideo : undefined,
         audience,
         language,
@@ -236,7 +241,8 @@ export default function LessonsPage({ currentVideo, preferVideo, defaultLanguage
     }
   };
 
-  const canSubmit = !submitting && (source === 'video' ? Boolean(currentVideo) : text.trim().length >= 15);
+  const material = source === 'file' ? upload?.text || '' : text;
+  const canSubmit = !submitting && (source === 'video' ? Boolean(currentVideo) : material.trim().length >= 15);
 
   // ---------------------------------------------------------------- active course
   if (activeCourse) {
@@ -304,24 +310,30 @@ export default function LessonsPage({ currentVideo, preferVideo, defaultLanguage
         <Clapperboard className="w-7 h-7 text-turmeric-400" />
         <h1 className="font-semiwide text-3xl font-extrabold tracking-tight text-ink-50">Create a video lesson</h1>
       </div>
-      <p className="text-ink-400 mb-8">Turn any topic, notes or YouTube video into a narrated, animated lesson — in {LANGUAGES.length} languages, for kids, students or teachers. Free.</p>
+      <p className="text-ink-400 mb-8">Turn any topic, notes, PDF or Word chapter, or YouTube video into a narrated, animated lesson — in {LANGUAGES.length} languages, for kids, students or teachers. Free.</p>
 
       <div className="bg-ink-900/50 border border-ink-800/50 rounded-2xl p-5 md:p-6 space-y-6">
         {/* source */}
         <div>
-          <div className="flex gap-2 mb-3" role="tablist">
+          <div className="flex flex-wrap gap-2 mb-3" role="tablist">
             <button
               role="tab" aria-selected={source === 'text'} onClick={() => setSource('text')}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium ${source === 'text' ? 'bg-turmeric-400 text-ink-950' : 'bg-ink-800/60 text-ink-300 hover:bg-ink-700/60'}`}
             >
-              <PenLine className="w-4 h-4" /> Topic<span className="hidden sm:inline">&nbsp;or text</span>
+              <PenLine className="w-4 h-4" /> <span>Topic<span className="hidden sm:inline"> or text</span></span>
+            </button>
+            <button
+              role="tab" aria-selected={source === 'file'} onClick={() => setSource('file')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium ${source === 'file' ? 'bg-turmeric-400 text-ink-950' : 'bg-ink-800/60 text-ink-300 hover:bg-ink-700/60'}`}
+            >
+              <FileUp className="w-4 h-4" /> <span><span className="sm:hidden">File</span><span className="hidden sm:inline">PDF or Word file</span></span>
             </button>
             <button
               role="tab" aria-selected={source === 'video'} onClick={() => setSource('video')} disabled={!currentVideo}
               title={currentVideo ? undefined : 'Summarize a YouTube video first'}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed ${source === 'video' ? 'bg-turmeric-400 text-ink-950' : 'bg-ink-800/60 text-ink-300 hover:bg-ink-700/60'}`}
             >
-              <Youtube className="w-4 h-4" /> <span className="hidden sm:inline">From a&nbsp;</span>YouTube<span className="hidden sm:inline">&nbsp;video</span>
+              <Youtube className="w-4 h-4" /> <span><span className="hidden sm:inline">From a </span>YouTube<span className="hidden sm:inline"> video</span></span>
             </button>
           </div>
 
@@ -331,7 +343,7 @@ export default function LessonsPage({ currentVideo, preferVideo, defaultLanguage
                 value={text}
                 onChange={(e) => setText(e.target.value)}
                 rows={6}
-                maxLength={20000}
+                maxLength={MAX_TEXT}
                 placeholder="Type a topic (e.g. “How do volcanoes erupt?”) or paste your notes, a textbook paragraph, or an article…"
                 className="w-full p-4 bg-ink-950/60 border border-ink-700/50 rounded-xl text-ink-200 placeholder-ink-500 focus:outline-none focus:ring-2 focus:ring-turmeric-500 resize-y"
                 aria-label="Topic or text for the lesson"
@@ -343,9 +355,11 @@ export default function LessonsPage({ currentVideo, preferVideo, defaultLanguage
                     {ex}
                   </button>
                 ))}
-                <span className="ml-auto text-xs text-ink-600">{text.length.toLocaleString()} / 20,000</span>
+                <span className="ml-auto text-xs text-ink-600">{text.length.toLocaleString()} / {MAX_TEXT.toLocaleString()}</span>
               </div>
             </>
+          ) : source === 'file' ? (
+            <FileSource file={upload} onChange={setUpload} maxChars={MAX_TEXT} />
           ) : currentVideo ? (
             <div className="flex items-center gap-3 p-3 rounded-xl bg-ink-950/60 border border-ink-700/50">
               <img src={currentVideo.metadata?.thumbnail || `https://i.ytimg.com/vi/${currentVideo.videoId}/mqdefault.jpg`} alt="" className="w-28 rounded-lg" />
@@ -378,6 +392,16 @@ export default function LessonsPage({ currentVideo, preferVideo, defaultLanguage
             ))}
           </div>
         </div>
+
+        {format === 'lesson' && source !== 'video' && material.length > LONG_FOR_ONE_LESSON && (
+          <p className="-mt-3 text-sm text-ink-300">
+            That's a lot of material for one short lesson. The most important parts will be picked out, but{' '}
+            <button type="button" onClick={() => setFormat('course')} className="text-turmeric-300 hover:text-turmeric-200 underline underline-offset-2">
+              a course with modules
+            </button>{' '}
+            would cover more of it.
+          </p>
+        )}
 
         {/* options */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">

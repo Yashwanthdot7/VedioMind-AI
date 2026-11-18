@@ -6,7 +6,7 @@ const { parseLanguage } = require('../utils/validators');
 
 const AUDIENCES = ['kids', 'student', 'teacher'];
 const MIN_TEXT = 15;
-const MAX_TEXT = 20000;
+const MAX_TEXT = 100000; // long material is condensed with TextRank, or split into course modules
 
 /**
  * Validates the shared lesson / course request body:
