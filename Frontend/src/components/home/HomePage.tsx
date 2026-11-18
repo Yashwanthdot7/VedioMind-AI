@@ -352,7 +352,7 @@ export default function HomePage({ busy, language, onLanguageChange, onSummarize
         <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-8 text-sm text-ink-500 sm:px-6">
           <span className="font-semibold text-ink-200">VideoMind</span>
           <span className="mr-auto">Free and open source. Summaries, study tools and video lessons in 15 languages.</span>
-          <a href="https://github.com/Yashwanthdot7/VedioMind-AI" target="_blank" rel="noreferrer" className="hover:text-white">Source code</a>
+          <a href="https://github.com/Yashwanthdot7/VideoMind-AI" target="_blank" rel="noreferrer" className="hover:text-white">Source code</a>
         </div>
       </footer>
     </div>
