@@ -31,6 +31,7 @@
   - **Quiz on demand**: the video is made first; a Quick quiz (5) or Full test (10, mixed difficulty) is generated only when you ask, so lessons finish faster
   - **Download as MP4**, recorded in your browser (no server rendering and no cost)
   - If the free AI voice quota runs out, lessons still play using your **browser's built-in voice**
+  - **Course mode**: a big topic or long notes become 3 to 5 modules that build on each other. Gemini plans the outline, each module gets the part of the material about it, and modules are made one by one, so you can start module 1 while the rest are being made
 - 📊 **Quiz analytics**: every quiz and test is saved with its score and an A+ to D grade. The **Analytics** page shows summary tiles (quizzes, average, best, day streak, time spent), score over time, accuracy by difficulty, grade spread, quizzes worth revisiting, and the full history, with date-range and quiz-type filters. History is saved to your account when signed in, otherwise in your browser (and can be imported after signing in).
 - 👤 **Accounts (Supabase)** — sign in with Google or email
 - 📚 **My Library** — every video you summarise is saved with its chat history; search, favourite, or remove videos
@@ -130,7 +131,7 @@ The free plan gives 10,000 Neurons a day, about 170 pictures (about 25 lessons).
 
 1. Create a project at [supabase.com](https://supabase.com).
 2. **SQL Editor → New query** → paste [`supabase/schema.sql`](supabase/schema.sql) → **Run**.
-   - Already ran it before quiz analytics existed? Just run [`supabase/migrations/002_quiz_attempts.sql`](supabase/migrations/002_quiz_attempts.sql) once.
+   - Already ran it before? Run the migrations you don't have yet, once each: [`002_quiz_attempts.sql`](supabase/migrations/002_quiz_attempts.sql) (quiz analytics), [`003_courses.sql`](supabase/migrations/003_courses.sql) (courses and the lesson files bucket).
 3. **Authentication → URL Configuration**: set *Site URL* to your frontend URL (e.g. `http://localhost:5173`) and add it to *Redirect URLs*.
 4. **Authentication → Providers → Google**: enable it and paste a Google OAuth client ID/secret ([guide](https://supabase.com/docs/guides/auth/social-login/auth-google)). Then set `VITE_ENABLE_GOOGLE_AUTH=true` in `Frontend/.env` to show the button. Email sign-in works without this step.
 5. Put the URL and keys in both `.env` files and restart.
@@ -191,6 +192,10 @@ All endpoints accept an optional `Authorization: Bearer <supabase access token>`
 | `GET` | `/api/lessons` | required | Your lessons |
 | `DELETE` | `/api/lessons/:id` | owner | Delete a lesson |
 | `GET` | `/api/lessons/options` | | Voices and lengths |
+| `POST` | `/api/courses` | optional | Create a course: same body as a lesson plus `modules: 3-5`. Returns at once; modules are made one after another |
+| `GET` | `/api/courses/:id` | owner | Course outline with every module's status, progress and `lessonId` |
+| `GET` | `/api/courses` | required | Your courses |
+| `DELETE` | `/api/courses/:id` | owner | Delete a course and all its module lessons |
 | `GET` | `/api/quiz-attempts` | required | Your quiz history, newest first |
 | `POST` | `/api/quiz-attempts` | required | Save a finished quiz `{ source, kind, title, language, answers[{chosen, answer, difficulty}], durationSec, … }`. Score and grade are computed on the server |
 | `DELETE` | `/api/quiz-attempts[/:id]` | required | Delete one attempt, or clear your history |
