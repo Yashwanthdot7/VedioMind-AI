@@ -291,5 +291,3 @@ All of them run on every push and pull request in [GitHub Actions](.github/workf
 ## Author
 
 **Yashwanth D** ([@Yashwanthdot7](https://github.com/Yashwanthdot7)), Information Science & Engineering, BGSCET Bengaluru.
-
-Licensed under the [MIT License](LICENSE).
